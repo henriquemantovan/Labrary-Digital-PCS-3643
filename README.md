@@ -371,6 +371,17 @@ Banco, testes, documentação e backlog evoluem em todas as sprints; não são e
 
 O backlog foi montado nas issues, conforme solicitado. A issue de acompanhamento agrega checklists por sprint e uma visão inicial dos estados. Um quadro GitHub Projects não foi criado; a equipe pode espelhar esse fluxo nele quando disponível.
 
+### Atualização do Kanban — 11/10/2026
+
+| Coluna | Itens | Situação registrada |
+| --- | --- | --- |
+| Backlog | HU01–HU14, TEC02–TEC06 | Aguardando priorização e capacidade das sprints |
+| Em andamento | TEC01 — modelagem e criação do banco | DER e script SQL inicial adicionados; execução em PostgreSQL, revisão do modelo e seed ainda pendentes |
+| Em revisão | — | Nenhum item registrado |
+| Concluído | — | Nenhum item marcado como concluído sem aceite da equipe |
+
+Essa atualização documenta o estado no repositório e complementa a issue #21; não altera o quadro remoto do GitHub Projects.
+
 ## 7. Protótipo da interface (telas do sistema)
 
 Os SVGs abaixo são **wireframes estáticos de desktop**, com dados fictícios. Não representam telas implementadas. A validação de navegação mobile integra a TEC03 e o desenvolvimento das histórias.
@@ -449,7 +460,7 @@ Preparação e Ajustes permitem edição conforme prazo/reabertura. Em avaliaç�
 
 ## 8. Tecnologias do sistema
 
-**Stack proposta, ainda não instalada ou validada.** A escolha prioriza uma aplicação pequena, com TypeScript no frontend/backend e separação MVC/REST. A baseline exata deve ser registrada na TEC02, usando versões compatíveis fixadas no lockfile e nas imagens; não declarar versões ou instalação como verificadas antes disso.
+**Stack implementada inicialmente na TEC02.** A escolha prioriza uma aplicação pequena, com TypeScript no frontend/backend e separação MVC/REST. Versões diretas e transitivas ficam fixadas em `pnpm-lock.yaml`; versões principais e runtime também estão declarados nos manifests e em `.nvmrc`.
 
 | Camada | Tecnologia proposta | Uso |
 | --- | --- | --- |
@@ -466,11 +477,29 @@ Preparação e Ajustes permitem edição conforme prazo/reabertura. Em avaliaç�
 | Gestão | GitHub Issues e pull requests | Backlog, revisão e rastreabilidade |
 | Diagramas | Mermaid | Componentes, DER e estados no repositório |
 
-**Instalação futura:** README deverá informar versões exatas, pré-requisitos, `.env.example` sem segredos, comandos de instalação/build, subida conjunta de frontend e backend, SQL/migrações, seed/dump e execução dos testes no Ubuntu 26.04. Os comandos executáveis serão adicionados quando a implementação existir, e a TEC05 verificará instalação em ambiente novo.
+**Baseline da TEC02 (15/10/2026):** Node.js 24.19.0, pnpm 11.25.0, React 19.3.1, Vite 8.3.4, Express 5.3.0, TypeScript 5.9.3 e Prisma 7.10.0. Os manifests fixam versões diretas; o lockfile fixa a árvore completa. O frontend e a API TypeScript têm build configurado. A API oferece `GET /api/health`, listagem/criação/detalhe de projetos e listagem/registro de metadados de materiais. O [contrato inicial](docs/api-inicial.md) descreve rotas, validações, envelopes e erros. O frontend lista projetos fornecidos pela API.
+
+**Instalação e desenvolvimento local:** requer Node.js 24.19.0 e pnpm 11.25.0. Na raiz do repositório, copie `.env.example` para `.env`, instale com `pnpm install --frozen-lockfile`, gere o cliente com `pnpm db:generate` e inicie as duas aplicações com `pnpm dev`. O frontend fica em `http://localhost:5173` e encaminha `/api` para a API em `http://localhost:3000`. `pnpm build` compila os workspaces e `pnpm test` executa os testes da API. A API ainda usa dados e metadados em memória; PostgreSQL e arquivos serão conectados em uma etapa posterior.
+
+O DER está em [docs/diagrama-er.md](docs/diagrama-er.md), o diagrama de classes inicial em [docs/diagrama-classes.md](docs/diagrama-classes.md) e o model Prisma em `packages/api/prisma/schema.prisma`. O script SQL de TEC01 permanece em `db/schema.sql` como schema completo do banco; a integração física do Prisma e a validação em ambiente limpo continuam pendentes.
 
 **Badges de testes e cobertura:** pendentes de workflows reais; não foram inseridos badges fictícios.
 
 ## 9. Arquitetura: componentes da aplicação
+
+### Banco de dados e script de criação
+
+O DER detalhado está em [docs/diagrama-er.md](docs/diagrama-er.md). O schema inicial para PostgreSQL está em [db/schema.sql](db/schema.sql), com tabelas, chaves, índices, restrições e tipos enumerados para usuários, turmas, grupos, projetos, entregas, materiais versionados, feedback, rubricas, avaliações, liberação de resultados e publicação.
+
+Com PostgreSQL instalado e um banco vazio criado, execute na raiz do repositório:
+
+```sh
+psql -d nome_do_banco -f db/schema.sql
+```
+
+O script cria os objetos dentro de uma transação. Não inclui seed nem armazena arquivos binários; os arquivos ficam em armazenamento privado e `storage_key` guarda sua referência. A aplicação ainda deverá impor autorização e regras que dependem de múltiplas linhas, como soma dos pesos da rubrica igual a 100% e compatibilidade de papel.
+
+O script SQL e o model Prisma descrevem as entidades do MVP. A API ainda não consulta PostgreSQL: usa um repositório em memória para esta etapa, e a criação/migração do banco não foi verificada em uma instância real. A instalação limpa e a validação de ponta a ponta permanecem no escopo da TEC05.
 
 ### Visão dos componentes e separação MVC
 
@@ -506,7 +535,9 @@ A View apresenta dados e captura ações. Controllers validam requisições, aut
 | Publicação e catálogo | Materiais autorizados, busca e despublicação |
 | Descoberta e estatísticas | Histórico, favoritos, sugestões e contagens; itens P2 |
 
-### Contratos REST propostos
+### Contratos REST do MVP
+
+A API inicial implementa health check, consulta/criação de projetos e registro/listagem de metadados de materiais; o [contrato detalhado e os exemplos de erro](docs/api-inicial.md) identificam o escopo atual. As demais rotas abaixo são previstas para histórias futuras.
 
 | Método e rota | Finalidade |
 | --- | --- |
@@ -539,5 +570,5 @@ A View apresenta dados e captura ações. Controllers validam requisições, aut
 | Backlog do produto/sprints | Seção 6 e issue de acompanhamento |
 | Imagens dos protótipos | Seção 7 e docs/prototipos |
 | Tecnologias | Seção 8; versões a fixar na implementação |
-| Arquitetura | Seção 9; MVC/REST e DER inicial |
+| Arquitetura e banco | Seção 9; MVC/REST, [DER](docs/diagrama-er.md), [classes](docs/diagrama-classes.md), Prisma e [schema PostgreSQL](db/schema.sql) |
 | Compartilhamento com professor | Compartilhar link com higoramario conforme aula |
