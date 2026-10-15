@@ -2,7 +2,7 @@
 
 > Documento de definição do projeto e planejamento Scrum — PCS3643, Laboratório de Engenharia de Software I.
 > Plataforma voltada aos projetos de Laboratório de Projeto de Sistemas Digitais.
-> Versão inicial: 04/10/2026. Situação: planejamento e protótipos; sistema ainda não implementado.
+> Versão inicial: 04/10/2026. Situação atual: base MVC/REST e HU01 implementadas localmente; revisão da equipe pendente.
 
 ## 1. Tema
 
@@ -91,10 +91,12 @@ As funcionalidades foram registradas como issues no formato **Como [papel], eu g
 
 **Critérios de aceitação:**
 
-- [ ] Login válido abre a área do perfil; credenciais inválidas exibem erro sem revelar dados.
-- [ ] Logout invalida a sessão.
-- [ ] Aluno acessa apenas seu grupo; avaliador apenas projetos atribuídos; professor gerencia sua turma.
-- [ ] A API rejeita acesso indevido mesmo quando a URL é acessada diretamente.
+- [x] Login válido abre a área do perfil; credenciais inválidas exibem erro sem revelar dados.
+- [x] Logout invalida a sessão.
+- [x] Aluno acessa apenas seu grupo; avaliador apenas projetos atribuídos; professor gerencia sua turma.
+- [x] A API rejeita acesso indevido mesmo quando a URL é acessada diretamente.
+
+**Estado local:** implementação e testes da HU01 prontos para revisão. Regras, instalação, contas de demonstração, limites da persistência em memória e roteiro de validação em [docs/hu01.md](docs/hu01.md). Aprovação por outro integrante, refinamento com o grupo e demonstração da sprint ainda pendentes.
 
 ### [HU02 — Cadastrar grupos e projetos](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/2)
 
@@ -314,6 +316,8 @@ As responsabilidades estão no corpo das issues. Os convites para @enplo, @kiyoc
 
 **Acompanhamento central:** [Product Backlog e sprints — issue #21](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/21).
 
+**HU01 — atualização local:** implementação pronta para revisão; critérios técnicos cobertos por testes. A conclusão formal depende da revisão e demonstração da equipe. Ver [registro da HU01](docs/hu01.md). Issues remotas não foram alteradas.
+
 O **Product Backlog** contém todas as histórias e tarefas técnicas. O **Sprint Backlog** contém o recorte que a equipe assume após avaliar capacidade. A coluna de sprint abaixo é uma sugestão de sequenciamento, não um compromisso já assumido.
 
 Prioridades: **P0** essencial ao MVP/entrega técnica; **P1** importante; **P2** complemento condicionado à capacidade e à decisão do professor. Pontos são estimativas relativas iniciais, sem equivalência fixa em horas.
@@ -477,13 +481,13 @@ Preparação e Ajustes permitem edição conforme prazo/reabertura. Em avaliaç�
 | Gestão | GitHub Issues e pull requests | Backlog, revisão e rastreabilidade |
 | Diagramas | Mermaid | Componentes, DER e estados no repositório |
 
-**Baseline da TEC02 (15/10/2026):** Node.js 24.19.0, pnpm 11.25.0, React 19.3.1, Vite 8.3.4, Express 5.3.0, TypeScript 5.9.3 e Prisma 7.10.0. Os manifests fixam versões diretas; o lockfile fixa a árvore completa. O frontend e a API TypeScript têm build configurado. A API oferece `GET /api/health`, listagem/criação/detalhe de projetos e listagem/registro de metadados de materiais. O [contrato inicial](docs/api-inicial.md) descreve rotas, validações, envelopes e erros. O frontend lista projetos fornecidos pela API.
+**Baseline da TEC02 (15/10/2026):** Node.js 24.19.0, pnpm 11.25.0, React 19.3.1, Vite 8.3.4, Express 5.3.0, TypeScript 5.9.3 e Prisma 7.10.0. Os manifests fixam versões diretas; o lockfile fixa a árvore completa. O frontend e a API TypeScript têm build configurado. A API oferece `GET /api/health`, listagem/criação/detalhe de projetos e listagem/registro de metadados de materiais. O [contrato inicial](docs/api-inicial.md) descreve rotas, validações, envelopes e erros. A HU01 acrescenta login, sessão com cookie HttpOnly, autorização por vínculo e uma área por perfil em tema escuro roxo/rosa. O [registro da HU01](docs/hu01.md) detalha regras e limitações.
 
-**Instalação e desenvolvimento local:** requer Node.js 24.19.0 e pnpm 11.25.0. Na raiz do repositório, copie `.env.example` para `.env`, instale com `pnpm install --frozen-lockfile`, gere o cliente com `pnpm db:generate` e inicie as duas aplicações com `pnpm dev`. O frontend fica em `http://localhost:5173` e encaminha `/api` para a API em `http://localhost:3000`. `pnpm build` compila os workspaces e `pnpm test` executa os testes da API. A API ainda usa dados e metadados em memória; PostgreSQL e arquivos serão conectados em uma etapa posterior.
+**Instalação e desenvolvimento local:** requer Node.js 24.19.0 e pnpm 11.25.0. Na raiz do repositório, copie `.env.example` para `.env`, instale com `pnpm install --frozen-lockfile` e inicie as duas aplicações com `pnpm dev`. O frontend fica em `http://localhost:5173` e encaminha `/api` para a API em `http://localhost:3000`. `pnpm build` compila os workspaces e `pnpm test` executa os testes da API e da interface com cobertura mínima de 85% nas quatro métricas. `pnpm test:e2e` verifica os três perfis em desktop e celular (instale Chromium com `pnpm exec playwright install --with-deps chromium`). As contas de demonstração e o uso de `AUTH_USERS_FILE` estão em [docs/hu01.md](docs/hu01.md). A API ainda usa projetos, metadados e sessões em memória; PostgreSQL e arquivos serão conectados em uma etapa posterior. `pnpm db:generate` continua disponível para gerar o cliente Prisma, sem ser necessário para executar a HU01.
 
 O DER está em [docs/diagrama-er.md](docs/diagrama-er.md), o diagrama de classes inicial em [docs/diagrama-classes.md](docs/diagrama-classes.md) e o model Prisma em `packages/api/prisma/schema.prisma`. O script SQL de TEC01 permanece em `db/schema.sql` como schema completo do banco; a integração física do Prisma e a validação em ambiente limpo continuam pendentes.
 
-**Badges de testes e cobertura:** pendentes de workflows reais; não foram inseridos badges fictícios.
+**CI:** o workflow [Build e testes](.github/workflows/ci.yml) executa build, cobertura e testes de navegador. Sua primeira execução remota depende da publicação das alterações; não foram inseridos badges com resultados presumidos.
 
 ## 9. Arquitetura: componentes da aplicação
 
@@ -497,7 +501,7 @@ Com PostgreSQL instalado e um banco vazio criado, execute na raiz do repositóri
 psql -d nome_do_banco -f db/schema.sql
 ```
 
-O script cria os objetos dentro de uma transação. Não inclui seed nem armazena arquivos binários; os arquivos ficam em armazenamento privado e `storage_key` guarda sua referência. A aplicação ainda deverá impor autorização e regras que dependem de múltiplas linhas, como soma dos pesos da rubrica igual a 100% e compatibilidade de papel.
+O script cria os objetos dentro de uma transação. Não inclui seed nem armazena arquivos binários; os arquivos ficam em armazenamento privado e `storage_key` guarda sua referência. A HU01 impõe autorização por perfil e vínculo. A aplicação ainda deverá impor outras regras que dependem de múltiplas linhas, como soma dos pesos da rubrica igual a 100% e compatibilidade de papel.
 
 O script SQL e o model Prisma descrevem as entidades do MVP. A API ainda não consulta PostgreSQL: usa um repositório em memória para esta etapa, e a criação/migração do banco não foi verificada em uma instância real. A instalação limpa e a validação de ponta a ponta permanecem no escopo da TEC05.
 
