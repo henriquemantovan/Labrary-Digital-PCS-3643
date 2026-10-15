@@ -371,6 +371,17 @@ Banco, testes, documentação e backlog evoluem em todas as sprints; não são e
 
 O backlog foi montado nas issues, conforme solicitado. A issue de acompanhamento agrega checklists por sprint e uma visão inicial dos estados. Um quadro GitHub Projects não foi criado; a equipe pode espelhar esse fluxo nele quando disponível.
 
+### Atualização do Kanban — 11/10/2026
+
+| Coluna | Itens | Situação registrada |
+| --- | --- | --- |
+| Backlog | HU01–HU14, TEC02–TEC06 | Aguardando priorização e capacidade das sprints |
+| Em andamento | TEC01 — modelagem e criação do banco | DER e script SQL inicial adicionados; execução em PostgreSQL, revisão do modelo e seed ainda pendentes |
+| Em revisão | — | Nenhum item registrado |
+| Concluído | — | Nenhum item marcado como concluído sem aceite da equipe |
+
+Essa atualização documenta o estado no repositório e complementa a issue #21; não altera o quadro remoto do GitHub Projects.
+
 ## 7. Protótipo da interface (telas do sistema)
 
 Os SVGs abaixo são **wireframes estáticos de desktop**, com dados fictícios. Não representam telas implementadas. A validação de navegação mobile integra a TEC03 e o desenvolvimento das histórias.
@@ -472,6 +483,20 @@ Preparação e Ajustes permitem edição conforme prazo/reabertura. Em avaliaç�
 
 ## 9. Arquitetura: componentes da aplicação
 
+### Banco de dados e script de criação
+
+O DER detalhado está em [docs/diagrama-er.md](docs/diagrama-er.md). O schema inicial para PostgreSQL está em [db/schema.sql](db/schema.sql), com tabelas, chaves, índices, restrições e tipos enumerados para usuários, turmas, grupos, projetos, entregas, materiais versionados, feedback, rubricas, avaliações, liberação de resultados e publicação.
+
+Com PostgreSQL instalado e um banco vazio criado, execute na raiz do repositório:
+
+```sh
+psql -d nome_do_banco -f db/schema.sql
+```
+
+O script cria os objetos dentro de uma transação. Não inclui seed nem armazena arquivos binários; os arquivos ficam em armazenamento privado e `storage_key` guarda sua referência. A aplicação ainda deverá impor autorização e regras que dependem de múltiplas linhas, como soma dos pesos da rubrica igual a 100% e compatibilidade de papel.
+
+O schema é a implementação inicial da persistência, mas ainda não foi executado contra uma instância PostgreSQL nem integrado ao Prisma. A instalação limpa e a validação de ponta a ponta permanecem no escopo da TEC05.
+
 ### Visão dos componentes e separação MVC
 
 ```mermaid
@@ -539,5 +564,5 @@ A View apresenta dados e captura ações. Controllers validam requisições, aut
 | Backlog do produto/sprints | Seção 6 e issue de acompanhamento |
 | Imagens dos protótipos | Seção 7 e docs/prototipos |
 | Tecnologias | Seção 8; versões a fixar na implementação |
-| Arquitetura | Seção 9; MVC/REST e DER inicial |
+| Arquitetura e banco | Seção 9; MVC/REST, [DER](docs/diagrama-er.md) e [schema PostgreSQL](db/schema.sql) |
 | Compartilhamento com professor | Compartilhar link com higoramario conforme aula |
