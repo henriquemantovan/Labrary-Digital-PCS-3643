@@ -1,4 +1,9 @@
-export const projectStatuses = ["PREPARACAO", "EM_AVALIACAO", "AJUSTES", "FINALIZADO"] as const;
+export const projectStatuses = [
+  "PREPARACAO",
+  "EM_AVALIACAO",
+  "AJUSTES",
+  "FINALIZADO",
+] as const;
 export type ProjectStatus = (typeof projectStatuses)[number];
 
 export const materialKinds = ["VIDEO", "RELATORIO", "MANUAL", "OUTRO"] as const;

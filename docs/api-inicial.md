@@ -1,15 +1,25 @@
-# API REST inicial (TEC02)
+# API REST (TEC02 + HU01)
 
-Todas as rotas usam JSON. Listas e respostas individuais bem-sucedidas vêm no envelope `{ "data": ... }`; erros usam `{ "error": { "code", "message", "details?" } }`. O servidor responde `400` para validação, `404` para recurso/rota ausente, `409` para conflito de grupo e `500` para falhas inesperadas.
+Todas as rotas usam JSON. Listas e respostas individuais bem-sucedidas vêm no envelope `{ "data": ... }`; erros usam `{ "error": { "code", "message", "details?" } }`. O servidor responde `401` para ausência de sessão, `403` para operação não permitida/origem inválida, `429` para excesso de tentativas de login, `400` para validação, `404` para recurso/rota ausente, `409` para conflito de grupo e `500` para falhas inesperadas.
 
 | Método | Rota | Uso | Sucesso |
 | --- | --- | --- | --- |
+| POST | `/api/auth/login` | Autentica `{ email, password }` e emite cookie HttpOnly | `200 { data: PublicUser }` |
+| GET | `/api/auth/me` | Restaura a sessão | `200 { data: PublicUser }` |
+| POST | `/api/auth/logout` | Revoga a sessão e limpa o cookie (idempotente) | `204` |
+| GET | `/api/scope` | Turmas/grupos permitidos, sem integrantes | `200 { data: { classes, groups } }` |
 | GET | `/api/health` | Estado da API | `200 { data: { status: "ok" } }` |
 | GET | `/api/projects?status=&classId=` | Lista e filtra projetos | `200 { data: Project[] }` |
 | POST | `/api/projects` | Cria projeto | `201 { data: Project }` |
 | GET | `/api/projects/:projectId` | Consulta projeto | `200 { data: Project }` |
 | GET | `/api/projects/:projectId/materials` | Lista metadados de materiais | `200 { data: ProjectMaterial[] }` |
 | POST | `/api/projects/:projectId/materials` | Registra metadados de material | `201 { data: ProjectMaterial }` |
+
+Todas as rotas de projetos, materiais e escopo exigem sessão válida. `GET /projects` aplica o escopo antes de retornar dados; filtros não ampliam acesso. Um projeto fora do escopo responde com o mesmo `404` de um projeto inexistente. Apenas professor cria projetos para grupos da própria turma; apenas aluno do grupo registra metadados enquanto o projeto está em Preparação/Ajustes (`409 PROJECT_LOCKED` nos demais estados).
+
+`PublicUser` contém apenas `id`, `fullName`, `email`, `role`. Credenciais inválidas/inativas retornam `401 INVALID_CREDENTIALS`, sempre com `E-mail ou senha inválidos.`. Cada POST exige o cabeçalho `X-CSRF-Protection: 1`; `Origin`, se informado, deve ser igual a `APP_ORIGIN`. Não há CORS. Use a mesma origem para frontend e `/api`.
+
+As respostas da API incluem `Cache-Control: no-store`. Veja [HU01](hu01.md) para matriz de permissões, configurações, contas e ciclo da sessão.
 
 Exemplo de criação de projeto:
 
@@ -35,4 +45,4 @@ Exemplo de erro:
 }
 ```
 
-`POST /materials` registra metadados JSON e gera uma chave `mock/...`; não recebe nem persiste bytes de arquivos. Autenticação, autorização, limites conforme requisito do projeto e armazenamento privado real serão adicionados com as histórias de entrega. O repositório é em memória e volta ao seed ao reiniciar a API.
+`POST /materials` registra metadados JSON e gera uma chave `mock/...`; não recebe nem persiste bytes de arquivos. A HU01 autentica e autoriza estas rotas. Limites conforme requisito do projeto, prazos e armazenamento privado real serão adicionados com as histórias de entrega. O repositório é em memória e volta ao seed ao reiniciar a API.

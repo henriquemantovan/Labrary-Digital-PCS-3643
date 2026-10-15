@@ -1,10 +1,14 @@
+import { AuthRepository } from "../repositories/authRepository.js";
 import { Router } from "express";
 import { createProjectController } from "../controllers/projectController.js";
 import { ProjectRepository } from "../repositories/projectRepository.js";
 
-export function createProjectRouter(repository: ProjectRepository) {
+export function createProjectRouter(
+  repository: ProjectRepository,
+  auth: AuthRepository,
+) {
   const router = Router();
-  const controller = createProjectController(repository);
+  const controller = createProjectController(repository, auth);
 
   router.get("/projects", controller.list);
   router.post("/projects", controller.create);
