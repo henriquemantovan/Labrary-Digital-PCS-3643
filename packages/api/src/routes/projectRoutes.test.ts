@@ -1,149 +1,280 @@
 import { describe, expect, it, vi } from "vitest";
 import request from "supertest";
-import { createApp } from "../app.js";
-import { createMemoryProjectRepository } from "../repositories/projectRepository.js";
+import { context, materialInput, projectInput } from "../test/context.js";
 
-describe("API REST de projetos e materiais", () => {
-  it("lista projetos de demonstração e filtra por estado", async () => {
-    const app = createApp();
-    const allProjects = await request(app).get("/api/projects");
-    const preparation = await request(app).get("/api/projects?status=PREPARACAO");
-    const classProjects = await request(app).get("/api/projects?classId=1");
-
-    expect(allProjects.status).toBe(200);
-    expect(allProjects.body.data).toHaveLength(2);
-    expect(preparation.body.data).toHaveLength(1);
-    expect(preparation.body.data[0].status).toBe("PREPARACAO");
-    expect(classProjects.body.data).toHaveLength(2);
+describe("API REST de projetos e materiais com autorização", () => {
+  it("mantém saúde pública e exige sessão em cada rota privada", async () => {
+    const { app } = context();
+    expect((await request(app).get("/api/health")).body.data.status).toBe("ok");
+    for (const path of [
+      "/api/projects",
+      "/api/projects/1",
+      "/api/projects/1/materials",
+      "/api/scope",
+      "/api/auth/me",
+    ]) {
+      expect((await request(app).get(path)).status).toBe(401);
+    }
+    for (const path of ["/api/projects", "/api/projects/1/materials"]) {
+      expect(
+        (await request(app).post(path).set("X-CSRF-Protection", "1").send({}))
+          .status,
+      ).toBe(401);
+    }
   });
-
-  it("responde à verificação de saúde e consulta um projeto", async () => {
-    const app = createApp();
-    const health = await request(app).get("/api/health");
-    const project = await request(app).get("/api/projects/1");
-
-    expect(health.status).toBe(200);
-    expect(health.body.data.status).toBe("ok");
-    expect(project.status).toBe(200);
-    expect(project.body.data.title).toBe("Controlador de semáforo inteligente");
+  it.each([
+    [1, [2]],
+    [2, [1]],
+    [3, [1, 2]],
+  ])("lista apenas projetos do perfil %s", async (id, ids) => {
+    const { client } = context();
+    const result = await client(id as number).get("/api/projects");
+    expect(result.status).toBe(200);
+    expect(result.body.data.map((item: { id: number }) => item.id)).toEqual(
+      ids,
+    );
+    expect(result.headers["cache-control"]).toBe("no-store");
   });
-
-  it("cria projeto válido com estado inicial de preparação", async () => {
-    const response = await request(createApp())
-      .post("/api/projects")
-      .send({ classId: 1, groupId: 3, title: "Contador síncrono", category: "Lógica digital" });
-
-    expect(response.status).toBe(201);
-    expect(response.body.data).toMatchObject({
+  it("não permite contornar escopo com filtros, IDs ou cabeçalhos de perfil", async () => {
+    const { client } = context();
+    const student = client(1);
+    expect(
+      (await student.get("/api/projects?status=EM_AVALIACAO&classId=1")).body
+        .data,
+    ).toEqual([]);
+    expect((await student.get("/api/projects?classId=2")).body.data).toEqual(
+      [],
+    );
+    const hidden = await student
+      .get("/api/projects/1")
+      .set("X-Role", "PROFESSOR");
+    const absent = await student.get("/api/projects/999");
+    expect(hidden.status).toBe(404);
+    expect(hidden.body).toEqual(absent.body);
+    for (const actor of [student, client(2)]) {
+      const deniedId = actor === student ? 1 : 2;
+      expect(
+        (await actor.get(`/api/projects/${deniedId}/materials`)).status,
+      ).toBe(404);
+      expect(
+        (
+          await actor
+            .post(`/api/projects/${deniedId}/materials`)
+            .send(materialInput)
+        ).status,
+      ).toBe(404);
+    }
+  });
+  it("nega acesso de professor à turma de outro docente", async () => {
+    const { auth, repository, client } = context();
+    auth.directory.users.push({
+      ...auth.directory.users[2],
+      id: 4,
+      email: "outro@labrary.local",
+    });
+    auth.directory.classes.push({
+      id: 2,
+      name: "Outra turma",
+      academicYear: 2026,
+      professorId: 4,
+    });
+    auth.directory.groups.push({
+      id: 4,
+      classId: 2,
+      name: "Grupo externo",
+      memberIds: [],
+    });
+    const external = repository.create({
+      ...projectInput,
+      classId: 2,
+      groupId: 4,
+      description: "Privado",
+    });
+    const professor = client(3);
+    expect((await professor.get(`/api/projects/${external.id}`)).status).toBe(
+      404,
+    );
+    expect(
+      (await professor.get(`/api/projects/${external.id}/materials`)).status,
+    ).toBe(404);
+    expect(
+      (
+        await professor
+          .post(`/api/projects/${external.id}/materials`)
+          .send(materialInput)
+      ).status,
+    ).toBe(404);
+    expect((await professor.get("/api/projects?classId=2")).body.data).toEqual(
+      [],
+    );
+    expect(
+      (
+        await professor
+          .post("/api/projects")
+          .send({ ...projectInput, classId: 2, groupId: 4 })
+      ).status,
+    ).toBe(403);
+    expect(
+      (
+        await professor
+          .post("/api/projects")
+          .send({ ...projectInput, groupId: 4 })
+      ).status,
+    ).toBe(403);
+    expect(
+      (
+        await professor
+          .post("/api/projects")
+          .send({ ...projectInput, groupId: 999 })
+      ).status,
+    ).toBe(403);
+  });
+  it("permite criar somente para grupos válidos da própria turma", async () => {
+    const { client } = context();
+    for (const id of [1, 2])
+      expect(
+        (await client(id).post("/api/projects").send(projectInput)).status,
+      ).toBe(403);
+    const professor = client(3);
+    const result = await professor.post("/api/projects").send(projectInput);
+    expect(result.status).toBe(201);
+    expect(result.body.data).toMatchObject({
+      ...projectInput,
       id: 3,
-      classId: 1,
-      groupId: 3,
-      title: "Contador síncrono",
       description: "",
       status: "PREPARACAO",
     });
+    expect(
+      (await professor.post("/api/projects").send(projectInput)).status,
+    ).toBe(409);
+    expect((await professor.get("/api/projects/3")).body.data.title).toBe(
+      projectInput.title,
+    );
   });
-
-  it("retorna erros de validação no formato comum", async () => {
-    const response = await request(createApp())
+  it("valida payloads, identificadores e filtros", async () => {
+    const { client } = context();
+    const professor = client(3);
+    const invalid = await professor
       .post("/api/projects")
-      .send({ classId: 0, groupId: -2, title: "  ", category: "" });
-
-    expect(response.status).toBe(400);
-    expect(response.body.error.code).toBe("VALIDATION_ERROR");
-    expect(response.body.error.details).toEqual(expect.arrayContaining([
-      expect.objectContaining({ path: "classId" }),
-      expect.objectContaining({ path: "title" }),
-    ]));
-  });
-
-  it("retorna 409 quando o grupo já tem projeto", async () => {
-    const response = await request(createApp())
-      .post("/api/projects")
-      .send({ classId: 1, groupId: 1, title: "Projeto duplicado", category: "Lógica digital" });
-
-    expect(response.status).toBe(409);
-    expect(response.body.error.code).toBe("GROUP_ALREADY_HAS_PROJECT");
-  });
-
-  it("registra metadados de material e retorna a lista do projeto", async () => {
-    const app = createApp();
-    const created = await request(app)
-      .post("/api/projects/1/materials")
-      .send({
-        kind: "RELATORIO",
-        title: "Relatório técnico",
-        originalFilename: "relatorio.pdf",
-        mimeType: "application/pdf",
-        sizeBytes: 2_400,
-      });
-    const listed = await request(app).get("/api/projects/1/materials");
-
-    expect(created.status).toBe(201);
-    expect(created.body.data).toMatchObject({ projectId: 1, versionNumber: 1, storageKey: "mock/1/1" });
-    expect(listed.status).toBe(200);
-    expect(listed.body.data).toHaveLength(1);
-  });
-
-  it("rejeita materiais inválidos e projetos inexistentes", async () => {
-    const app = createApp();
-    const invalid = await request(app).post("/api/projects/1/materials").send({ kind: "ARQUIVO" });
-    const missing = await request(app).get("/api/projects/999/materials");
-
+      .send({ classId: 0, groupId: -2, title: " ", category: "" });
     expect(invalid.status).toBe(400);
-    expect(invalid.body.error.code).toBe("VALIDATION_ERROR");
-    expect(missing.status).toBe(404);
-    expect(missing.body.error.code).toBe("PROJECT_NOT_FOUND");
+    expect(invalid.body.error.details).toEqual(
+      expect.arrayContaining([expect.objectContaining({ path: "title" })]),
+    );
+    for (const path of [
+      "/api/projects/NaN",
+      "/api/projects/0/materials",
+      "/api/projects?status=unknown",
+      "/api/projects?role=PROFESSOR",
+    ]) {
+      expect((await professor.get(path)).status).toBe(400);
+    }
   });
-
-  it("incrementa a versão de materiais com o mesmo título", async () => {
-    const app = createApp();
-    const material = {
-      kind: "RELATORIO",
-      title: "Relatório técnico",
-      originalFilename: "relatorio.pdf",
-      mimeType: "application/pdf",
-      sizeBytes: 2_400,
-    };
-    const first = await request(app).post("/api/projects/1/materials").send(material);
-    const second = await request(app).post("/api/projects/1/materials").send(material);
-
-    expect(first.body.data.versionNumber).toBe(1);
-    expect(second.body.data.versionNumber).toBe(2);
-  });
-
-  it("trata JSON malformado com erro HTTP padronizado", async () => {
-    const response = await request(createApp())
-      .post("/api/projects")
-      .set("Content-Type", "application/json")
-      .send("{invalido");
-
-    expect(response.status).toBe(400);
-    expect(response.body.error.code).toBe("INVALID_JSON");
-  });
-
-  it("esconde detalhes inesperados em uma resposta 500", async () => {
-    const repository = createMemoryProjectRepository();
-    const failingRepository = {
-      ...repository,
-      list: () => { throw new Error("informação interna"); },
-    };
-    const errorLogger = vi.spyOn(console, "error").mockImplementation(() => undefined);
-    const response = await request(createApp({ repository: failingRepository })).get("/api/projects");
-    errorLogger.mockRestore();
-
-    expect(response.status).toBe(500);
-    expect(response.body.error).toMatchObject({
-      code: "INTERNAL_ERROR",
-      message: "Ocorreu um erro interno.",
+  it("registra metadados somente para aluno do grupo em entrega aberta", async () => {
+    const { client, repository } = context();
+    const student = client(1);
+    expect((await student.get("/api/projects/2/materials")).body.data).toEqual(
+      [],
+    );
+    const first = await student
+      .post("/api/projects/2/materials")
+      .send(materialInput);
+    expect(first.status).toBe(201);
+    expect(first.body.data).toMatchObject({
+      projectId: 2,
+      versionNumber: 1,
+      storageKey: "mock/2/1",
     });
-    expect(JSON.stringify(response.body)).not.toContain("informação interna");
+    const second = await student
+      .post("/api/projects/2/materials")
+      .send(materialInput);
+    expect(second.body.data.versionNumber).toBe(2);
+    expect(
+      (
+        await student
+          .post("/api/projects/2/materials")
+          .send({ ...materialInput, title: "Manual" })
+      ).body.data.versionNumber,
+    ).toBe(1);
+    expect(
+      (await student.get("/api/projects/2/materials")).body.data,
+    ).toHaveLength(3);
+    expect(
+      (
+        await student
+          .post("/api/projects/2/materials")
+          .send({ kind: "INVALID" })
+      ).status,
+    ).toBe(400);
+    expect(
+      (await client(3).post("/api/projects/2/materials").send(materialInput))
+        .status,
+    ).toBe(403);
+    expect(
+      (await client(2).post("/api/projects/1/materials").send(materialInput))
+        .status,
+    ).toBe(403);
+    repository.get(2)!.status = "EM_AVALIACAO";
+    expect(
+      (await student.post("/api/projects/2/materials").send(materialInput))
+        .status,
+    ).toBe(409);
+    repository.get(2)!.status = "AJUSTES";
+    expect(
+      (await student.post("/api/projects/2/materials").send(materialInput))
+        .status,
+    ).toBe(201);
   });
-
-  it("mantém resposta padronizada para caminhos desconhecidos", async () => {
-    const response = await request(createApp()).get("/api/unknown");
-
-    expect(response.status).toBe(404);
-    expect(response.body.error).toMatchObject({ code: "ROUTE_NOT_FOUND" });
+  it("remove acesso imediatamente quando o vínculo muda", async () => {
+    const { auth, client } = context();
+    const student = client(1),
+      evaluator = client(2),
+      professor = client(3);
+    auth.directory.groups[1].memberIds = [];
+    auth.directory.assignments = [];
+    auth.directory.classes[0].professorId = 999;
+    for (const actor of [student, evaluator, professor])
+      expect((await actor.get("/api/projects")).body.data).toEqual([]);
+    expect((await student.get("/api/projects/2")).status).toBe(404);
+    expect((await evaluator.get("/api/projects/1")).status).toBe(404);
+    expect((await professor.get("/api/projects/1")).status).toBe(404);
+  });
+  it("retorna apenas turmas e grupos próprios sem vazar integrantes", async () => {
+    const { client } = context();
+    expect((await client(1).get("/api/scope")).body.data).toEqual({
+      classes: [],
+      groups: [{ id: 2, classId: 1, name: "Grupo 02" }],
+    });
+    expect((await client(2).get("/api/scope")).body.data).toEqual({
+      classes: [],
+      groups: [],
+    });
+    expect((await client(3).get("/api/scope")).body.data.classes).toHaveLength(
+      1,
+    );
+  });
+  it("padroniza erros sem expor detalhes internos", async () => {
+    const { app, client, repository } = context();
+    expect(
+      (
+        await client(3)
+          .post("/api/projects")
+          .set("Content-Type", "application/json")
+          .send("{invalid")
+      ).body.error.code,
+    ).toBe("INVALID_JSON");
+    const logger = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    vi.spyOn(repository, "list").mockImplementation(() => {
+      throw new Error("segredo interno");
+    });
+    const failed = await client(3).get("/api/projects");
+    logger.mockRestore();
+    expect(failed.status).toBe(500);
+    expect(JSON.stringify(failed.body)).not.toContain("segredo interno");
+    expect((await request(app).get("/api/unknown")).body.error.code).toBe(
+      "ROUTE_NOT_FOUND",
+    );
   });
 });
