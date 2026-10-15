@@ -2,16 +2,28 @@ import { useEffect, useState } from "react";
 
 type ApiStatus = "carregando" | "online" | "offline";
 
+interface ProjectCard {
+  id: number;
+  title: string;
+  description: string;
+  category: string;
+  status: string;
+}
+
 export function App() {
   const [apiStatus, setApiStatus] = useState<ApiStatus>("carregando");
+  const [projects, setProjects] = useState<ProjectCard[]>([]);
 
   useEffect(() => {
-    fetch("/api/health")
+    fetch("/api/projects")
       .then((response) => {
         if (!response.ok) throw new Error("API indisponível");
         return response.json();
       })
-      .then(() => setApiStatus("online"))
+      .then((result: { data: ProjectCard[] }) => {
+        setProjects(result.data);
+        setApiStatus("online");
+      })
       .catch(() => setApiStatus("offline"));
   }, []);
 
@@ -41,6 +53,28 @@ export function App() {
           <span>API REST em desenvolvimento</span>
         </div>
       </section>
+
+      {apiStatus === "online" && (
+        <section className="projects" aria-labelledby="projects-title">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">Amostra local</p>
+              <h2 id="projects-title">Projetos em andamento</h2>
+            </div>
+            <span>{projects.length.toString().padStart(2, "0")} projetos</span>
+          </div>
+          <div className="project-grid">
+            {projects.map((project) => (
+              <article className="project-card" key={project.id}>
+                <p className="project-category">{project.category}</p>
+                <h3>{project.title}</h3>
+                <p>{project.description}</p>
+                <span className="project-status">{project.status.replaceAll("_", " ")}</span>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       <footer>Uma biblioteca feita em equipe, para aprender em equipe.</footer>
     </main>

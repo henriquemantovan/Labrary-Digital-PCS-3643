@@ -477,9 +477,9 @@ Preparação e Ajustes permitem edição conforme prazo/reabertura. Em avaliaç�
 | Gestão | GitHub Issues e pull requests | Backlog, revisão e rastreabilidade |
 | Diagramas | Mermaid | Componentes, DER e estados no repositório |
 
-**Baseline da TEC02 (15/10/2026):** Node.js 24.19.0, pnpm 11.25.0, React 19.3.1, Vite 8.3.4, Express 5.3.0, TypeScript 5.9.3 e Prisma 7.10.0. Os manifests fixam versões diretas; o lockfile fixa a árvore completa. O frontend e a API TypeScript têm build configurado. A API inicial responde em `GET /api/health`; os endpoints de projetos e materiais entram nos próximos incrementos da TEC02.
+**Baseline da TEC02 (15/10/2026):** Node.js 24.19.0, pnpm 11.25.0, React 19.3.1, Vite 8.3.4, Express 5.3.0, TypeScript 5.9.3 e Prisma 7.10.0. Os manifests fixam versões diretas; o lockfile fixa a árvore completa. O frontend e a API TypeScript têm build configurado. A API oferece `GET /api/health`, listagem/criação/detalhe de projetos e listagem/registro de metadados de materiais. O [contrato inicial](docs/api-inicial.md) descreve rotas, validações, envelopes e erros. O frontend lista projetos fornecidos pela API.
 
-**Instalação e desenvolvimento local:** requer Node.js 24.19.0 e pnpm 11.25.0. Na raiz do repositório, copie `.env.example` para `.env`, instale com `pnpm install --frozen-lockfile`, gere o cliente com `pnpm db:generate` e inicie as duas aplicações com `pnpm dev`. O frontend fica em `http://localhost:5173` e encaminha `/api` para a API em `http://localhost:3000`. Os comandos `pnpm build` e `pnpm test` compilam e executam os testes dos workspaces. A API ainda usa dados em memória; PostgreSQL e dados iniciais serão conectados em uma etapa posterior.
+**Instalação e desenvolvimento local:** requer Node.js 24.19.0 e pnpm 11.25.0. Na raiz do repositório, copie `.env.example` para `.env`, instale com `pnpm install --frozen-lockfile`, gere o cliente com `pnpm db:generate` e inicie as duas aplicações com `pnpm dev`. O frontend fica em `http://localhost:5173` e encaminha `/api` para a API em `http://localhost:3000`. `pnpm build` compila os workspaces e `pnpm test` executa os testes da API. A API ainda usa dados e metadados em memória; PostgreSQL e arquivos serão conectados em uma etapa posterior.
 
 O DER está em [docs/diagrama-er.md](docs/diagrama-er.md), o diagrama de classes inicial em [docs/diagrama-classes.md](docs/diagrama-classes.md) e o model Prisma em `packages/api/prisma/schema.prisma`. O script SQL de TEC01 permanece em `db/schema.sql` como schema completo do banco; a integração física do Prisma e a validação em ambiente limpo continuam pendentes.
 
@@ -499,7 +499,7 @@ psql -d nome_do_banco -f db/schema.sql
 
 O script cria os objetos dentro de uma transação. Não inclui seed nem armazena arquivos binários; os arquivos ficam em armazenamento privado e `storage_key` guarda sua referência. A aplicação ainda deverá impor autorização e regras que dependem de múltiplas linhas, como soma dos pesos da rubrica igual a 100% e compatibilidade de papel.
 
-O schema é a implementação inicial da persistência, mas ainda não foi executado contra uma instância PostgreSQL nem integrado ao Prisma. A instalação limpa e a validação de ponta a ponta permanecem no escopo da TEC05.
+O script SQL e o model Prisma descrevem as entidades do MVP. A API ainda não consulta PostgreSQL: usa um repositório em memória para esta etapa, e a criação/migração do banco não foi verificada em uma instância real. A instalação limpa e a validação de ponta a ponta permanecem no escopo da TEC05.
 
 ### Visão dos componentes e separação MVC
 
@@ -535,7 +535,9 @@ A View apresenta dados e captura ações. Controllers validam requisições, aut
 | Publicação e catálogo | Materiais autorizados, busca e despublicação |
 | Descoberta e estatísticas | Histórico, favoritos, sugestões e contagens; itens P2 |
 
-### Contratos REST propostos
+### Contratos REST do MVP
+
+A API inicial implementa health check, consulta/criação de projetos e registro/listagem de metadados de materiais; o [contrato detalhado e os exemplos de erro](docs/api-inicial.md) identificam o escopo atual. As demais rotas abaixo são previstas para histórias futuras.
 
 | Método e rota | Finalidade |
 | --- | --- |

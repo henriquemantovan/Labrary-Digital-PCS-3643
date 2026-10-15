@@ -41,6 +41,13 @@ enum SubmissionStatus {
   @@map("submission_status")
 }
 
+enum PublicationStatus {
+  PUBLICADO
+  RETIRADO
+
+  @@map("publication_status")
+}
+
 model AppUser {
   id           BigInt   @id @default(autoincrement())
   fullName     String   @map("full_name") @db.VarChar(160)
@@ -50,10 +57,17 @@ model AppUser {
   active       Boolean  @default(true)
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
 
-  classes       CourseClass[]     @relation("ClassProfessor")
-  memberships   GroupMembership[]
-  authoredFiles MaterialVersion[] @relation("FileUploader")
-  messages      ProjectMessage[]
+  classes              CourseClass[]        @relation("ClassProfessor")
+  memberships          GroupMembership[]
+  authoredFiles        MaterialVersion[]    @relation("FileUploader")
+  createdMaterials     ProjectMaterial[]    @relation("MaterialCreator")
+  messages             ProjectMessage[]
+  evaluatorAssignments ProjectEvaluator[]
+  submissions          Submission[]         @relation("SubmissionAuthor")
+  evaluations          Evaluation[]
+  rubricVersions       RubricVersion[]      @relation("RubricAuthor")
+  resultReleases       ResultRelease[]      @relation("ResultReleaser")
+  publications         ProjectPublication[] @relation("Publisher")
 
   @@map("app_user")
 }
@@ -64,18 +78,20 @@ model CourseClass {
   academicYear Int    @map("academic_year") @db.SmallInt
   professorId  BigInt @map("professor_id")
 
-  professor AppUser        @relation("ClassProfessor", fields: [professorId], references: [id])
+  professor AppUser         @relation("ClassProfessor", fields: [professorId], references: [id])
   groups    StudentGroup[]
   projects  Project[]
+  rubrics   RubricVersion[]
 
   @@unique([name, academicYear])
   @@map("course_class")
 }
 
 model StudentGroup {
-  id      BigInt @id @default(autoincrement())
-  classId BigInt @map("class_id")
-  name    String @db.VarChar(120)
+  id        BigInt   @id @default(autoincrement())
+  classId   BigInt   @map("class_id")
+  name      String   @db.VarChar(120)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   courseClass CourseClass       @relation(fields: [classId], references: [id], onDelete: Cascade)
   members     GroupMembership[]
@@ -112,12 +128,16 @@ model Project {
   createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz
   updatedAt   DateTime      @default(now()) @map("updated_at") @db.Timestamptz
 
-  courseClass  CourseClass       @relation(fields: [classId], references: [id])
-  group        StudentGroup      @relation(fields: [groupId, classId], references: [id, classId])
-  materials    ProjectMaterial[]
-  messages     ProjectMessage[]
-  submissions  Submission[]
-  evaluators   ProjectEvaluator[]
+  courseClass    CourseClass          @relation(fields: [classId], references: [id])
+  group          StudentGroup         @relation(fields: [groupId, classId], references: [id, classId])
+  materials      ProjectMaterial[]
+  messages       ProjectMessage[]
+  submissions    Submission[]
+  evaluators     ProjectEvaluator[]
+  requirements   ProjectRequirement[]
+  rubrics        ProjectRubric[]
+  resultReleases ResultRelease[]
+  publications   ProjectPublication[]
 
   @@unique([id, groupId])
   @@unique([groupId, classId])
@@ -130,21 +150,44 @@ model ProjectEvaluator {
   evaluatorId BigInt   @map("evaluator_id")
   assignedAt  DateTime @default(now()) @map("assigned_at") @db.Timestamptz
 
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  evaluator AppUser @relation(fields: [evaluatorId], references: [id])
 
   @@id([projectId, evaluatorId])
   @@map("project_evaluator")
 }
 
-model ProjectMaterial {
-  id        BigInt      @id @default(autoincrement())
-  projectId BigInt      @map("project_id")
-  kind      MaterialKind
-  title     String      @db.VarChar(200)
-  createdAt DateTime    @default(now()) @map("created_at") @db.Timestamptz
+model ProjectRequirement {
+  id               BigInt       @id @default(autoincrement())
+  projectId        BigInt       @map("project_id")
+  kind             MaterialKind
+  label            String       @db.VarChar(160)
+  required         Boolean      @default(true)
+  allowedMimeTypes String[]     @default([]) @map("allowed_mime_types") @db.Text
+  maxSizeBytes     BigInt?      @map("max_size_bytes")
+  dueAt            DateTime?    @map("due_at") @db.Timestamptz
 
-  project  Project          @relation(fields: [projectId], references: [id])
-  versions MaterialVersion[]
+  project   Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  materials ProjectMaterial[]
+
+  @@unique([projectId, kind, label])
+  @@map("project_requirement")
+}
+
+model ProjectMaterial {
+  id            BigInt       @id @default(autoincrement())
+  projectId     BigInt       @map("project_id")
+  requirementId BigInt?      @map("requirement_id")
+  kind          MaterialKind
+  title         String       @db.VarChar(200)
+  createdBy     BigInt       @map("created_by")
+  createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamptz
+
+  project     Project              @relation(fields: [projectId], references: [id])
+  requirement ProjectRequirement?  @relation(fields: [requirementId], references: [id])
+  creator     AppUser              @relation("MaterialCreator", fields: [createdBy], references: [id])
+  versions    MaterialVersion[]
+  snapshots   SubmissionMaterial[]
 
   @@unique([id, projectId])
   @@map("project_material")
@@ -158,12 +201,15 @@ model MaterialVersion {
   originalFilename String   @map("original_filename")
   mimeType         String   @map("mime_type") @db.VarChar(160)
   sizeBytes        BigInt   @map("size_bytes")
+  checksumSha256   String?  @map("checksum_sha256") @db.Char(64)
   uploadedBy       BigInt   @map("uploaded_by")
   uploadedAt       DateTime @default(now()) @map("uploaded_at") @db.Timestamptz
 
-  material  ProjectMaterial @relation(fields: [materialId], references: [id], onDelete: Cascade)
-  uploader  AppUser         @relation("FileUploader", fields: [uploadedBy], references: [id])
-  messages  ProjectMessage[]
+  material             ProjectMaterial       @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  uploader             AppUser               @relation("FileUploader", fields: [uploadedBy], references: [id])
+  messages             ProjectMessage[]
+  snapshots            SubmissionMaterial[]
+  publicationMaterials PublicationMaterial[]
 
   @@unique([materialId, versionNumber])
   @@unique([id, materialId])
@@ -175,27 +221,177 @@ model Submission {
   projectId    BigInt           @map("project_id")
   roundNumber  Int              @map("round_number")
   status       SubmissionStatus @default(EM_AVALIACAO)
+  submittedBy  BigInt           @map("submitted_by")
   submittedAt  DateTime         @default(now()) @map("submitted_at") @db.Timestamptz
+  closedAt     DateTime?        @map("closed_at") @db.Timestamptz
+  returnReason String?          @map("return_reason")
 
-  project Project @relation(fields: [projectId], references: [id])
+  project        Project              @relation(fields: [projectId], references: [id])
+  author         AppUser              @relation("SubmissionAuthor", fields: [submittedBy], references: [id])
+  materials      SubmissionMaterial[]
+  evaluations    Evaluation[]
+  resultReleases ResultRelease[]
 
   @@unique([projectId, roundNumber])
   @@unique([id, projectId])
   @@map("submission")
 }
 
-model ProjectMessage {
-  id                BigInt   @id @default(autoincrement())
-  projectId         BigInt   @map("project_id")
-  authorId          BigInt   @map("author_id")
-  materialVersionId BigInt?  @map("material_version_id")
-  body              String
-  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz
+model SubmissionMaterial {
+  submissionId      BigInt @map("submission_id")
+  materialId        BigInt @map("material_id")
+  materialVersionId BigInt @map("material_version_id")
 
-  project        Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  author         AppUser         @relation(fields: [authorId], references: [id])
+  submission Submission      @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  material   ProjectMaterial @relation(fields: [materialId], references: [id])
+  version    MaterialVersion @relation(fields: [materialVersionId, materialId], references: [id, materialId])
+
+  @@id([submissionId, materialId])
+  @@unique([submissionId, materialVersionId])
+  @@map("submission_material")
+}
+
+model ProjectMessage {
+  id                BigInt    @id @default(autoincrement())
+  projectId         BigInt    @map("project_id")
+  authorId          BigInt    @map("author_id")
+  materialVersionId BigInt?   @map("material_version_id")
+  body              String
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  editedAt          DateTime? @map("edited_at") @db.Timestamptz
+
+  project         Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  author          AppUser          @relation(fields: [authorId], references: [id])
   materialVersion MaterialVersion? @relation(fields: [materialVersionId], references: [id])
 
   @@index([projectId, createdAt])
   @@map("project_message")
+}
+
+model RubricVersion {
+  id            BigInt   @id @default(autoincrement())
+  classId       BigInt   @map("class_id")
+  versionNumber Int      @map("version_number")
+  title         String   @db.VarChar(160)
+  createdBy     BigInt   @map("created_by")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  courseClass CourseClass       @relation(fields: [classId], references: [id])
+  creator     AppUser           @relation("RubricAuthor", fields: [createdBy], references: [id])
+  criteria    RubricCriterion[]
+  projects    ProjectRubric[]
+  evaluations Evaluation[]
+
+  @@unique([classId, versionNumber])
+  @@unique([id, classId])
+  @@map("rubric_version")
+}
+
+model RubricCriterion {
+  id              BigInt  @id @default(autoincrement())
+  rubricVersionId BigInt  @map("rubric_version_id")
+  title           String  @db.VarChar(160)
+  description     String  @default("")
+  weight          Decimal @db.Decimal(5, 2)
+  minScore        Decimal @default(0) @map("min_score") @db.Decimal(5, 2)
+  maxScore        Decimal @default(10) @map("max_score") @db.Decimal(5, 2)
+  position        Int     @db.SmallInt
+
+  rubricVersion RubricVersion     @relation(fields: [rubricVersionId], references: [id], onDelete: Cascade)
+  scores        EvaluationScore[]
+
+  @@unique([rubricVersionId, position])
+  @@unique([id, rubricVersionId])
+  @@map("rubric_criterion")
+}
+
+model ProjectRubric {
+  projectId       BigInt @map("project_id")
+  rubricVersionId BigInt @map("rubric_version_id")
+
+  project Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  rubric  RubricVersion @relation(fields: [rubricVersionId], references: [id])
+
+  @@id([projectId, rubricVersionId])
+  @@map("project_rubric")
+}
+
+model Evaluation {
+  id              BigInt    @id @default(autoincrement())
+  submissionId    BigInt    @map("submission_id")
+  evaluatorId     BigInt    @map("evaluator_id")
+  rubricVersionId BigInt    @map("rubric_version_id")
+  isFinal         Boolean   @default(false) @map("is_final")
+  finalizedAt     DateTime? @map("finalized_at") @db.Timestamptz
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime  @default(now()) @map("updated_at") @db.Timestamptz
+
+  submission Submission        @relation(fields: [submissionId], references: [id])
+  evaluator  AppUser           @relation(fields: [evaluatorId], references: [id])
+  rubric     RubricVersion     @relation(fields: [rubricVersionId], references: [id])
+  scores     EvaluationScore[]
+
+  @@unique([submissionId, evaluatorId])
+  @@unique([id, rubricVersionId])
+  @@map("evaluation")
+}
+
+model EvaluationScore {
+  evaluationId    BigInt  @map("evaluation_id")
+  rubricVersionId BigInt  @map("rubric_version_id")
+  criterionId     BigInt  @map("criterion_id")
+  score           Decimal @db.Decimal(5, 2)
+  comment         String  @default("")
+
+  evaluation Evaluation      @relation(fields: [evaluationId, rubricVersionId], references: [id, rubricVersionId], onDelete: Cascade)
+  criterion  RubricCriterion @relation(fields: [criterionId, rubricVersionId], references: [id, rubricVersionId])
+
+  @@id([evaluationId, criterionId])
+  @@map("evaluation_score")
+}
+
+model ResultRelease {
+  id           BigInt    @id @default(autoincrement())
+  projectId    BigInt    @map("project_id")
+  submissionId BigInt    @map("submission_id")
+  releasedBy   BigInt    @map("released_by")
+  releasedAt   DateTime  @default(now()) @map("released_at") @db.Timestamptz
+  revokedAt    DateTime? @map("revoked_at") @db.Timestamptz
+
+  project    Project    @relation(fields: [projectId], references: [id])
+  submission Submission @relation(fields: [submissionId], references: [id])
+  releaser   AppUser    @relation("ResultReleaser", fields: [releasedBy], references: [id])
+
+  @@map("result_release")
+}
+
+model ProjectPublication {
+  id                BigInt            @id @default(autoincrement())
+  projectId         BigInt            @map("project_id")
+  status            PublicationStatus
+  title             String            @db.VarChar(200)
+  publicDescription String            @map("public_description")
+  category          String            @db.VarChar(100)
+  publishedBy       BigInt            @map("published_by")
+  publishedAt       DateTime          @default(now()) @map("published_at") @db.Timestamptz
+  withdrawnAt       DateTime?         @map("withdrawn_at") @db.Timestamptz
+
+  project   Project               @relation(fields: [projectId], references: [id])
+  publisher AppUser               @relation("Publisher", fields: [publishedBy], references: [id])
+  materials PublicationMaterial[]
+
+  @@unique([id, projectId])
+  @@map("project_publication")
+}
+
+model PublicationMaterial {
+  publicationId     BigInt @map("publication_id")
+  projectId         BigInt @map("project_id")
+  materialVersionId BigInt @map("material_version_id")
+
+  publication ProjectPublication @relation(fields: [publicationId, projectId], references: [id, projectId], onDelete: Cascade)
+  version     MaterialVersion    @relation(fields: [materialVersionId], references: [id])
+
+  @@id([publicationId, materialVersionId])
+  @@map("publication_material")
 }
