@@ -460,7 +460,7 @@ Preparação e Ajustes permitem edição conforme prazo/reabertura. Em avaliaç�
 
 ## 8. Tecnologias do sistema
 
-**Stack proposta, ainda não instalada ou validada.** A escolha prioriza uma aplicação pequena, com TypeScript no frontend/backend e separação MVC/REST. A baseline exata deve ser registrada na TEC02, usando versões compatíveis fixadas no lockfile e nas imagens; não declarar versões ou instalação como verificadas antes disso.
+**Stack implementada inicialmente na TEC02.** A escolha prioriza uma aplicação pequena, com TypeScript no frontend/backend e separação MVC/REST. Versões diretas e transitivas ficam fixadas em `pnpm-lock.yaml`; versões principais e runtime também estão declarados nos manifests e em `.nvmrc`.
 
 | Camada | Tecnologia proposta | Uso |
 | --- | --- | --- |
@@ -477,7 +477,11 @@ Preparação e Ajustes permitem edição conforme prazo/reabertura. Em avaliaç�
 | Gestão | GitHub Issues e pull requests | Backlog, revisão e rastreabilidade |
 | Diagramas | Mermaid | Componentes, DER e estados no repositório |
 
-**Instalação futura:** README deverá informar versões exatas, pré-requisitos, `.env.example` sem segredos, comandos de instalação/build, subida conjunta de frontend e backend, SQL/migrações, seed/dump e execução dos testes no Ubuntu 26.04. Os comandos executáveis serão adicionados quando a implementação existir, e a TEC05 verificará instalação em ambiente novo.
+**Baseline da TEC02 (15/10/2026):** Node.js 24.19.0, pnpm 11.25.0, React 19.3.1, Vite 8.3.4, Express 5.3.0, TypeScript 5.9.3 e Prisma 7.10.0. Os manifests fixam versões diretas; o lockfile fixa a árvore completa. O frontend e a API TypeScript têm build configurado. A API inicial responde em `GET /api/health`; os endpoints de projetos e materiais entram nos próximos incrementos da TEC02.
+
+**Instalação e desenvolvimento local:** requer Node.js 24.19.0 e pnpm 11.25.0. Na raiz do repositório, copie `.env.example` para `.env`, instale com `pnpm install --frozen-lockfile`, gere o cliente com `pnpm db:generate` e inicie as duas aplicações com `pnpm dev`. O frontend fica em `http://localhost:5173` e encaminha `/api` para a API em `http://localhost:3000`. Os comandos `pnpm build` e `pnpm test` compilam e executam os testes dos workspaces. A API ainda usa dados em memória; PostgreSQL e dados iniciais serão conectados em uma etapa posterior.
+
+O DER está em [docs/diagrama-er.md](docs/diagrama-er.md), o diagrama de classes inicial em [docs/diagrama-classes.md](docs/diagrama-classes.md) e o model Prisma em `packages/api/prisma/schema.prisma`. O script SQL de TEC01 permanece em `db/schema.sql` como schema completo do banco; a integração física do Prisma e a validação em ambiente limpo continuam pendentes.
 
 **Badges de testes e cobertura:** pendentes de workflows reais; não foram inseridos badges fictícios.
 
@@ -564,5 +568,5 @@ A View apresenta dados e captura ações. Controllers validam requisições, aut
 | Backlog do produto/sprints | Seção 6 e issue de acompanhamento |
 | Imagens dos protótipos | Seção 7 e docs/prototipos |
 | Tecnologias | Seção 8; versões a fixar na implementação |
-| Arquitetura e banco | Seção 9; MVC/REST, [DER](docs/diagrama-er.md) e [schema PostgreSQL](db/schema.sql) |
+| Arquitetura e banco | Seção 9; MVC/REST, [DER](docs/diagrama-er.md), [classes](docs/diagrama-classes.md), Prisma e [schema PostgreSQL](db/schema.sql) |
 | Compartilhamento com professor | Compartilhar link com higoramario conforme aula |

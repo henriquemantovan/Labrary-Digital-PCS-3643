@@ -1,0 +1,18 @@
+{
+  "name": "labrary-digital",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@11.25.0",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "concurrently --names api,web --prefix-colors blue,green \"pnpm --filter @labrary/api dev\" \"pnpm --filter @labrary/web dev\"",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "db:generate": "pnpm --filter @labrary/api db:generate"
+  },
+  "devDependencies": {
+    "concurrently": "10.0.6"
+  }
+}
