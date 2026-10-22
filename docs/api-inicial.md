@@ -19,6 +19,7 @@ Rotas REST usam JSON; início e retorno de OAuth fazem redirecionamentos HTTP. L
 | POST | `/api/projects` | Cria projeto | `201 { data: Project }` |
 | GET | `/api/projects/:projectId` | Consulta projeto | `200 { data: Project }` |
 | GET | `/api/projects/:projectId/materials` | Lista materiais com versão atual e histórico | `200 { data: ProjectMaterial[] }` |
+| GET | `/api/projects/:projectId/material-rules` | Formatos, tamanhos, prazo e se o usuário pode enviar | `200 { data: MaterialRules }` |
 | POST | `/api/projects/:projectId/materials` | Registra material novo (versão 1) | `201 { data: ProjectMaterial }` |
 | POST | `/api/projects/:projectId/materials/:materialId/versions` | Substitui material criando nova versão | `201 { data: ProjectMaterial }` |
 | GET | `/api/projects/:projectId/messages` | Consulta feedback privado | `200 { data: ProjectMessage[] }` |
@@ -55,6 +56,8 @@ Exemplo de erro:
 ```
 
 `ProjectMaterial` contém `id`, `projectId`, `kind`, `title`, `createdBy`, `createdAt`, `currentVersion` e `versions` (da mais recente para a mais antiga). Cada versão traz `versionNumber`, `originalFilename`, `mimeType`, `sizeBytes`, `checksumSha256`, `uploadedBy { id, fullName }` e `uploadedAt`; a chave interna de armazenamento não é exposta. Criar um material com o mesmo tipo e título (sem diferenciar maiúsculas) responde `409 MATERIAL_ALREADY_EXISTS`: a substituição usa a rota de versões, que nunca apaga versões anteriores. Material inexistente ou de outro projeto responde `404 MATERIAL_NOT_FOUND`.
+
+`MaterialRules` contém `dueAt`, `lock` (`null`, `PROJECT_LOCKED` ou `DEADLINE_PASSED`), `canUpload` e `rules` (por tipo: `kind`, `defaultTitle`, `required`, `formats[{ label, mimeType, extensions }]`, `maxSizeBytes`). Enquanto a HU03 não existe, as regras padrão são: vídeo MP4/WebM até 500 MB; relatório e manual PDF até 20 MB; outros PDF/ZIP/PNG/JPEG até 50 MB. A entrega está aberta em Preparação antes de `dueAt` e em Ajustes (reabertura pelo professor, mesmo após o prazo). Envios recusados respondem `400 EMPTY_FILE`, `413 FILE_TOO_LARGE`, `415 UNSUPPORTED_FORMAT` (tipo ou extensão fora da regra) ou `409 DEADLINE_PASSED`.
 
 As duas rotas de escrita de materiais ainda recebem metadados JSON e geram uma chave `mock/...`; não recebem nem persistem bytes de arquivos (upload real na HU04). A HU01 autentica e autoriza estas rotas. Limites conforme requisito do projeto, prazos e armazenamento privado real serão adicionados com as histórias de entrega. O entrypoint da API persiste projetos, materiais com suas versões e mensagens em arquivo privado desde a HU07. Sem snapshot anterior, no modo local há seed; no modo Google iniciam vazios. Identidades, vínculos de autorização, sessões e tentativas OAuth usam PostgreSQL no modo Google; no modo local, sessões ficam em memória.
 
