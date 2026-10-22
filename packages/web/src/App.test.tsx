@@ -1,8 +1,9 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { App } from "./App";
-import type { Project, Scope, User } from "./api";
+import type { Material, MaterialRules, Project, Scope, User } from "./api";
+import { FakeXHR } from "./test/fakeXhr";
 
 const student: User = {
   id: 1,
@@ -44,6 +45,21 @@ const scope: Scope = {
     { id: 1, classId: 1, name: "Grupo 01" },
     { id: 2, classId: 1, name: "Grupo 02" },
     { id: 3, classId: 1, name: "Grupo 03" },
+  ],
+};
+const pdf = { label: "PDF", mimeType: "application/pdf", extensions: [".pdf"] };
+const materialRules: MaterialRules = {
+  dueAt: null,
+  lock: null,
+  canUpload: true,
+  rules: [
+    {
+      kind: "RELATORIO",
+      defaultTitle: "Relatório do projeto",
+      required: true,
+      formats: [pdf],
+      maxSizeBytes: 20 * 1024 * 1024,
+    },
   ],
 };
 type Override = (
@@ -91,6 +107,7 @@ beforeEach(() => {
       if (input === "/api/projects") return response(available);
       if (input.endsWith("/materials") || input.endsWith("/messages"))
         return response([]);
+      if (input.endsWith("/material-rules")) return response(materialRules);
       return response(
         available.find((project) => input === `/api/projects/${project.id}`) ??
           projects[0],
@@ -185,7 +202,8 @@ describe("HU01: interface", () => {
       screen.getByRole("link", { name: "Abrir Monitor de energia" }),
     );
     await screen.findByRole("heading", { name: "Monitor de energia" });
-    await screen.findByText("Uma ideia em construção");
+    await screen.findByText(/0 de 1 obrigatórios enviados/);
+    expect(screen.getByText("Pendente")).toBeDefined();
     await user.click(screen.getByRole("button", { name: "Todos os projetos" }));
     await screen.findByRole("heading", { name: "Olá, Marina." });
     await user.click(screen.getByRole("link", { name: "Monitor de energia" }));
@@ -225,6 +243,7 @@ describe("HU01: interface", () => {
                 sizeBytes: 2400,
                 uploadedBy: { id: 1, fullName: "Aluno" },
                 uploadedAt: "2026-10-22T12:00:00.000Z",
+                downloadUrl: "/api/projects/2/materials/1/versions/2/file",
               },
               versions: [
                 {
@@ -235,6 +254,7 @@ describe("HU01: interface", () => {
                   sizeBytes: 2400,
                   uploadedBy: { id: 1, fullName: "Aluno" },
                   uploadedAt: "2026-10-22T12:00:00.000Z",
+                  downloadUrl: "/api/projects/2/materials/1/versions/2/file",
                 },
               ],
             },
@@ -246,8 +266,60 @@ describe("HU01: interface", () => {
       screen.getByRole("button", { name: "Entrar no meu espaço" }),
     );
     await screen.findByRole("heading", { name: "Monitor de energia" });
-    expect(screen.getByText("relatorio.pdf")).toBeDefined();
-    expect(screen.getByText("v2")).toBeDefined();
+    expect(screen.getByText(/relatorio\.pdf/)).toBeDefined();
+    expect(screen.getByText(/versão 2/)).toBeDefined();
+  });
+  it("atualiza a lista após enviar e substituir um material", async () => {
+    window.history.replaceState(null, "", "/projetos/2");
+    FakeXHR.instances = [];
+    vi.stubGlobal("XMLHttpRequest", FakeXHR);
+    const user = userEvent.setup();
+    const saved = (versionNumber: number): Material => {
+      const version = {
+        id: versionNumber,
+        versionNumber,
+        originalFilename: `relatorio-v${versionNumber}.pdf`,
+        mimeType: "application/pdf",
+        sizeBytes: 100,
+        uploadedBy: { id: 1, fullName: "Marina Oliveira" },
+        uploadedAt: "2026-10-22T15:00:00.000Z",
+        downloadUrl: `/api/projects/2/materials/1/versions/${versionNumber}/file`,
+      };
+      return {
+        id: 1,
+        title: "Relatório do projeto",
+        kind: "RELATORIO",
+        currentVersion: version,
+        versions: [version],
+      };
+    };
+    override = (url) =>
+      url === "/api/projects/2"
+        ? response({ ...projects[1], missingMaterials: ["RELATORIO"] })
+        : undefined;
+    render(<App />);
+    const input = await screen.findByLabelText(
+      "Arquivo para Relatório do projeto",
+    );
+    expect(screen.getByText("Pendentes: Relatório")).toBeDefined();
+    const file = new File(["%PDF-1.7"], "relatorio.pdf", {
+      type: "application/pdf",
+    });
+    await user.upload(input, file);
+    await FakeXHR.instances[0].respond(201, { data: saved(1) });
+    await screen.findByText(/Enviado · versão 1/);
+    expect(screen.getByText(/1 de 1 obrigatórios enviados/)).toBeDefined();
+    expect(screen.getByText("Materiais obrigatórios presentes")).toBeDefined();
+    await user.upload(
+      screen.getByLabelText("Arquivo para Relatório do projeto"),
+      file,
+    );
+    expect(FakeXHR.instances[1].url).toBe(
+      "/api/projects/2/materials/1/versions",
+    );
+    await FakeXHR.instances[1].respond(201, { data: saved(2) });
+    await screen.findByText(/Enviado · versão 2/);
+    expect(screen.getAllByText("Relatório do projeto")).toHaveLength(1);
   });
   it("informa projeto indisponível e permite voltar ou tentar novamente", async () => {
     window.history.replaceState(null, "", "/projetos/999");
@@ -448,6 +520,19 @@ it("HU06 combina grupo, estado e pendências e consulta histórico de versões",
     },
     { ...projects[1], missingMaterials: [] },
   ];
+  const history = [
+    [2, "revisado.pdf"],
+    [1, "inicial.pdf"],
+  ].map(([id, originalFilename]) => ({
+    id,
+    versionNumber: id,
+    originalFilename,
+    mimeType: "application/pdf",
+    sizeBytes: 2400,
+    uploadedBy: { id: 1, fullName: "Aluno" },
+    uploadedAt: "2026-10-22T12:00:00.000Z",
+    downloadUrl: `/api/projects/1/materials/1/versions/${id}/file`,
+  }));
   override = (url) =>
     url.endsWith("/materials")
       ? response([
@@ -455,15 +540,8 @@ it("HU06 combina grupo, estado e pendências e consulta histórico de versões",
             id: 1,
             title: "Relatório",
             kind: "RELATORIO",
-            currentVersion: {
-              id: 2,
-              versionNumber: 2,
-              originalFilename: "revisado.pdf",
-            },
-            versions: [
-              { id: 2, versionNumber: 2, originalFilename: "revisado.pdf" },
-              { id: 1, versionNumber: 1, originalFilename: "inicial.pdf" },
-            ],
+            currentVersion: history[0],
+            versions: history,
           },
         ])
       : undefined;
@@ -495,10 +573,12 @@ it("HU06 combina grupo, estado e pendências e consulta histórico de versões",
   await user.click(
     screen.getByRole("link", { name: "Abrir Semáforo inteligente" }),
   );
-  await screen.findByText("inicial.pdf");
-  expect(screen.getByText("revisado.pdf")).toBeTruthy();
-  expect(screen.getByText("v1")).toBeTruthy();
-  expect(screen.getByText("v2")).toBeTruthy();
+  await user.click(await screen.findByRole("button", { name: "Histórico (2)" }));
+  const versions = within(screen.getByRole("list", { name: /^Versões de/ }));
+  expect(versions.getByText(/^inicial\.pdf/)).toBeTruthy();
+  expect(versions.getByText(/^revisado\.pdf/)).toBeTruthy();
+  expect(versions.getByText("v1")).toBeTruthy();
+  expect(versions.getByText("v2")).toBeTruthy();
 });
 
 it.each([

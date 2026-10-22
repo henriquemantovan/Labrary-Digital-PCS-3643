@@ -13,6 +13,7 @@ const version = (id: number, versionNumber: number) => ({
   sizeBytes: 2400,
   uploadedBy: { id: 1, fullName: "Marina" },
   uploadedAt: "2026-11-02T12:00:00.000Z",
+  downloadUrl: `/api/projects/2/materials/3/versions/${id}/file`,
 });
 const material = {
   id: 3,
