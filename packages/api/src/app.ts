@@ -13,6 +13,7 @@ import {
 } from "./repositories/projectRepository.js";
 import { createProjectRouter } from "./routes/projectRoutes.js";
 import { MaterialPolicy } from "./services/materialPolicy.js";
+import { createDiskStorage, FileStorage } from "./services/fileStorage.js";
 
 import { GoogleAuthOptions } from "./controllers/googleAuthController.js";
 
@@ -34,6 +35,7 @@ export interface AppOptions {
   sessionTtlMs?: number;
   loginLimit?: number;
   materialPolicy?: MaterialPolicy;
+  storage?: FileStorage;
 }
 
 export function createApp(options: AppOptions = {}) {
@@ -84,6 +86,7 @@ export function createApp(options: AppOptions = {}) {
     createProjectRouter(repository, auth, {
       now,
       materialPolicy: options.materialPolicy,
+      storage: options.storage ?? createDiskStorage(".uploads"),
     }),
   );
 
