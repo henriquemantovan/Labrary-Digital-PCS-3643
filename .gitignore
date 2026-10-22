@@ -9,3 +9,4 @@ packages/api/src/generated/prisma/
 test-results/
 playwright-report/
 .auth/
+.uploads/

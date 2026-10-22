@@ -333,7 +333,11 @@ describe("API REST de projetos e materiais com autorização", () => {
     const student = client(1);
     const result = await student
       .post(`/api/projects/2/materials/${material.id}/versions`)
-      .send({ originalFilename: "x.pdf", mimeType: "application/pdf", sizeBytes: 1 });
+      .send({
+        originalFilename: "x.pdf",
+        mimeType: "application/pdf",
+        sizeBytes: 1,
+      });
     expect(result.status).toBe(404);
     expect(repository.getMaterial(1, material.id)?.versions).toHaveLength(1);
   });

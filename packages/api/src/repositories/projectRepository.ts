@@ -19,7 +19,10 @@ export interface ProjectRepository {
   get(id: number): Project | undefined;
   create(input: NewProject): Project;
   listMaterials(projectId: number): ProjectMaterial[];
-  getMaterial(projectId: number, materialId: number): ProjectMaterial | undefined;
+  getMaterial(
+    projectId: number,
+    materialId: number,
+  ): ProjectMaterial | undefined;
   createMaterial(
     projectId: number,
     material: NewMaterial,

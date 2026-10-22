@@ -86,15 +86,13 @@ export function createProjectController(
   return {
     list(request: Request, response: Response) {
       const query = listQuerySchema.parse(request.query);
-      response
-        .status(200)
-        .json({
-          data: repository
-            .list(query)
-            .filter((project) =>
-              permissions.canRead(response.locals.user, project),
-            ),
-        });
+      response.status(200).json({
+        data: repository
+          .list(query)
+          .filter((project) =>
+            permissions.canRead(response.locals.user, project),
+          ),
+      });
     },
 
     get(request: Request, response: Response) {

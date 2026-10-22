@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import { resolve } from "node:path";
 import { directorySchema } from "../models/auth.js";
 import { createDemoDirectory } from "../fixtures/demo.js";
 
@@ -17,4 +18,12 @@ export async function loadDirectory(env: NodeJS.ProcessEnv) {
   return directorySchema.parse(
     JSON.parse(await readFile(env.AUTH_USERS_FILE, "utf8")),
   );
+}
+
+/** Pasta privada dos materiais enviados; relativa à raiz do repositório. */
+export function resolveUploadDir(
+  env: NodeJS.ProcessEnv,
+  repositoryRoot: string,
+) {
+  return resolve(repositoryRoot, env.UPLOAD_DIR || ".uploads");
 }
