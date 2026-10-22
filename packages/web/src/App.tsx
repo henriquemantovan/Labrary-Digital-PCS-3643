@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { api, ApiError } from "./api";
-import type { Material, Project, Scope, User } from "./api";
+import type { Material, MaterialRules, Project, Scope, User } from "./api";
 import { Icon } from "./Icons";
+import { MaterialsPanel } from "./Materials";
 
 const roleLabels = {
   ALUNO: "Aluno",
@@ -429,6 +430,9 @@ function Dashboard({
   const [scope, setScope] = useState<Scope>({ classes: [], groups: [] });
   const [detail, setDetail] = useState<Project | null>(null);
   const [materials, setMaterials] = useState<Material[]>([]);
+  const [materialRules, setMaterialRules] = useState<MaterialRules | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [revision, setRevision] = useState(0);
@@ -446,6 +450,7 @@ function Dashboard({
     setError("");
     setDetail(null);
     setMaterials([]);
+    setMaterialRules(null);
     setCreating(false);
     const load = async () => {
       try {
@@ -457,13 +462,15 @@ function Dashboard({
         setProjects(items);
         setScope(access);
         if (detailId) {
-          const [project, files] = await Promise.all([
+          const [project, files, rules] = await Promise.all([
             api<Project>(`/projects/${detailId}`),
             api<Material[]>(`/projects/${detailId}/materials`),
+            api<MaterialRules>(`/projects/${detailId}/material-rules`),
           ]);
           if (active) {
             setDetail(project);
             setMaterials(files);
+            setMaterialRules(rules);
           }
         }
       } catch (failure) {
@@ -613,33 +620,21 @@ function Dashboard({
           <span />
           {statusLabels[detail.status]}
         </span>
-        <section className="detail-section">
-          <div className="section-heading">
-            <h2>Materiais do projeto</h2>
-            <span>{materials.length} materiais</span>
-          </div>
-          {materials.length ? (
-            <ul className="material-list">
-              {materials.map((item) => (
-                <li key={item.id}>
-                  <Icon name="book" />
-                  <div>
-                    <strong>{item.title}</strong>
-                    <span>{item.currentVersion.originalFilename}</span>
-                  </div>
-                  <span className="tiny-badge">
-                    v{item.currentVersion.versionNumber}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <Empty
-              title="Uma ideia em construção"
-              text="Ainda não há materiais registrados neste projeto."
-            />
-          )}
-        </section>
+        {materialRules && (
+          <MaterialsPanel
+            projectId={detail.id}
+            materials={materials}
+            rules={materialRules}
+            onSaved={(saved) =>
+              setMaterials((current) =>
+                current.some((item) => item.id === saved.id)
+                  ? current.map((item) => (item.id === saved.id ? saved : item))
+                  : [...current, saved],
+              )
+            }
+            expired={expired}
+          />
+        )}
         <div className="access-note">
           <Icon name="lock" size={17} />
           Acesso restrito ao grupo e à equipe acadêmica vinculada ao projeto.
