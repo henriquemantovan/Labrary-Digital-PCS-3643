@@ -16,6 +16,7 @@ import {
   receiveUpload,
 } from "../services/multipartUpload.js";
 import { Request, Response } from "express";
+import { pipeline } from "node:stream/promises";
 import { z } from "zod";
 import { ApiError } from "../errors.js";
 import {
@@ -41,6 +42,20 @@ const materialIdSchema = z.object({
   projectId: positiveInteger,
   materialId: positiveInteger,
 });
+const versionIdSchema = materialIdSchema.extend({ versionId: positiveInteger });
+
+/** `attachment` com nome ASCII de reserva e nome UTF-8 (RFC 6266/5987). */
+export function attachmentHeader(filename: string) {
+  const fallback = filename
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\x20-\x7e]|["\\]/g, "_");
+  const encoded = encodeURIComponent(filename).replace(
+    /['()*]/g,
+    (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`,
+  );
+  return `attachment; filename="${fallback}"; filename*=UTF-8''${encoded}`;
+}
 
 const createProjectSchema = z
   .object({
@@ -75,18 +90,21 @@ export function createProjectController(
   const authorName = (userId: number) =>
     auth.directory.users.find((user) => user.id === userId)?.fullName ?? null;
   // A chave interna de armazenamento nunca sai da API.
-  const presentVersion = ({
-    storageKey: _storageKey,
-    uploadedBy,
-    ...version
-  }: ProjectMaterial["versions"][number]) => ({
-    ...version,
-    uploadedBy: { id: uploadedBy, fullName: authorName(uploadedBy) },
-  });
+  const presentVersion =
+    (projectId: number) =>
+    ({
+      storageKey: _storageKey,
+      uploadedBy,
+      ...version
+    }: ProjectMaterial["versions"][number]) => ({
+      ...version,
+      uploadedBy: { id: uploadedBy, fullName: authorName(uploadedBy) },
+      downloadUrl: `/api/projects/${projectId}/materials/${version.materialId}/versions/${version.id}/file`,
+    });
   const presentMaterial = ({ versions, ...material }: ProjectMaterial) => ({
     ...material,
-    currentVersion: presentVersion(versions[0]),
-    versions: versions.map(presentVersion),
+    currentVersion: presentVersion(material.projectId)(versions[0]),
+    versions: versions.map(presentVersion(material.projectId)),
   });
   const { storage } = options;
   /**
@@ -181,6 +199,25 @@ export function createProjectController(
           rules: policy.rulesFor(project),
         },
       });
+    },
+
+    async downloadVersion(request: Request, response: Response) {
+      const project = accessibleProject(request, response);
+      const { materialId, versionId } = versionIdSchema.parse(request.params);
+      const version = repository
+        .getMaterial(project.id, materialId)
+        ?.versions.find((item) => item.id === versionId);
+      const file = version && (await storage.open(version.storageKey));
+      if (!version || !file)
+        throw new ApiError(404, "FILE_NOT_FOUND", "Arquivo não encontrado.");
+      response.status(200).set({
+        "Content-Type": version.mimeType,
+        "Content-Length": String(file.sizeBytes),
+        "Content-Disposition": attachmentHeader(version.originalFilename),
+        "Content-Security-Policy": "default-src 'none'; sandbox",
+      });
+      // Se o cliente desistir no meio, o pipeline fecha o arquivo e a resposta.
+      await pipeline(file.stream, response).catch(() => undefined);
     },
 
     async createMaterial(request: Request, response: Response) {

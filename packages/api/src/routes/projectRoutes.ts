@@ -24,6 +24,10 @@ export function createProjectRouter(
     "/projects/:projectId/materials/:materialId/versions",
     controller.createVersion,
   );
+  router.get(
+    "/projects/:projectId/materials/:materialId/versions/:versionId/file",
+    controller.downloadVersion,
+  );
 
   return router;
 }

@@ -16,6 +16,7 @@ Todas as rotas usam JSON, exceto o envio de arquivos de materiais (`multipart/fo
 | GET | `/api/projects/:projectId/material-rules` | Formatos, tamanhos, prazo e se o usuário pode enviar | `200 { data: MaterialRules }` |
 | POST | `/api/projects/:projectId/materials` | Registra material novo (versão 1) | `201 { data: ProjectMaterial }` |
 | POST | `/api/projects/:projectId/materials/:materialId/versions` | Substitui material criando nova versão | `201 { data: ProjectMaterial }` |
+| GET | `/api/projects/:projectId/materials/:materialId/versions/:versionId/file` | Baixa o arquivo de uma versão | `200` com o arquivo |
 
 Todas as rotas de projetos, materiais e escopo exigem sessão válida. `GET /projects` aplica o escopo antes de retornar dados; filtros não ampliam acesso. Um projeto fora do escopo responde com o mesmo `404` de um projeto inexistente. Apenas professor cria projetos para grupos da própria turma; apenas aluno do grupo registra metadados enquanto o projeto está em Preparação/Ajustes (`409 PROJECT_LOCKED` nos demais estados).
 
@@ -47,7 +48,7 @@ Exemplo de erro:
 }
 ```
 
-`ProjectMaterial` contém `id`, `projectId`, `kind`, `title`, `createdBy`, `createdAt`, `currentVersion` e `versions` (da mais recente para a mais antiga). Cada versão traz `versionNumber`, `originalFilename`, `mimeType`, `sizeBytes`, `checksumSha256`, `uploadedBy { id, fullName }` e `uploadedAt`; a chave interna de armazenamento não é exposta. Criar um material com o mesmo tipo e título (sem diferenciar maiúsculas) responde `409 MATERIAL_ALREADY_EXISTS`: a substituição usa a rota de versões, que nunca apaga versões anteriores. Material inexistente ou de outro projeto responde `404 MATERIAL_NOT_FOUND`.
+`ProjectMaterial` contém `id`, `projectId`, `kind`, `title`, `createdBy`, `createdAt`, `currentVersion` e `versions` (da mais recente para a mais antiga). Cada versão traz `versionNumber`, `originalFilename`, `mimeType`, `sizeBytes`, `checksumSha256`, `uploadedBy { id, fullName }`, `uploadedAt` e `downloadUrl`; a chave interna de armazenamento não é exposta. Criar um material com o mesmo tipo e título (sem diferenciar maiúsculas) responde `409 MATERIAL_ALREADY_EXISTS`: a substituição usa a rota de versões, que nunca apaga versões anteriores. Material inexistente ou de outro projeto responde `404 MATERIAL_NOT_FOUND`.
 
 `MaterialRules` contém `dueAt`, `lock` (`null`, `PROJECT_LOCKED` ou `DEADLINE_PASSED`), `canUpload` e `rules` (por tipo: `kind`, `defaultTitle`, `required`, `formats[{ label, mimeType, extensions }]`, `maxSizeBytes`). Enquanto a HU03 não existe, as regras padrão são: vídeo MP4/WebM até 500 MB; relatório e manual PDF até 20 MB; outros PDF/ZIP/PNG/JPEG até 50 MB. A entrega está aberta em Preparação antes de `dueAt` e em Ajustes (reabertura pelo professor, mesmo após o prazo). Envios recusados respondem `400 EMPTY_FILE`, `413 FILE_TOO_LARGE`, `415 UNSUPPORTED_FORMAT` (tipo ou extensão fora da regra) ou `409 DEADLINE_PASSED`.
 
@@ -62,5 +63,7 @@ Exemplo de erro:
 Erros de formato do envio: `400 MULTIPART_REQUIRED`, `FILE_REQUIRED`, `UNEXPECTED_FILE`, `TOO_MANY_FILES`, `TOO_MANY_FIELDS`, `FIELD_TOO_LONG` e `INVALID_MULTIPART`.
 
 Exemplo: `curl -b cookies.txt -H 'X-CSRF-Protection: 1' -F kind=RELATORIO -F 'file=@relatorio.pdf' http://localhost:3000/api/projects/2/materials`.
+
+**Download.** `GET …/versions/:versionId/file` exige sessão e acesso de leitura ao projeto (integrantes do grupo, avaliadores atribuídos e professor da turma). O arquivo vem com `Content-Disposition: attachment` (nome original em UTF-8), o `Content-Type` detectado no envio, `X-Content-Type-Options: nosniff`, `Content-Security-Policy: default-src 'none'; sandbox` e `Cache-Control: no-store`. Projeto fora do escopo → `404 PROJECT_NOT_FOUND`; material, versão ou arquivo ausente → `404 FILE_NOT_FOUND`. Não existe URL pública de material.
 
 O repositório de metadados é em memória e volta ao seed ao reiniciar a API; os arquivos permanecem em `UPLOAD_DIR`.
