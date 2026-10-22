@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { createHash } from "node:crypto";
 import { readdir } from "node:fs/promises";
+import { Readable } from "node:stream";
+import request from "supertest";
 import {
   context,
   materialInput,
@@ -13,6 +15,7 @@ import {
   defaultMaterialRules,
 } from "../services/materialPolicy.js";
 import { FileStorage } from "../services/fileStorage.js";
+import { attachmentHeader } from "../controllers/projectController.js";
 
 const materials = "/api/projects/2/materials";
 const versions = (id: number) => `${materials}/${id}/versions`;
@@ -422,5 +425,103 @@ describe("envio de materiais com arquivo", () => {
     expect(
       (await client(1).get("/api/projects/2/material-rules")).body.data,
     ).toMatchObject({ lock: "DEADLINE_PASSED", canUpload: false });
+  });
+});
+
+describe("download protegido das versões", () => {
+  const binary = (req: request.Test) =>
+    req.buffer(true).parse((res, callback) => {
+      const chunks: Buffer[] = [];
+      res.on("data", (chunk: Buffer) => chunks.push(chunk));
+      res.on("end", () => callback(null, Buffer.concat(chunks)));
+    });
+
+  it("entrega cada versão como anexo para quem pode ver o projeto", async () => {
+    const { client } = context();
+    const student = client(1);
+    const created = await upload(
+      student,
+      materials,
+      materialInput,
+      pdfFile("relatório – versão 1.pdf"),
+    );
+    const v2Content = Buffer.concat([sampleFiles.pdf, Buffer.from("v2")]);
+    const replaced = await upload(
+      student,
+      versions(1),
+      {},
+      {
+        content: v2Content,
+        filename: "relatorio-v2.pdf",
+      },
+    );
+    const [v2, v1] = replaced.body.data.versions;
+    expect(v1.downloadUrl).toBe(created.body.data.currentVersion.downloadUrl);
+    expect(v2.downloadUrl).toBe("/api/projects/2/materials/1/versions/2/file");
+
+    const first = await binary(student.get(v1.downloadUrl));
+    expect(first.status).toBe(200);
+    expect(first.body).toEqual(sampleFiles.pdf);
+    expect(first.headers).toMatchObject({
+      "content-type": "application/pdf",
+      "content-length": String(sampleFiles.pdf.length),
+      "content-disposition":
+        'attachment; filename="relatorio _ versao 1.pdf"; ' +
+        "filename*=UTF-8''relat%C3%B3rio%20%E2%80%93%20vers%C3%A3o%201.pdf",
+      "content-security-policy": "default-src 'none'; sandbox",
+      "x-content-type-options": "nosniff",
+      "cache-control": "no-store",
+    });
+    expect((await binary(student.get(v2.downloadUrl))).body).toEqual(v2Content);
+    expect((await binary(client(3).get(v2.downloadUrl))).status).toBe(200);
+  });
+  it("escapa aspas, barras e caracteres reservados no nome do anexo", () => {
+    expect(attachmentHeader(`O "manual" (v2)*\\it's.pdf`)).toBe(
+      `attachment; filename="O _manual_ (v2)*_it's.pdf"; ` +
+        "filename*=UTF-8''O%20%22manual%22%20%28v2%29%2A%5Cit%27s.pdf",
+    );
+  });
+  it("responde 404 igual para fora do escopo, inexistente ou sem arquivo", async () => {
+    const { client, repository, storage } = context();
+    const student = client(1);
+    await upload(student, materials, materialInput, pdfFile());
+    const url = "/api/projects/2/materials/1/versions/1/file";
+    expect((await client(2).get(url)).body.error.code).toBe(
+      "PROJECT_NOT_FOUND",
+    );
+    for (const path of [
+      "/api/projects/2/materials/9/versions/1/file",
+      "/api/projects/2/materials/1/versions/9/file",
+    ])
+      expect((await student.get(path)).body.error.code).toBe("FILE_NOT_FOUND");
+    expect(
+      (await student.get("/api/projects/2/materials/1/versions/0/file")).status,
+    ).toBe(400);
+    await storage.remove(repository.getMaterial(2, 1)!.versions[0].storageKey);
+    expect((await student.get(url)).body.error.code).toBe("FILE_NOT_FOUND");
+  });
+  it("permite ao avaliador baixar os materiais do projeto atribuído", async () => {
+    const { app, client, repository, storage } = context();
+    const stored = await storage.save(Readable.from([sampleFiles.mp4]), {
+      maxBytes: 1_000,
+    });
+    const material = repository.createMaterial(
+      1,
+      { kind: "VIDEO", title: "Vídeo", createdBy: 1 },
+      {
+        originalFilename: "demo.mp4",
+        mimeType: "video/mp4",
+        sizeBytes: stored.sizeBytes,
+        storageKey: stored.storageKey,
+        checksumSha256: stored.checksumSha256,
+        uploadedBy: 1,
+      },
+    );
+    const url = `/api/projects/1/materials/${material.id}/versions/1/file`;
+    const evaluator = await binary(client(2).get(url));
+    expect(evaluator.status).toBe(200);
+    expect(evaluator.body).toEqual(sampleFiles.mp4);
+    expect((await client(1).get(url)).status).toBe(404);
+    expect((await request(app).get(url)).status).toBe(401);
   });
 });

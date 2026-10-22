@@ -61,6 +61,8 @@ export function receiveUpload(
     try {
       parser = busboy({
         headers: request.headers,
+        // Navegadores enviam o nome do arquivo em UTF-8 (padrão do busboy: latin1).
+        defParamCharset: "utf8",
         limits: { files: 1, fields: 8, fieldSize: 1024, parts: 9 },
       });
     } catch {
