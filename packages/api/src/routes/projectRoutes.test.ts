@@ -10,6 +10,7 @@ describe("API REST de projetos e materiais com autorização", () => {
       "/api/projects",
       "/api/projects/1",
       "/api/projects/1/materials",
+      "/api/projects/1/material-rules",
       "/api/scope",
       "/api/auth/me",
     ]) {
@@ -340,6 +341,91 @@ describe("API REST de projetos e materiais com autorização", () => {
       });
     expect(result.status).toBe(404);
     expect(repository.getMaterial(1, material.id)?.versions).toHaveLength(1);
+  });
+  it("valida formato, tamanho e prazo informados no envio", async () => {
+    const { client, repository } = context();
+    const student = client(1);
+    const send = (body: object) =>
+      student
+        .post("/api/projects/2/materials")
+        .send({ ...materialInput, ...body });
+    expect((await send({ mimeType: "video/mp4" })).body.error.code).toBe(
+      "UNSUPPORTED_FORMAT",
+    );
+    expect((await send({ originalFilename: "relatorio.docx" })).status).toBe(
+      415,
+    );
+    expect((await send({ sizeBytes: 0 })).body.error.code).toBe("EMPTY_FILE");
+    expect((await send({ sizeBytes: 21 * 1024 * 1024 })).status).toBe(413);
+    const video = await send({
+      kind: "VIDEO",
+      title: "Vídeo",
+      originalFilename: "demo.mp4",
+      mimeType: "video/mp4",
+      sizeBytes: 400 * 1024 * 1024,
+    });
+    expect(video.status).toBe(201);
+    expect(
+      (
+        await student
+          .post(`/api/projects/2/materials/${video.body.data.id}/versions`)
+          .send({
+            originalFilename: "demo.pdf",
+            mimeType: "application/pdf",
+            sizeBytes: 5,
+          })
+      ).body.error.code,
+    ).toBe("UNSUPPORTED_FORMAT");
+    repository.get(2)!.dueAt = "2020-01-01T00:00:00.000Z";
+    const late = await send({ title: "Atrasado" });
+    expect(late.status).toBe(409);
+    expect(late.body.error.code).toBe("DEADLINE_PASSED");
+    expect(
+      (
+        await student
+          .post(`/api/projects/2/materials/${video.body.data.id}/versions`)
+          .send({
+            originalFilename: "demo.mp4",
+            mimeType: "video/mp4",
+            sizeBytes: 5,
+          })
+      ).body.error.code,
+    ).toBe("DEADLINE_PASSED");
+    repository.get(2)!.status = "AJUSTES";
+    expect((await send({ title: "Reaberto" })).status).toBe(201);
+  });
+  it("informa regras de envio e se o usuário pode enviar", async () => {
+    const { client, repository } = context();
+    const student = await client(1).get("/api/projects/2/material-rules");
+    expect(student.status).toBe(200);
+    expect(student.body.data).toMatchObject({
+      dueAt: null,
+      lock: null,
+      canUpload: true,
+    });
+    expect(student.body.data.rules[0]).toMatchObject({
+      kind: "VIDEO",
+      required: true,
+      maxSizeBytes: 500 * 1024 * 1024,
+      formats: [
+        { label: "MP4", mimeType: "video/mp4", extensions: [".mp4"] },
+        { label: "WebM", mimeType: "video/webm", extensions: [".webm"] },
+      ],
+    });
+    expect(
+      (await client(3).get("/api/projects/2/material-rules")).body.data
+        .canUpload,
+    ).toBe(false);
+    expect(
+      (await client(2).get("/api/projects/1/material-rules")).body.data,
+    ).toMatchObject({ lock: "PROJECT_LOCKED", canUpload: false });
+    expect((await client(1).get("/api/projects/1/material-rules")).status).toBe(
+      404,
+    );
+    repository.get(2)!.dueAt = "2020-01-01T00:00:00.000Z";
+    expect(
+      (await client(1).get("/api/projects/2/material-rules")).body.data,
+    ).toMatchObject({ lock: "DEADLINE_PASSED", canUpload: false });
   });
   it("remove acesso imediatamente quando o vínculo muda", async () => {
     const { auth, client } = context();

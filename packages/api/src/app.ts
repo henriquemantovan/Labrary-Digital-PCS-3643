@@ -12,6 +12,7 @@ import {
   ProjectRepository,
 } from "./repositories/projectRepository.js";
 import { createProjectRouter } from "./routes/projectRoutes.js";
+import { MaterialPolicy } from "./services/materialPolicy.js";
 
 export interface AppOptions {
   repository?: ProjectRepository;
@@ -21,6 +22,7 @@ export interface AppOptions {
   origin?: string;
   sessionTtlMs?: number;
   loginLimit?: number;
+  materialPolicy?: MaterialPolicy;
 }
 
 export function createApp(options: AppOptions = {}) {
@@ -55,7 +57,13 @@ export function createApp(options: AppOptions = {}) {
     }),
   );
   app.use("/api/projects", requireAuth(auth, now));
-  app.use("/api", createProjectRouter(repository, auth));
+  app.use(
+    "/api",
+    createProjectRouter(repository, auth, {
+      now,
+      materialPolicy: options.materialPolicy,
+    }),
+  );
 
   app.use((_request, response) => {
     response.status(404).json({

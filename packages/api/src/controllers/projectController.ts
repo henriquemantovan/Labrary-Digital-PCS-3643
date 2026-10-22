@@ -1,5 +1,12 @@
 import { AuthRepository } from "../repositories/authRepository.js";
 import { createPermissions } from "../services/permissions.js";
+import {
+  assertFileAccepted,
+  createDefaultMaterialPolicy,
+  MaterialPolicy,
+  ruleFor,
+  uploadLock,
+} from "../services/materialPolicy.js";
 import { randomUUID } from "node:crypto";
 import { Request, Response } from "express";
 import { z } from "zod";
@@ -41,7 +48,7 @@ const fileMetadataSchema = z
   .object({
     originalFilename: z.string().trim().min(1).max(255),
     mimeType: z.string().trim().min(1).max(160),
-    sizeBytes: z.number().int().nonnegative().max(100_000_000),
+    sizeBytes: z.number().int().nonnegative(),
   })
   .strict();
 
@@ -52,11 +59,19 @@ const createMaterialSchema = fileMetadataSchema
   })
   .strict();
 
+export interface ProjectControllerOptions {
+  now?: () => number;
+  materialPolicy?: MaterialPolicy;
+}
+
 export function createProjectController(
   repository: ProjectRepository,
   auth: AuthRepository,
+  options: ProjectControllerOptions = {},
 ) {
   const permissions = createPermissions(auth);
+  const now = options.now ?? Date.now;
+  const policy = options.materialPolicy ?? createDefaultMaterialPolicy();
   const authorName = (userId: number) =>
     auth.directory.users.find((user) => user.id === userId)?.fullName ?? null;
   // A chave interna de armazenamento nunca sai da API.
@@ -124,11 +139,26 @@ export function createProjectController(
       });
     },
 
+    materialRules(request: Request, response: Response) {
+      const project = accessibleProject(request, response);
+      const lock = uploadLock(project, now());
+      response.status(200).json({
+        data: {
+          dueAt: project.dueAt,
+          lock,
+          canUpload:
+            !lock && permissions.canUpload(response.locals.user, project),
+          rules: policy.rulesFor(project),
+        },
+      });
+    },
+
     createMaterial(request: Request, response: Response) {
       const project = accessibleProject(request, response);
       const user = response.locals.user;
-      permissions.assertUpload(user, project);
+      permissions.assertUpload(user, project, now());
       const { kind, title, ...file } = createMaterialSchema.parse(request.body);
+      assertFileAccepted(ruleFor(policy, project, kind), file);
       const material = repository.createMaterial(
         project.id,
         { kind, title, createdBy: user.id },
@@ -145,16 +175,19 @@ export function createProjectController(
     createVersion(request: Request, response: Response) {
       const project = accessibleProject(request, response);
       const { materialId } = materialIdSchema.parse(request.params);
-      if (!repository.getMaterial(project.id, materialId))
+      const existing = repository.getMaterial(project.id, materialId);
+      if (!existing)
         throw new ApiError(
           404,
           "MATERIAL_NOT_FOUND",
           "Material não encontrado.",
         );
       const user = response.locals.user;
-      permissions.assertUpload(user, project);
+      permissions.assertUpload(user, project, now());
+      const file = fileMetadataSchema.parse(request.body);
+      assertFileAccepted(ruleFor(policy, project, existing.kind), file);
       const material = repository.addVersion(project.id, materialId, {
-        ...fileMetadataSchema.parse(request.body),
+        ...file,
         storageKey: pendingStorageKey(project.id),
         checksumSha256: null,
         uploadedBy: user.id,
