@@ -33,6 +33,7 @@ export default defineConfig({
         AUTH_DEMO: "true",
         AUTH_USERS_FILE: "",
         APP_ORIGIN: `http://localhost:${webPort}`,
+        UPLOAD_DIR: `test-results/uploads-${apiPort}`,
       },
     },
     {

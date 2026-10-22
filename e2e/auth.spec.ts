@@ -102,7 +102,10 @@ test("avaliador acessa somente projeto atribuído", async ({
   await page
     .getByRole("link", { name: "Abrir Controlador de semáforo inteligente" })
     .click();
-  await expect(page.getByText("Uma ideia em construção")).toBeVisible();
+  await expect(page.getByText(/Os materiais ficam bloqueados/)).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Enviar arquivo" }),
+  ).toHaveCount(0);
   await noHorizontalOverflow(page);
 });
 
