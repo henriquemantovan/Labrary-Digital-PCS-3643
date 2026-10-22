@@ -214,8 +214,16 @@ describe("HU01: interface", () => {
               id: 1,
               title: "Relatório",
               kind: "RELATORIO",
-              versionNumber: 2,
-              originalFilename: "relatorio.pdf",
+              currentVersion: {
+                id: 2,
+                versionNumber: 2,
+                originalFilename: "relatorio.pdf",
+                mimeType: "application/pdf",
+                sizeBytes: 2400,
+                uploadedBy: { id: 1, fullName: "Aluno" },
+                uploadedAt: "2026-10-22T12:00:00.000Z",
+              },
+              versions: [],
             },
           ])
         : undefined;

@@ -18,12 +18,21 @@ export interface Scope {
   classes: { id: number; name: string; academicYear: number }[];
   groups: { id: number; classId: number; name: string }[];
 }
+export interface MaterialVersion {
+  id: number;
+  versionNumber: number;
+  originalFilename: string;
+  mimeType: string;
+  sizeBytes: number;
+  uploadedBy: { id: number; fullName: string | null };
+  uploadedAt: string;
+}
 export interface Material {
   id: number;
   title: string;
   kind: string;
-  versionNumber: number;
-  originalFilename: string;
+  currentVersion: MaterialVersion;
+  versions: MaterialVersion[];
 }
 export class ApiError extends Error {
   constructor(

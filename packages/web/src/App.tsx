@@ -625,9 +625,11 @@ function Dashboard({
                   <Icon name="book" />
                   <div>
                     <strong>{item.title}</strong>
-                    <span>{item.originalFilename}</span>
+                    <span>{item.currentVersion.originalFilename}</span>
                   </div>
-                  <span className="tiny-badge">v{item.versionNumber}</span>
+                  <span className="tiny-badge">
+                    v{item.currentVersion.versionNumber}
+                  </span>
                 </li>
               ))}
             </ul>

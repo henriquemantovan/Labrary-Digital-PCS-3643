@@ -1,6 +1,8 @@
 import { ApiError } from "../errors.js";
 import {
+  MaterialVersion,
   NewMaterial,
+  NewMaterialVersion,
   NewProject,
   Project,
   ProjectMaterial,
@@ -17,8 +19,24 @@ export interface ProjectRepository {
   get(id: number): Project | undefined;
   create(input: NewProject): Project;
   listMaterials(projectId: number): ProjectMaterial[];
-  createMaterial(projectId: number, input: NewMaterial): ProjectMaterial;
+  getMaterial(projectId: number, materialId: number): ProjectMaterial | undefined;
+  createMaterial(
+    projectId: number,
+    material: NewMaterial,
+    version: NewMaterialVersion,
+  ): ProjectMaterial;
+  addVersion(
+    projectId: number,
+    materialId: number,
+    version: NewMaterialVersion,
+  ): ProjectMaterial;
 }
+
+type StoredMaterial = Omit<ProjectMaterial, "versions">;
+
+const sameTitle = (left: string, right: string) =>
+  left.trim().toLocaleLowerCase("pt-BR") ===
+  right.trim().toLocaleLowerCase("pt-BR");
 
 const demoTimestamp = "2026-10-15T12:00:00.000Z";
 
@@ -51,9 +69,34 @@ export function createMemoryProjectRepository(): ProjectRepository {
       updatedAt: demoTimestamp,
     },
   ];
-  const materials: ProjectMaterial[] = [];
+  const materials: StoredMaterial[] = [];
+  const versions: MaterialVersion[] = [];
   let nextProjectId = 3;
   let nextMaterialId = 1;
+  let nextVersionId = 1;
+
+  const withVersions = (material: StoredMaterial): ProjectMaterial => ({
+    ...material,
+    versions: versions
+      .filter((version) => version.materialId === material.id)
+      .sort((left, right) => right.versionNumber - left.versionNumber),
+  });
+  const storeVersion = (materialId: number, input: NewMaterialVersion) => {
+    const versionNumber =
+      versions
+        .filter((version) => version.materialId === materialId)
+        .reduce(
+          (highest, version) => Math.max(highest, version.versionNumber),
+          0,
+        ) + 1;
+    versions.push({
+      id: nextVersionId++,
+      materialId,
+      versionNumber,
+      ...input,
+      uploadedAt: new Date().toISOString(),
+    });
+  };
 
   return {
     list(filter) {
@@ -89,30 +132,54 @@ export function createMemoryProjectRepository(): ProjectRepository {
       return project;
     },
     listMaterials(projectId) {
-      return materials.filter((material) => material.projectId === projectId);
+      return materials
+        .filter((material) => material.projectId === projectId)
+        .map(withVersions);
     },
-    createMaterial(projectId, input) {
-      const relatedMaterials = materials.filter(
-        (material) => material.projectId === projectId,
+    getMaterial(projectId, materialId) {
+      const material = materials.find(
+        (item) => item.id === materialId && item.projectId === projectId,
       );
-      const versionNumber =
-        relatedMaterials
-          .filter((material) => material.title === input.title)
-          .reduce(
-            (highest, material) => Math.max(highest, material.versionNumber),
-            0,
-          ) + 1;
-      const material: ProjectMaterial = {
-        id: nextMaterialId,
+      return material && withVersions(material);
+    },
+    createMaterial(projectId, input, version) {
+      if (
+        materials.some(
+          (material) =>
+            material.projectId === projectId &&
+            material.kind === input.kind &&
+            sameTitle(material.title, input.title),
+        )
+      ) {
+        throw new ApiError(
+          409,
+          "MATERIAL_ALREADY_EXISTS",
+          "Já existe um material com este tipo e título. Envie uma nova versão para substituí-lo.",
+        );
+      }
+      const material: StoredMaterial = {
+        id: nextMaterialId++,
         projectId,
         ...input,
-        versionNumber,
-        storageKey: `mock/${projectId}/${nextMaterialId}`,
-        uploadedAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
       };
-      nextMaterialId += 1;
       materials.push(material);
-      return material;
+      storeVersion(material.id, version);
+      return withVersions(material);
+    },
+    addVersion(projectId, materialId, version) {
+      const material = materials.find(
+        (item) => item.id === materialId && item.projectId === projectId,
+      );
+      if (!material) {
+        throw new ApiError(
+          404,
+          "MATERIAL_NOT_FOUND",
+          "Material não encontrado.",
+        );
+      }
+      storeVersion(material.id, version);
+      return withVersions(material);
     },
   };
 }
