@@ -1,0 +1,4 @@
+interface:
+  display_name: "Labrary: testar e corrigir"
+  short_description: "Execute testes e corrija falhas antes de entregar"
+  default_prompt: "Use $labrary-testar-e-corrigir para implementar a mudança solicitada, executar os testes e corrigir as falhas encontradas."
