@@ -1,4 +1,4 @@
-# API REST (TEC02 + HU01 + HU06 + HU07)
+# API REST (TEC02 + HU01 + HU04 + HU06 + HU07)
 
 Rotas REST usam JSON, exceto o envio de arquivos de materiais (`multipart/form-data`); início e retorno de OAuth fazem redirecionamentos HTTP. Listas e respostas individuais bem-sucedidas vêm no envelope `{ "data": ... }`; erros usam `{ "error": { "code", "message", "details?" } }`. O servidor responde `401` para ausência de sessão, `403` para operação não permitida/origem inválida, `429` para excesso de tentativas de login, `400` para validação, `404` para recurso/rota ausente, `409` para conflito de grupo e `500` para falhas inesperadas.
 

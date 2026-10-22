@@ -132,7 +132,10 @@ test("avaliador acessa somente projeto atribuído", async ({
   await page
     .getByRole("link", { name: "Abrir Controlador de semáforo inteligente" })
     .click();
-  await expect(page.getByText("Uma ideia em construção")).toBeVisible();
+  await expect(page.getByText(/Os materiais ficam bloqueados/)).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Enviar arquivo" }),
+  ).toHaveCount(0);
   await noHorizontalOverflow(page);
 });
 
@@ -173,32 +176,30 @@ test("HU07 conserva feedback privado e versão após recarga e falha de resposta
 }) => {
   await page.goto("/");
   await login(page, "aluno");
-  const materialInput = {
-    kind: "RELATORIO",
-    title: "Relatório de feedback",
-    originalFilename: "feedback.pdf",
+  const file = {
+    name: "feedback.pdf",
     mimeType: "application/pdf",
-    sizeBytes: 1200,
+    buffer: Buffer.from("%PDF-1.7\nfeedback\n%%EOF\n"),
   };
   const first = await context.request.post("/api/projects/2/materials", {
     headers: { "X-CSRF-Protection": "1" },
-    data: materialInput,
+    multipart: { kind: "OUTRO", title: "Relatório de feedback", file },
   });
   expect(first.status()).toBe(201);
-  const version = (await first.json()).data;
+  const material = (await first.json()).data;
   await page.goto("/projetos/2");
   await expect(
     page.getByText("Nenhuma mensagem ainda. Comece a conversa."),
   ).toBeVisible();
   await page
     .getByLabel("Contexto da mensagem")
-    .selectOption(String(version.id));
+    .selectOption(String(material.currentVersion.id));
   expect(
     (
-      await context.request.post("/api/projects/2/materials", {
-        headers: { "X-CSRF-Protection": "1" },
-        data: materialInput,
-      })
+      await context.request.post(
+        `/api/projects/2/materials/${material.id}/versions`,
+        { headers: { "X-CSRF-Protection": "1" }, multipart: { file } },
+      )
     ).status(),
   ).toBe(201);
   const text = '<script>alert("feedback")</script> Podemos revisar o circuito?';
