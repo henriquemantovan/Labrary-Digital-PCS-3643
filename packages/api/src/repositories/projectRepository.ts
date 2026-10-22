@@ -1,7 +1,9 @@
 import { NewMessage, ProjectMessage } from "../models/message.js";
 import { ApiError } from "../errors.js";
 import {
+  MaterialVersion,
   NewMaterial,
+  NewMaterialVersion,
   NewProject,
   Project,
   ProjectMaterial,
@@ -18,7 +20,17 @@ export interface ProjectRepository {
   get(id: number): Project | undefined;
   create(input: NewProject): Project;
   listMaterials(projectId: number): ProjectMaterial[];
-  createMaterial(projectId: number, input: NewMaterial): ProjectMaterial;
+  getMaterial(projectId: number, materialId: number): ProjectMaterial | undefined;
+  createMaterial(
+    projectId: number,
+    material: NewMaterial,
+    version: NewMaterialVersion,
+  ): ProjectMaterial;
+  addVersion(
+    projectId: number,
+    materialId: number,
+    version: NewMaterialVersion,
+  ): ProjectMaterial;
   listMessages(projectId: number): ProjectMessage[];
   createMessage(input: NewMessage): {
     message: ProjectMessage;
@@ -35,6 +47,10 @@ export interface ProjectStorage {
   load(): ProjectSnapshot | undefined;
   save(snapshot: ProjectSnapshot): void;
 }
+
+const sameTitle = (left: string, right: string) =>
+  left.trim().toLocaleLowerCase("pt-BR") ===
+  right.trim().toLocaleLowerCase("pt-BR");
 
 const demoTimestamp = "2026-10-15T12:00:00.000Z";
 
@@ -78,11 +94,27 @@ export function createMemoryProjectRepository(
   if (saved) ({ projects, materials, messages } = saved);
   let nextProjectId = Math.max(2, ...projects.map((item) => item.id)) + 1;
   let nextMaterialId = Math.max(0, ...materials.map((item) => item.id)) + 1;
+  let nextVersionId =
+    Math.max(
+      0,
+      ...materials.flatMap((item) => item.versions.map(({ id }) => id)),
+    ) + 1;
   let nextMessageId = Math.max(0, ...messages.map((item) => item.id)) + 1;
   const commit = (snapshot: ProjectSnapshot) => {
     storage?.save(snapshot);
     ({ projects, materials, messages } = snapshot);
   };
+  const buildVersion = (
+    materialId: number,
+    versionNumber: number,
+    input: NewMaterialVersion,
+  ): MaterialVersion => ({
+    id: nextVersionId,
+    materialId,
+    versionNumber,
+    ...input,
+    uploadedAt: new Date().toISOString(),
+  });
 
   return {
     listMessages(projectId) {
@@ -151,28 +183,69 @@ export function createMemoryProjectRepository(
     listMaterials(projectId) {
       return materials.filter((material) => material.projectId === projectId);
     },
-    createMaterial(projectId, input) {
-      const relatedMaterials = materials.filter(
-        (material) => material.projectId === projectId,
+    getMaterial(projectId, materialId) {
+      return materials.find(
+        (item) => item.id === materialId && item.projectId === projectId,
       );
-      const versionNumber =
-        relatedMaterials
-          .filter((material) => material.title === input.title)
-          .reduce(
-            (highest, material) => Math.max(highest, material.versionNumber),
-            0,
-          ) + 1;
+    },
+    createMaterial(projectId, input, version) {
+      if (
+        materials.some(
+          (material) =>
+            material.projectId === projectId &&
+            material.kind === input.kind &&
+            sameTitle(material.title, input.title),
+        )
+      ) {
+        throw new ApiError(
+          409,
+          "MATERIAL_ALREADY_EXISTS",
+          "Já existe um material com este tipo e título. Envie uma nova versão para substituí-lo.",
+        );
+      }
       const material: ProjectMaterial = {
         id: nextMaterialId,
         projectId,
         ...input,
-        versionNumber,
-        storageKey: `mock/${projectId}/${nextMaterialId}`,
-        uploadedAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        versions: [buildVersion(nextMaterialId, 1, version)],
       };
       commit({ projects, materials: [...materials, material], messages });
       nextMaterialId += 1;
+      nextVersionId += 1;
       return material;
+    },
+    addVersion(projectId, materialId, version) {
+      const material = materials.find(
+        (item) => item.id === materialId && item.projectId === projectId,
+      );
+      if (!material) {
+        throw new ApiError(
+          404,
+          "MATERIAL_NOT_FOUND",
+          "Material não encontrado.",
+        );
+      }
+      const updated: ProjectMaterial = {
+        ...material,
+        versions: [
+          buildVersion(
+            material.id,
+            material.versions[0].versionNumber + 1,
+            version,
+          ),
+          ...material.versions,
+        ],
+      };
+      commit({
+        projects,
+        materials: materials.map((item) =>
+          item === material ? updated : item,
+        ),
+        messages,
+      });
+      nextVersionId += 1;
+      return updated;
     },
   };
 }

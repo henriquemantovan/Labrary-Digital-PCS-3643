@@ -792,16 +792,20 @@ function Dashboard({
           </p>
           {materials.length ? (
             <ul className="material-list">
-              {materials.map((item) => (
-                <li key={item.id}>
-                  <Icon name="book" />
-                  <div>
-                    <strong>{item.title}</strong>
-                    <span>{item.originalFilename}</span>
-                  </div>
-                  <span className="tiny-badge">v{item.versionNumber}</span>
-                </li>
-              ))}
+              {materials.flatMap((item) =>
+                item.versions.map((version) => (
+                  <li key={version.id}>
+                    <Icon name="book" />
+                    <div>
+                      <strong>{item.title}</strong>
+                      <span>{version.originalFilename}</span>
+                    </div>
+                    <span className="tiny-badge">
+                      v{version.versionNumber}
+                    </span>
+                  </li>
+                )),
+              )}
             </ul>
           ) : (
             <Empty

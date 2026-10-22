@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 import request from "supertest";
-import { context, materialInput } from "../test/context.js";
+import { context, storedMaterial, versionInput } from "../test/context.js";
 
 const input = () => ({
   clientMessageId: randomUUID(),
@@ -14,7 +14,8 @@ describe("HU07: feedback privado", () => {
       now: () => Date.parse("2026-11-02T12:00:00.000Z"),
     });
     auth.directory.assignments.push({ projectId: 2, evaluatorId: 2 });
-    const version = repository.createMaterial(2, materialInput);
+    const material = storedMaterial(repository, 2);
+    const version = material.versions[0];
     const sent = await client(1)
       .post("/api/projects/2/messages")
       .send({ ...input(), materialVersionId: version.id });
@@ -24,7 +25,7 @@ describe("HU07: feedback privado", () => {
       createdAt: "2026-11-02T12:00:00.000Z",
       materialVersion: { id: version.id, versionNumber: 1 },
     });
-    repository.createMaterial(2, materialInput);
+    repository.addVersion(2, material.id, versionInput);
     for (const actor of [2, 3])
       expect(
         (await client(actor).post("/api/projects/2/messages").send(input()))
@@ -89,7 +90,7 @@ describe("HU07: feedback privado", () => {
   });
   it("valida texto, contexto e identidade sem aceitar autor do cliente", async () => {
     const { repository, client } = context();
-    const other = repository.createMaterial(1, materialInput);
+    const other = storedMaterial(repository, 1).versions[0];
     for (const patch of [
       { body: "  " },
       { body: "a".repeat(5001) },

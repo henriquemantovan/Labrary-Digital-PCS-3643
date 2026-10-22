@@ -5,12 +5,21 @@ import { ProjectFeedback } from "./ProjectFeedback";
 import type { ProjectMessage } from "./api";
 
 const expired = vi.fn();
+const version = (id: number, versionNumber: number) => ({
+  id,
+  versionNumber,
+  originalFilename: "relatorio.pdf",
+  mimeType: "application/pdf",
+  sizeBytes: 2400,
+  uploadedBy: { id: 1, fullName: "Marina" },
+  uploadedAt: "2026-11-02T12:00:00.000Z",
+});
 const material = {
-  id: 7,
+  id: 3,
   title: "Relatório",
   kind: "RELATORIO",
-  versionNumber: 2,
-  originalFilename: "relatorio.pdf",
+  currentVersion: version(7, 2),
+  versions: [version(7, 2), version(6, 1)],
 };
 const original: ProjectMessage = {
   id: 1,

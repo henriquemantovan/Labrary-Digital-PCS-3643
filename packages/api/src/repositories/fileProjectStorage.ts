@@ -28,12 +28,24 @@ const snapshotSchema = z.object({
       projectId: id,
       title: z.string(),
       kind: z.enum(materialKinds),
-      versionNumber: id,
-      originalFilename: z.string(),
-      mimeType: z.string(),
-      sizeBytes: z.number().nonnegative(),
-      storageKey: z.string(),
-      uploadedAt: timestamp,
+      createdBy: id,
+      createdAt: timestamp,
+      versions: z
+        .array(
+          z.object({
+            id,
+            materialId: id,
+            versionNumber: id,
+            originalFilename: z.string(),
+            mimeType: z.string(),
+            sizeBytes: z.number().nonnegative(),
+            storageKey: z.string(),
+            checksumSha256: z.string().nullable(),
+            uploadedBy: id,
+            uploadedAt: timestamp,
+          }),
+        )
+        .min(1),
     }),
   ),
   messages: z.array(

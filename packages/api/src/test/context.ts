@@ -2,7 +2,11 @@ import request from "supertest";
 import { createApp, AppOptions } from "../app.js";
 import { createDemoDirectory } from "../fixtures/demo.js";
 import { createAuthRepository } from "../repositories/authRepository.js";
-import { createMemoryProjectRepository } from "../repositories/projectRepository.js";
+import { MaterialKind } from "../models/project.js";
+import {
+  createMemoryProjectRepository,
+  ProjectRepository,
+} from "../repositories/projectRepository.js";
 
 const demo = await createDemoDirectory();
 export function context(options: AppOptions = {}) {
@@ -55,3 +59,28 @@ export const materialInput = {
   mimeType: "application/pdf",
   sizeBytes: 2400,
 };
+
+/** Versão gravada direto no repositório, sem passar pelas rotas. */
+export const versionInput = {
+  originalFilename: "relatorio.pdf",
+  mimeType: "application/pdf",
+  sizeBytes: 2400,
+  storageKey: "mock/teste",
+  checksumSha256: null,
+  uploadedBy: 1,
+};
+export const storedMaterial = (
+  repository: ProjectRepository,
+  projectId: number,
+  material: { kind?: MaterialKind; title?: string } = {},
+) =>
+  repository.createMaterial(
+    projectId,
+    {
+      kind: "RELATORIO",
+      title: "Relatório técnico",
+      createdBy: 1,
+      ...material,
+    },
+    versionInput,
+  );

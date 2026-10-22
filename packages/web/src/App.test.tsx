@@ -217,8 +217,26 @@ describe("HU01: interface", () => {
               id: 1,
               title: "Relatório",
               kind: "RELATORIO",
-              versionNumber: 2,
-              originalFilename: "relatorio.pdf",
+              currentVersion: {
+                id: 2,
+                versionNumber: 2,
+                originalFilename: "relatorio.pdf",
+                mimeType: "application/pdf",
+                sizeBytes: 2400,
+                uploadedBy: { id: 1, fullName: "Aluno" },
+                uploadedAt: "2026-10-22T12:00:00.000Z",
+              },
+              versions: [
+                {
+                  id: 2,
+                  versionNumber: 2,
+                  originalFilename: "relatorio.pdf",
+                  mimeType: "application/pdf",
+                  sizeBytes: 2400,
+                  uploadedBy: { id: 1, fullName: "Aluno" },
+                  uploadedAt: "2026-10-22T12:00:00.000Z",
+                },
+              ],
             },
           ])
         : undefined;
@@ -437,15 +455,15 @@ it("HU06 combina grupo, estado e pendências e consulta histórico de versões",
             id: 1,
             title: "Relatório",
             kind: "RELATORIO",
-            originalFilename: "inicial.pdf",
-            versionNumber: 1,
-          },
-          {
-            id: 2,
-            title: "Relatório",
-            kind: "RELATORIO",
-            originalFilename: "revisado.pdf",
-            versionNumber: 2,
+            currentVersion: {
+              id: 2,
+              versionNumber: 2,
+              originalFilename: "revisado.pdf",
+            },
+            versions: [
+              { id: 2, versionNumber: 2, originalFilename: "revisado.pdf" },
+              { id: 1, versionNumber: 1, originalFilename: "inicial.pdf" },
+            ],
           },
         ])
       : undefined;

@@ -17,6 +17,10 @@ export function createProjectRouter(
   router.get("/projects/:projectId", controller.get);
   router.get("/projects/:projectId/materials", controller.listMaterials);
   router.post("/projects/:projectId/materials", controller.createMaterial);
+  router.post(
+    "/projects/:projectId/materials/:materialId/versions",
+    controller.createVersion,
+  );
 
   const messages = createMessageController(repository, auth, now);
   router.get("/projects/:projectId/messages", messages.list);

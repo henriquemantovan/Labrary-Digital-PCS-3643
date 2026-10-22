@@ -5,7 +5,12 @@ import { randomUUID } from "node:crypto";
 import { afterEach, expect, it, vi } from "vitest";
 import { createFileProjectStorage } from "./fileProjectStorage.js";
 import { createMemoryProjectRepository } from "./projectRepository.js";
-import { context, materialInput, projectInput } from "../test/context.js";
+import {
+  context,
+  projectInput,
+  storedMaterial,
+  versionInput,
+} from "../test/context.js";
 
 const directories: string[] = [];
 afterEach(() => {
@@ -24,11 +29,11 @@ it("persiste projetos, versões e conversa real em disco e restaura após recria
     createFileProjectStorage(path),
   );
   const initial = context({ repository });
-  const version = repository.createMaterial(2, materialInput);
+  const material = storedMaterial(repository, 2);
   const payload = {
     clientMessageId: randomUUID(),
     body: "Revisar relatório",
-    materialVersionId: version.id,
+    materialVersionId: material.versions[0].id,
   };
   const sent = await initial
     .client(1)
@@ -49,9 +54,10 @@ it("persiste projetos, versões e conversa real em disco e restaura após recria
       .status,
   ).toBe(200);
   expect(restoredRepository.get(3)?.title).toBe(projectInput.title);
+  expect(restoredRepository.getMaterial(2, material.id)).toEqual(material);
   expect(
-    restoredRepository.createMaterial(2, materialInput).versionNumber,
-  ).toBe(2);
+    restoredRepository.addVersion(2, material.id, versionInput).versions[0],
+  ).toMatchObject({ id: 2, versionNumber: 2 });
   expect(
     restoredRepository.create({ ...projectInput, groupId: 4, description: "" })
       .id,
@@ -106,4 +112,27 @@ it("falha de gravação mantém o estado anterior e permite repetir sem duplica�
   ).toBe(2);
   expect(repository.listMessages(2).map((item) => item.id)).toEqual([2, 1]);
   expect(repository.listMessages(1)).toEqual([]);
+});
+it("falha de gravação não registra material nem versão e permite repetir", () => {
+  const save = vi.fn();
+  const repository = createMemoryProjectRepository(true, {
+    load: () => undefined,
+    save,
+  });
+  const failOnce = () =>
+    save.mockImplementationOnce(() => {
+      throw new Error("sem espaço");
+    });
+  failOnce();
+  expect(() => storedMaterial(repository, 2)).toThrow("sem espaço");
+  expect(repository.listMaterials(2)).toEqual([]);
+  const material = storedMaterial(repository, 2);
+  expect(material).toMatchObject({ id: 1, versions: [{ id: 1 }] });
+  failOnce();
+  expect(() => repository.addVersion(2, 1, versionInput)).toThrow("sem espaço");
+  expect(repository.getMaterial(2, 1)).toEqual(material);
+  expect(repository.addVersion(2, 1, versionInput).versions[0]).toMatchObject({
+    id: 2,
+    versionNumber: 2,
+  });
 });
