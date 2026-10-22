@@ -1,0 +1,4 @@
+interface:
+  display_name: "Labrary: interface React"
+  short_description: "Crie telas acessíveis e responsivas com testes reais"
+  default_prompt: "Use $labrary-interface-react para implementar a tela solicitada, testar suas interações e verificar desktop e celular."

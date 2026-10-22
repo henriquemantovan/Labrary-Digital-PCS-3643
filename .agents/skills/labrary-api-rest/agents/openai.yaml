@@ -1,0 +1,4 @@
+interface:
+  display_name: "Labrary: API REST"
+  short_description: "Desenvolva a API com contratos, permissões e testes"
+  default_prompt: "Use $labrary-api-rest para implementar a alteração de API solicitada com testes executados e permissões verificadas."

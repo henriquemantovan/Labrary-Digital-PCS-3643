@@ -4,6 +4,8 @@
 > Plataforma voltada aos projetos de Laboratório de Projeto de Sistemas Digitais.
 > Versão inicial: 04/10/2026. Situação atual: base MVC/REST e HU01 implementadas localmente; revisão da equipe pendente.
 
+**Programando com IA:** veja o [guia de desenvolvimento com IA](docs/desenvolvimento-com-ia.md), o [AGENTS.md](AGENTS.md) e as [skills compartilhadas](.agents/skills/). O fluxo inclui gerar código com testes, a própria IA executá-los, corrigir falhas e relatar os resultados.
+
 ## 1. Tema
 
 **Gestão, avaliação e divulgação de projetos acadêmicos de sistemas digitais.**
