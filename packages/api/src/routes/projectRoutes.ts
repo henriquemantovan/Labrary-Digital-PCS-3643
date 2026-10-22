@@ -9,7 +9,7 @@ import { ProjectRepository } from "../repositories/projectRepository.js";
 export function createProjectRouter(
   repository: ProjectRepository,
   auth: AuthRepository,
-  options: ProjectControllerOptions = {},
+  options: ProjectControllerOptions,
 ) {
   const router = Router();
   const controller = createProjectController(repository, auth, options);

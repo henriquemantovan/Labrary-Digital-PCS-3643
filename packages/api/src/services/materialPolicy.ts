@@ -138,3 +138,29 @@ export function uploadLock(project: Project, now: number): UploadLock | null {
     return "DEADLINE_PASSED";
   return null;
 }
+
+const startsWith = (data: Buffer, bytes: number[], offset = 0) =>
+  data.length >= offset + bytes.length &&
+  bytes.every((byte, index) => data[offset + index] === byte);
+const ascii = (text: string) => [...text].map((char) => char.charCodeAt(0));
+
+/**
+ * Identifica o formato pelos bytes iniciais (assinatura), sem confiar na
+ * extensão nem no `Content-Type` enviados pelo navegador.
+ */
+export function detectMimeType(signature: Buffer): string | null {
+  if (startsWith(signature, ascii("%PDF-"))) return fileFormats.pdf.mimeType;
+  if (startsWith(signature, ascii("ftyp"), 4)) return fileFormats.mp4.mimeType;
+  if (startsWith(signature, [0x1a, 0x45, 0xdf, 0xa3]))
+    return fileFormats.webm.mimeType;
+  if (
+    startsWith(signature, [0x50, 0x4b, 0x03, 0x04]) ||
+    startsWith(signature, [0x50, 0x4b, 0x05, 0x06])
+  )
+    return fileFormats.zip.mimeType;
+  if (startsWith(signature, [0x89, ...ascii("PNG\r\n"), 0x1a, 0x0a]))
+    return fileFormats.png.mimeType;
+  if (startsWith(signature, [0xff, 0xd8, 0xff]))
+    return fileFormats.jpeg.mimeType;
+  return null;
+}

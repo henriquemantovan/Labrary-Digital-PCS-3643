@@ -3,16 +3,25 @@ import { createPermissions } from "../services/permissions.js";
 import {
   assertFileAccepted,
   createDefaultMaterialPolicy,
+  detectMimeType,
   MaterialPolicy,
+  MaterialRule,
   ruleFor,
   uploadLock,
 } from "../services/materialPolicy.js";
-import { randomUUID } from "node:crypto";
+import { FileStorage } from "../services/fileStorage.js";
+import {
+  assertDeclaredLength,
+  ReceivedUpload,
+  receiveUpload,
+} from "../services/multipartUpload.js";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { ApiError } from "../errors.js";
 import {
   materialKinds,
+  NewMaterialVersion,
+  Project,
   ProjectMaterial,
   projectStatuses,
 } from "../models/project.js";
@@ -44,30 +53,21 @@ const createProjectSchema = z
   })
   .strict();
 
-const fileMetadataSchema = z
-  .object({
-    originalFilename: z.string().trim().min(1).max(255),
-    mimeType: z.string().trim().min(1).max(160),
-    sizeBytes: z.number().int().nonnegative(),
-  })
-  .strict();
-
-const createMaterialSchema = fileMetadataSchema
-  .extend({
-    kind: z.enum(materialKinds),
-    title: z.string().trim().min(1).max(200),
-  })
+const materialKindSchema = z.object({ kind: z.enum(materialKinds) });
+const materialFieldsSchema = materialKindSchema
+  .extend({ title: z.string().trim().min(1).max(200).optional() })
   .strict();
 
 export interface ProjectControllerOptions {
   now?: () => number;
   materialPolicy?: MaterialPolicy;
+  storage: FileStorage;
 }
 
 export function createProjectController(
   repository: ProjectRepository,
   auth: AuthRepository,
-  options: ProjectControllerOptions = {},
+  options: ProjectControllerOptions,
 ) {
   const permissions = createPermissions(auth);
   const now = options.now ?? Date.now;
@@ -88,8 +88,38 @@ export function createProjectController(
     currentVersion: presentVersion(versions[0]),
     versions: versions.map(presentVersion),
   });
-  const pendingStorageKey = (projectId: number) =>
-    `mock/${projectId}/${randomUUID()}`;
+  const { storage } = options;
+  /**
+   * Confere o arquivo pelo tipo detectado nos bytes e grava a versão; se algo
+   * falhar, o arquivo recebido é apagado.
+   */
+  const storeVersion = async <T>(
+    { file }: ReceivedUpload,
+    rule: MaterialRule,
+    uploadedBy: number,
+    save: (version: NewMaterialVersion) => T,
+  ) => {
+    try {
+      const format = assertFileAccepted(rule, {
+        originalFilename: file.originalFilename,
+        mimeType: detectMimeType(file.signature) ?? "application/octet-stream",
+        sizeBytes: file.sizeBytes,
+      });
+      return save({
+        originalFilename: file.originalFilename,
+        mimeType: format.mimeType,
+        sizeBytes: file.sizeBytes,
+        storageKey: file.storageKey,
+        checksumSha256: file.checksumSha256,
+        uploadedBy,
+      });
+    } catch (error) {
+      await storage.remove(file.storageKey);
+      throw error;
+    }
+  };
+  const largestRule = (project: Project) =>
+    Math.max(...policy.rulesFor(project).map((rule) => rule.maxSizeBytes));
   const accessibleProject = (request: Request, response: Response) => {
     const { projectId } = projectIdSchema.parse(request.params);
     const project = repository.get(projectId);
@@ -153,26 +183,34 @@ export function createProjectController(
       });
     },
 
-    createMaterial(request: Request, response: Response) {
+    async createMaterial(request: Request, response: Response) {
       const project = accessibleProject(request, response);
       const user = response.locals.user;
-      permissions.assertUpload(user, project, now());
-      const { kind, title, ...file } = createMaterialSchema.parse(request.body);
-      assertFileAccepted(ruleFor(policy, project, kind), file);
-      const material = repository.createMaterial(
-        project.id,
-        { kind, title, createdBy: user.id },
-        {
-          ...file,
-          storageKey: pendingStorageKey(project.id),
-          checksumSha256: null,
-          uploadedBy: user.id,
+      const startedAt = now();
+      permissions.assertUpload(user, project, startedAt);
+      assertDeclaredLength(request, largestRule(project));
+      let rule: MaterialRule | undefined;
+      const upload = await receiveUpload(request, storage, {
+        maxBytes(fields) {
+          const { kind } = materialKindSchema.parse(fields);
+          rule = ruleFor(policy, project, kind);
+          return rule.maxSizeBytes;
         },
-      );
+      });
+      const material = await storeVersion(upload, rule!, user.id, (version) => {
+        const { kind, title } = materialFieldsSchema.parse(upload.fields);
+        // O projeto pode ter sido submetido enquanto o arquivo chegava.
+        permissions.assertUpload(user, project, startedAt);
+        return repository.createMaterial(
+          project.id,
+          { kind, title: title ?? rule!.defaultTitle, createdBy: user.id },
+          version,
+        );
+      });
       response.status(201).json({ data: presentMaterial(material) });
     },
 
-    createVersion(request: Request, response: Response) {
+    async createVersion(request: Request, response: Response) {
       const project = accessibleProject(request, response);
       const { materialId } = materialIdSchema.parse(request.params);
       const existing = repository.getMaterial(project.id, materialId);
@@ -183,14 +221,22 @@ export function createProjectController(
           "Material não encontrado.",
         );
       const user = response.locals.user;
-      permissions.assertUpload(user, project, now());
-      const file = fileMetadataSchema.parse(request.body);
-      assertFileAccepted(ruleFor(policy, project, existing.kind), file);
-      const material = repository.addVersion(project.id, materialId, {
-        ...file,
-        storageKey: pendingStorageKey(project.id),
-        checksumSha256: null,
-        uploadedBy: user.id,
+      const startedAt = now();
+      permissions.assertUpload(user, project, startedAt);
+      const rule = ruleFor(policy, project, existing.kind);
+      assertDeclaredLength(request, rule.maxSizeBytes);
+      const upload = await receiveUpload(request, storage, {
+        maxBytes: () => rule.maxSizeBytes,
+      });
+      const material = await storeVersion(upload, rule, user.id, (version) => {
+        if (Object.keys(upload.fields).length)
+          throw new ApiError(
+            400,
+            "UNEXPECTED_FIELD",
+            "Envie somente o arquivo para substituir o material.",
+          );
+        permissions.assertUpload(user, project, startedAt);
+        return repository.addVersion(project.id, materialId, version);
       });
       response.status(201).json({ data: presentMaterial(material) });
     },

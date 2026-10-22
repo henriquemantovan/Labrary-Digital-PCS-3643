@@ -1,6 +1,6 @@
 # API REST (TEC02 + HU01)
 
-Todas as rotas usam JSON. Listas e respostas individuais bem-sucedidas vêm no envelope `{ "data": ... }`; erros usam `{ "error": { "code", "message", "details?" } }`. O servidor responde `401` para ausência de sessão, `403` para operação não permitida/origem inválida, `429` para excesso de tentativas de login, `400` para validação, `404` para recurso/rota ausente, `409` para conflito de grupo e `500` para falhas inesperadas.
+Todas as rotas usam JSON, exceto o envio de arquivos de materiais (`multipart/form-data`). Listas e respostas individuais bem-sucedidas vêm no envelope `{ "data": ... }`; erros usam `{ "error": { "code", "message", "details?" } }`. O servidor responde `401` para ausência de sessão, `403` para operação não permitida/origem inválida, `429` para excesso de tentativas de login, `400` para validação, `404` para recurso/rota ausente, `409` para conflito de grupo e `500` para falhas inesperadas.
 
 | Método | Rota | Uso | Sucesso |
 | --- | --- | --- | --- |
@@ -51,4 +51,16 @@ Exemplo de erro:
 
 `MaterialRules` contém `dueAt`, `lock` (`null`, `PROJECT_LOCKED` ou `DEADLINE_PASSED`), `canUpload` e `rules` (por tipo: `kind`, `defaultTitle`, `required`, `formats[{ label, mimeType, extensions }]`, `maxSizeBytes`). Enquanto a HU03 não existe, as regras padrão são: vídeo MP4/WebM até 500 MB; relatório e manual PDF até 20 MB; outros PDF/ZIP/PNG/JPEG até 50 MB. A entrega está aberta em Preparação antes de `dueAt` e em Ajustes (reabertura pelo professor, mesmo após o prazo). Envios recusados respondem `400 EMPTY_FILE`, `413 FILE_TOO_LARGE`, `415 UNSUPPORTED_FORMAT` (tipo ou extensão fora da regra) ou `409 DEADLINE_PASSED`.
 
-As duas rotas de escrita de materiais ainda recebem metadados JSON e geram uma chave `mock/...`; não recebem nem persistem bytes de arquivos (upload real na HU04). A HU01 autentica e autoriza estas rotas. Limites conforme requisito do projeto, prazos e armazenamento privado real serão adicionados com as histórias de entrega. O repositório é em memória e volta ao seed ao reiniciar a API.
+**Envio de arquivos.** `POST …/materials` e `POST …/materials/:materialId/versions` recebem `multipart/form-data` com **um** arquivo no campo `file`. Na criação, o campo `kind` deve vir **antes** do arquivo (define o limite aplicado durante o envio); `title` é opcional (padrão: título sugerido do tipo). A substituição não aceita outros campos (`400 UNEXPECTED_FIELD`). O servidor:
+
+- recusa antes de ler o corpo se o `Content-Length` já excede o limite do tipo (`413`);
+- grava em streaming numa pasta privada (`UPLOAD_DIR`), interrompendo ao passar do limite (`413 FILE_TOO_LARGE`);
+- identifica o formato pelos bytes iniciais (PDF, MP4, WebM, ZIP, PNG, JPEG), ignorando o `Content-Type` do navegador; formato ou extensão fora da regra → `415 UNSUPPORTED_FORMAT`; arquivo vazio → `400 EMPTY_FILE`;
+- registra tamanho real e SHA-256 da versão;
+- apaga o arquivo recebido em qualquer recusa, inclusive se a entrega fechar durante o envio.
+
+Erros de formato do envio: `400 MULTIPART_REQUIRED`, `FILE_REQUIRED`, `UNEXPECTED_FILE`, `TOO_MANY_FILES`, `TOO_MANY_FIELDS`, `FIELD_TOO_LONG` e `INVALID_MULTIPART`.
+
+Exemplo: `curl -b cookies.txt -H 'X-CSRF-Protection: 1' -F kind=RELATORIO -F 'file=@relatorio.pdf' http://localhost:3000/api/projects/2/materials`.
+
+O repositório de metadados é em memória e volta ao seed ao reiniciar a API; os arquivos permanecem em `UPLOAD_DIR`.
