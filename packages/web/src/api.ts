@@ -7,6 +7,7 @@ export interface User {
 export interface Project {
   id: number;
   classId: number;
+  academicYear?: number | null;
   groupId: number;
   title: string;
   description: string;
@@ -63,4 +64,54 @@ export async function api<T>(
       body?.error?.message ?? "Não foi possível concluir. Tente novamente.",
     );
   return body.data as T;
+}
+
+export interface Person {
+  id: number;
+  fullName: string;
+  role: "ALUNO" | "AVALIADOR";
+}
+export interface LinkChange {
+  before: number[];
+  after: number[];
+  changedBy: number;
+  changedAt: string;
+}
+export interface ManagedGroup {
+  id: number;
+  classId: number;
+  name: string;
+  memberIds: number[];
+  history: LinkChange[];
+}
+export interface Administration {
+  groups: ManagedGroup[];
+  people: Person[];
+}
+export interface Requirement {
+  kind: "VIDEO" | "RELATORIO" | "MANUAL";
+  label: string;
+  required: true;
+  allowedMimeTypes: string[];
+  maxSizeBytes: number;
+  dueAt: string;
+}
+export interface Criterion {
+  title: string;
+  description: string;
+  weight: number;
+  minScore: 0;
+  maxScore: 10;
+}
+export interface RubricVersion {
+  id: number;
+  versionNumber: number;
+  title: string;
+  criteria: Criterion[];
+  createdAt: string;
+  createdBy: number;
+}
+export interface Evaluators {
+  evaluatorIds: number[];
+  history: LinkChange[];
 }

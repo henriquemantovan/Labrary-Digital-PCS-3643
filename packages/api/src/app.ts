@@ -13,7 +13,14 @@ import {
 } from "./repositories/projectRepository.js";
 import { createProjectRouter } from "./routes/projectRoutes.js";
 
+import { createPlanningRouter } from "./routes/planningRoutes.js";
+import {
+  createMemoryPlanningRepository,
+  PlanningRepository,
+} from "./repositories/planningRepository.js";
+
 export interface AppOptions {
+  planning?: PlanningRepository;
   repository?: ProjectRepository;
   auth?: AuthRepository;
   now?: () => number;
@@ -55,6 +62,16 @@ export function createApp(options: AppOptions = {}) {
     }),
   );
   app.use("/api/projects", requireAuth(auth, now));
+  app.use("/api/classes", requireAuth(auth, now));
+  app.use(
+    "/api",
+    createPlanningRouter(
+      repository,
+      auth,
+      options.planning ?? createMemoryPlanningRepository(),
+      now,
+    ),
+  );
   app.use("/api", createProjectRouter(repository, auth));
 
   app.use((_request, response) => {

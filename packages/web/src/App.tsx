@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { api, ApiError } from "./api";
 import type { Material, Project, Scope, User } from "./api";
+import { GroupManager, ProjectPlanning } from "./Planning";
 import { Icon } from "./Icons";
 
 const roleLabels = {
@@ -435,6 +436,8 @@ function Dashboard({
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("");
   const [creating, setCreating] = useState(false);
+  const [managingClass, setManagingClass] = useState<number | null>(null);
+  const [planning, setPlanning] = useState(false);
   const detailId = /^\/projetos\/(\d+)$/.exec(path)?.[1];
   const knownPath =
     ["/", "/projetos", "/perfil"].includes(path) ||
@@ -576,6 +579,14 @@ function Dashboard({
                   ))}
               </ul>
               <button
+                className="secondary"
+                onClick={() =>
+                  setManagingClass(managingClass === item.id ? null : item.id)
+                }
+              >
+                Gerenciar grupos de {item.name}
+              </button>
+              <button
                 className="text-button"
                 onClick={() => navigate("/projetos")}
               >
@@ -584,6 +595,14 @@ function Dashboard({
             </article>
           ))}
         </div>
+        {managingClass !== null && (
+          <GroupManager
+            key={managingClass}
+            classId={managingClass}
+            expired={expired}
+            onChanged={() => setRevision(revision + 1)}
+          />
+        )}
         {!scope.classes.length && (
           <Empty
             title="Nenhuma turma vinculada"
@@ -613,6 +632,26 @@ function Dashboard({
           <span />
           {statusLabels[detail.status]}
         </span>
+        <p className="muted">
+          Turma{" "}
+          {scope.classes.find((item) => item.id === detail.classId)?.name ??
+            detail.classId}{" "}
+          ·{" "}
+          {detail.academicYear ??
+            scope.classes.find((item) => item.id === detail.classId)
+              ?.academicYear}
+        </p>
+        <button className="secondary" onClick={() => setPlanning(!planning)}>
+          {planning ? "Fechar configuração" : "Requisitos e rubricas"}
+        </button>
+        {planning && (
+          <ProjectPlanning
+            key={detail.id}
+            project={detail}
+            teacher={user.role === "PROFESSOR"}
+            expired={expired}
+          />
+        )}
         <section className="detail-section">
           <div className="section-heading">
             <h2>Materiais do projeto</h2>
@@ -904,8 +943,8 @@ function CreateProject({
       {error && <Notice>{error}</Notice>}
       {!groups.length ? (
         <p className="muted">
-          Todos os grupos vinculados já têm projeto. O cadastro de novos grupos
-          faz parte da próxima etapa.
+          Todos os grupos vinculados já têm projeto. Cadastre outro grupo em
+          Minhas turmas.
         </p>
       ) : (
         <form onSubmit={submit}>
@@ -924,6 +963,11 @@ function CreateProject({
                       {
                         scope.classes.find((item) => item.id === group.classId)
                           ?.name
+                      }{" "}
+                      ·{" "}
+                      {
+                        scope.classes.find((item) => item.id === group.classId)
+                          ?.academicYear
                       }
                     </option>
                   ))}

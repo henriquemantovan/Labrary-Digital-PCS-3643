@@ -3,7 +3,7 @@ import { createPermissions } from "../services/permissions.js";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { ApiError } from "../errors.js";
-import { materialKinds, projectStatuses } from "../models/project.js";
+import { Project, materialKinds, projectStatuses } from "../models/project.js";
 import { ProjectRepository } from "../repositories/projectRepository.js";
 
 const positiveInteger = z.coerce.number().int().positive();
@@ -43,6 +43,12 @@ export function createProjectController(
   auth: AuthRepository,
 ) {
   const permissions = createPermissions(auth);
+  const view = (project: Project) => ({
+    ...project,
+    academicYear:
+      auth.directory.classes.find((item) => item.id === project.classId)
+        ?.academicYear ?? null,
+  });
   const accessibleProject = (request: Request, response: Response) => {
     const { projectId } = projectIdSchema.parse(request.params);
     const project = repository.get(projectId);
@@ -54,20 +60,19 @@ export function createProjectController(
   return {
     list(request: Request, response: Response) {
       const query = listQuerySchema.parse(request.query);
-      response
-        .status(200)
-        .json({
-          data: repository
-            .list(query)
-            .filter((project) =>
-              permissions.canRead(response.locals.user, project),
-            ),
-        });
+      response.status(200).json({
+        data: repository
+          .list(query)
+          .filter((project) =>
+            permissions.canRead(response.locals.user, project),
+          )
+          .map(view),
+      });
     },
 
     get(request: Request, response: Response) {
       const project = accessibleProject(request, response);
-      response.status(200).json({ data: project });
+      response.status(200).json({ data: view(project) });
     },
 
     create(request: Request, response: Response) {
@@ -84,7 +89,7 @@ export function createProjectController(
         input.groupId,
       );
       const project = repository.create(input);
-      response.status(201).json({ data: project });
+      response.status(201).json({ data: view(project) });
     },
 
     listMaterials(request: Request, response: Response) {
