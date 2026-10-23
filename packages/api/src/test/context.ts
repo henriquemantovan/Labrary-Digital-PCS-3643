@@ -18,6 +18,11 @@ export function context(options: AppOptions = {}) {
     return {
       get: (path: string) =>
         request(app).get(path).set("Cookie", `labrary_session=${token}`),
+      put: (path: string) =>
+        request(app)
+          .put(path)
+          .set("Cookie", `labrary_session=${token}`)
+          .set("X-CSRF-Protection", "1"),
       post: (path: string) =>
         request(app)
           .post(path)

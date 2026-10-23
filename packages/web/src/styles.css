@@ -1656,3 +1656,39 @@ svg {
     transform: none;
   }
 }
+
+.planning-block {
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  min-width: 0;
+}
+.people-options {
+  display: grid;
+  gap: 0.6rem;
+  margin: 1rem 0;
+}
+.people-options label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.people-options input {
+  width: auto;
+  margin: 0;
+}
+.create-panel details {
+  margin: 1rem 0;
+  overflow-wrap: anywhere;
+}
+.create-panel summary {
+  cursor: pointer;
+}
+.create-panel h3 {
+  margin-top: 1.5rem;
+}
+.create-panel input,
+.create-panel textarea {
+  max-width: 100%;
+}

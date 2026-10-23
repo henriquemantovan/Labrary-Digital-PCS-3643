@@ -128,6 +128,8 @@ As funcionalidades foram registradas como issues no formato **Como [papel], eu g
 - [ ] Rubrica define critérios, escala de 0 a 10 e pesos positivos cuja soma é 100%.
 - [ ] Mudanças após início de avaliações exigem nova versão explícita; avaliações preservam a rubrica utilizada.
 
+**Incremento HU02/HU03 para revisão:** gestão de grupos/vínculos, requisitos e versões de rubrica em API/React, reutilizando HU01. Consulte [estado por critério e limitações](docs/hu02-hu03.md). Histórias continuam abertas: persistência durável, integração com entregas/avaliações e aceite humano ainda pendentes. A divisão da Sprint 3 continua proposta.
+
 ### [HU04 — Enviar e substituir materiais](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/4)
 
 **Como aluno, eu gostaria de enviar vídeo, relatório e manual do projeto, de forma que possa cumprir os requisitos de entrega.**

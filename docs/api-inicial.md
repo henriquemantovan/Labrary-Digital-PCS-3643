@@ -46,3 +46,90 @@ Exemplo de erro:
 ```
 
 `POST /materials` registra metadados JSON e gera uma chave `mock/...`; não recebe nem persiste bytes de arquivos. A HU01 autentica e autoriza estas rotas. Limites conforme requisito do projeto, prazos e armazenamento privado real serão adicionados com as histórias de entrega. O repositório é em memória e volta ao seed ao reiniciar a API.
+
+## Incremento HU02/HU03 — gestão e configuração
+
+Todas as rotas abaixo exigem a sessão HU01; PUT/POST exigem a mesma proteção CSRF.
+A resposta de projeto agora inclui `academicYear`, derivado da turma (não é um ano
+livre enviado pelo cliente). O restante do contrato de criação é preservado.
+
+| Método | Rota | Perfil e resposta |
+| --- | --- | --- |
+| GET | `/api/classes/:classId/administration` | Professor da turma; `{ groups, people }` |
+| POST | `/api/classes/:classId/groups` | Professor da turma; `{ name }` → `201` com grupo vazio |
+| PUT | `/api/classes/:classId/groups/:groupId/members` | Professor da turma; `{ memberIds: number[] }` → grupo com histórico |
+| GET | `/api/projects/:projectId/evaluators` | Professor da turma; `{ evaluatorIds, history }` |
+| PUT | `/api/projects/:projectId/evaluators` | Professor da turma; `{ evaluatorIds: number[] }` → vínculos e histórico |
+| GET | `/api/projects/:projectId/requirements` | Usuário com acesso ao projeto; `Requirement[]` |
+| PUT | `/api/projects/:projectId/requirements` | Professor da turma; `{ requirements: Requirement[] }` |
+| GET | `/api/projects/:projectId/rubrics` | Usuário com acesso ao projeto; versões em ordem de criação |
+| POST | `/api/projects/:projectId/rubrics` | Professor da turma; cria versão explícita, `201` |
+
+`administration` não expõe senhas, hashes, e-mails ou sessões. `people` contém
+somente `{ id, fullName, role }` das contas ativas de aluno/avaliador provisionadas
+na instância, para seleção pelo professor. Não existe cadastro de contas nem um
+cadastro separado de matrícula individual na turma nesta etapa. `groups` contém
+os grupos da turma, `memberIds` atuais e seu histórico. O escopo público da HU01
+(`/scope`) continua sem lista de integrantes. Alunos podem manter mais de um
+vínculo explícito, conforme o contrato já existente da HU01.
+
+As listas de integrantes/avaliadores substituem o conjunto atual, aceitam `[]`
+para remoção e rejeitam IDs repetidos, inexistentes, inativos ou de perfil incorreto.
+Cada alteração registra `{ target, targetId, before, after, changedBy, changedAt }`.
+Ator e horário vêm do servidor. A próxima requisição com uma sessão já existente
+reflete a remoção/inclusão do vínculo. Nome duplicado de grupo na mesma turma
+retorna `409 GROUP_EXISTS`; vínculo inválido retorna `400 INVALID_LINK`.
+
+Um requisito tem:
+
+```json
+{
+  "kind": "RELATORIO",
+  "label": "Relatório",
+  "required": true,
+  "allowedMimeTypes": ["application/pdf"],
+  "maxSizeBytes": 5000000,
+  "dueAt": "2026-10-28T23:59:00Z"
+}
+```
+
+A lista deve ter exatamente um VIDEO, um RELATORIO e um MANUAL, todos obrigatórios.
+Formatos MIME exatos (sem curingas), tamanho inteiro positivo e prazo ISO com fuso
+são definidos pelo professor. O exemplo não define os limites/prazos do curso.
+Antes da configuração, GET retorna `[]`; a interface oferece os três campos
+obrigatórios sem inventar limites ou datas. Ela converte o prazo local para UTC.
+Este incremento configura requisitos; o endpoint antigo de metadados ainda não
+aplica esses requisitos nem recebe bytes. A integração da entrega é HU04/HU05.
+
+Uma nova rubrica recebe:
+
+```json
+{
+  "baseVersion": 0,
+  "title": "Avaliação do projeto",
+  "criteria": [
+    { "title": "Funcionamento", "description": "", "weight": 70, "minScore": 0, "maxScore": 10 },
+    { "title": "Documentação", "description": "", "weight": 30, "minScore": 0, "maxScore": 10 }
+  ]
+}
+```
+
+`baseVersion` é o **ID** da última versão do projeto, ou `0` para a primeira.
+Um editor desatualizado recebe `409 RUBRIC_VERSION_CONFLICT` e precisa recarregar.
+Cada POST cria snapshot novo; não há endpoint para sobrescrever/apagar versões.
+Pesos positivos têm no máximo duas casas e somam exatamente 100% (soma em
+centésimos); a escala é fixada em 0–10. O servidor atribui autor, data, ID e
+`versionNumber` crescente por turma, alinhado à chave de `RubricVersion` no Prisma.
+Projetos diferentes da mesma turma podem ter números de versão não consecutivos.
+
+Acesso a projeto de outro escopo segue `404 PROJECT_NOT_FOUND`; turma externa
+usa `404 CLASS_NOT_FOUND`; operação docente com outro perfil usa `403`.
+
+**Persistência:** `createMemoryPlanningRepository` mantém requisitos, versões e
+históricos somente no processo. Grupos/vínculos usam o diretório de autenticação
+já existente. Nada escreve de volta em `AUTH_USERS_FILE`. Reiniciar restaura os
+seeds e perde essas alterações. Os modelos Prisma existentes (`GroupMembership`,
+`ProjectRequirement`, `RubricVersion`, `RubricCriterion`, `ProjectRubric`,
+`Evaluation.rubricVersionId`) orientam a integração futura, mas não há adapter
+PostgreSQL conectado nem fluxo de avaliação implementado. Não considerar o
+histórico durável ou a preservação da versão usada por avaliações já concluídos.

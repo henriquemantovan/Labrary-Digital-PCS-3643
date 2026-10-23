@@ -25,7 +25,9 @@ export default defineConfig({
   })),
   webServer: targets.flatMap(({ webPort, apiPort }) => [
     {
-      command: "pnpm --filter @labrary/api dev",
+      // No watcher/IPC is needed for an isolated test server.
+      command:
+        "pnpm --filter @labrary/api exec node --import tsx src/server.ts",
       url: `http://localhost:${apiPort}/api/health`,
       reuseExistingServer: false,
       env: {
