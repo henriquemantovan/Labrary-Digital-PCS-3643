@@ -15,7 +15,11 @@ const credentialsSchema = z
     password: z.string().min(1).max(256),
   })
   .strict();
+import { UspAuthOptions } from "./uspAuthController.js";
+
 export interface AuthOptions {
+  usp?: UspAuthOptions;
+  localLogin?: boolean;
   now: () => number;
   secureCookies: boolean;
   sessionTtlMs: number;
@@ -34,6 +38,12 @@ export function createAuthController(
   };
   return {
     async login(request: Request, response: Response) {
+      if (options.localLogin === false)
+        throw new ApiError(
+          403,
+          "LOCAL_LOGIN_DISABLED",
+          "Entre com a Senha Única USP.",
+        );
       const now = options.now();
       for (const [key, value] of attempts)
         if (value.resetAt <= now) attempts.delete(key);

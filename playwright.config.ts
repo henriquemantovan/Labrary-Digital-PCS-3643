@@ -23,23 +23,36 @@ export default defineConfig({
       baseURL: `http://localhost:${webPort}`,
     },
   })),
-  webServer: targets.flatMap(({ webPort, apiPort }) => [
-    {
-      command: "pnpm --filter @labrary/api dev",
-      url: `http://localhost:${apiPort}/api/health`,
-      reuseExistingServer: false,
-      env: {
-        API_PORT: String(apiPort),
-        AUTH_DEMO: "true",
-        AUTH_USERS_FILE: "",
-        APP_ORIGIN: `http://localhost:${webPort}`,
+  webServer: [
+    ...targets.flatMap(({ webPort, apiPort }) => [
+      {
+        command: "pnpm --filter @labrary/api dev",
+        url: `http://localhost:${apiPort}/api/health`,
+        reuseExistingServer: false,
+        env: {
+          API_PORT: String(apiPort),
+          AUTH_DEMO: "true",
+          AUTH_USERS_FILE: "",
+          APP_ORIGIN: `http://localhost:${webPort}`,
+        },
       },
+      {
+        command: `pnpm --filter @labrary/web dev --port ${webPort} --strictPort`,
+        url: `http://localhost:${webPort}`,
+        reuseExistingServer: false,
+        env: { API_PORT: String(apiPort), WEB_PORT: String(webPort) },
+      },
+    ]),
+    {
+      command: "pnpm --filter @labrary/api exec tsx integration/uspFixture.ts",
+      url: "http://localhost:3004/api/health",
+      reuseExistingServer: false,
     },
     {
-      command: `pnpm --filter @labrary/web dev --port ${webPort} --strictPort`,
-      url: `http://localhost:${webPort}`,
+      command: "pnpm --filter @labrary/web dev --port 5181 --strictPort",
+      url: "http://localhost:5181",
       reuseExistingServer: false,
-      env: { API_PORT: String(apiPort), WEB_PORT: String(webPort) },
+      env: { API_PORT: "3004", WEB_PORT: "5181" },
     },
-  ]),
+  ],
 });

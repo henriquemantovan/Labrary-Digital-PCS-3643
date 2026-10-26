@@ -3,6 +3,14 @@ export interface User {
   fullName: string;
   email: string;
   role: "ALUNO" | "AVALIADOR" | "PROFESSOR";
+  uspNumber?: string;
+  uspAffiliations?: {
+    tipoVinculo: string;
+    nomeVinculo?: string;
+    tipoFuncao?: string;
+    codigoUnidade?: string;
+    nomeUnidade?: string;
+  }[];
 }
 export interface Project {
   id: number;

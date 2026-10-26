@@ -1,6 +1,6 @@
 # Diagrama entidade-relacionamento
 
-Modelo lógico inicial do MVP do Labrary Digital. Os arquivos binários permanecem em armazenamento privado; o banco guarda metadados e chaves de armazenamento. A criação física está em [`db/schema.sql`](../db/schema.sql).
+Modelo lógico inicial do MVP do Labrary Digital. Os arquivos binários permanecem em armazenamento privado; o banco guarda metadados e chaves de armazenamento. O snapshot original está em [`db/schema.sql`](../db/schema.sql); a evolução física usa [migrations](senha-unica-usp.md). `app_user` também contém `usp_number` único, `usp_affiliations` JSONB e `usp_synced_at`, e permite `password_hash` nulo para contas institucionais.
 
 ```mermaid
 erDiagram

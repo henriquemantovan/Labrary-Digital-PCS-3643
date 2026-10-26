@@ -45,4 +45,4 @@ export function createAuthRepository(
     },
   };
 }
-export type AuthRepository = ReturnType<typeof createAuthRepository>;
+export type AuthRepository = ReturnType<typeof createAuthRepository> & { refresh?: () => Promise<void> };
