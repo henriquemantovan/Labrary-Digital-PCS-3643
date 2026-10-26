@@ -13,7 +13,11 @@ import {
 } from "./repositories/projectRepository.js";
 import { createProjectRouter } from "./routes/projectRoutes.js";
 
+import { UspAuthOptions } from "./controllers/uspAuthController.js";
+
 export interface AppOptions {
+  usp?: UspAuthOptions;
+  localLogin?: boolean;
   repository?: ProjectRepository;
   auth?: AuthRepository;
   now?: () => number;
@@ -25,7 +29,8 @@ export interface AppOptions {
 
 export function createApp(options: AppOptions = {}) {
   const app = express();
-  const repository = options.repository ?? createMemoryProjectRepository();
+  const repository =
+    options.repository ?? createMemoryProjectRepository(!options.usp);
 
   const auth = options.auth ?? createAuthRepository();
   const now = options.now ?? Date.now;
@@ -48,6 +53,8 @@ export function createApp(options: AppOptions = {}) {
   app.use(
     "/api",
     createAuthRouter(auth, {
+      usp: options.usp,
+      localLogin: options.localLogin ?? !options.usp,
       now,
       secureCookies: options.secureCookies ?? false,
       sessionTtlMs: options.sessionTtlMs ?? 8 * 60 * 60_000,

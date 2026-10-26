@@ -22,35 +22,39 @@ export interface ProjectRepository {
 
 const demoTimestamp = "2026-10-15T12:00:00.000Z";
 
-export function createMemoryProjectRepository(): ProjectRepository {
-  const projects: Project[] = [
-    {
-      id: 1,
-      classId: 1,
-      groupId: 1,
-      title: "Controlador de semáforo inteligente",
-      description:
-        "Controlador digital com temporização configurável e modo de travessia para pedestres.",
-      category: "Sistemas digitais",
-      status: "EM_AVALIACAO",
-      dueAt: null,
-      createdAt: demoTimestamp,
-      updatedAt: demoTimestamp,
-    },
-    {
-      id: 2,
-      classId: 1,
-      groupId: 2,
-      title: "Monitor de consumo energético",
-      description:
-        "Protótipo de leitura e sinalização local do consumo de um circuito.",
-      category: "Instrumentação",
-      status: "PREPARACAO",
-      dueAt: null,
-      createdAt: demoTimestamp,
-      updatedAt: demoTimestamp,
-    },
-  ];
+export function createMemoryProjectRepository(
+  withDemo = true,
+): ProjectRepository {
+  const projects: Project[] = withDemo
+    ? [
+        {
+          id: 1,
+          classId: 1,
+          groupId: 1,
+          title: "Controlador de semáforo inteligente",
+          description:
+            "Controlador digital com temporização configurável e modo de travessia para pedestres.",
+          category: "Sistemas digitais",
+          status: "EM_AVALIACAO",
+          dueAt: null,
+          createdAt: demoTimestamp,
+          updatedAt: demoTimestamp,
+        },
+        {
+          id: 2,
+          classId: 1,
+          groupId: 2,
+          title: "Monitor de consumo energético",
+          description:
+            "Protótipo de leitura e sinalização local do consumo de um circuito.",
+          category: "Instrumentação",
+          status: "PREPARACAO",
+          dueAt: null,
+          createdAt: demoTimestamp,
+          updatedAt: demoTimestamp,
+        },
+      ]
+    : [];
   const materials: ProjectMaterial[] = [];
   let nextProjectId = 3;
   let nextMaterialId = 1;

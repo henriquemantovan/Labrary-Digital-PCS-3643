@@ -24,7 +24,8 @@ export function requireAuth(
   auth: AuthRepository,
   now: () => number,
 ): RequestHandler {
-  return (request, response, next) => {
+  return async (request, response, next) => {
+    await auth.refresh?.();
     const token = readSessionToken(request);
     const session = auth.getSession(token, now());
     const user = session && auth.findById(session.userId);

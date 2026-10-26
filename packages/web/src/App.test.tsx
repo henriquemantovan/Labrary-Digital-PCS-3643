@@ -68,6 +68,8 @@ beforeEach(() => {
     vi.fn(async (input: string, init?: RequestInit) => {
       const custom = await override(input, init);
       if (custom) return custom;
+      if (input === "/api/auth/providers")
+        return response({ usp: false, local: true });
       if (input === "/api/auth/me")
         return session
           ? response(session)
@@ -376,4 +378,50 @@ describe("HU01: interface", () => {
     );
     await screen.findByText("Este projeto ainda não tem uma descrição.");
   });
+});
+
+it("oferece Senha Única sem pedir senha local e mostra erro de retorno", async () => {
+  session = null;
+  window.history.replaceState(null, "", "/login?authError=usp");
+  override = (url) =>
+    url === "/api/auth/providers"
+      ? response({ usp: true, local: false })
+      : undefined;
+  render(<App />);
+  expect(
+    (
+      await screen.findByRole("link", { name: "Entrar com Senha Única USP" })
+    ).getAttribute("href"),
+  ).toBe("/api/auth/usp");
+  expect(screen.queryByLabelText("Senha", { exact: true })).toBeNull();
+  expect(screen.getByText(/Não foi possível entrar com a USP/)).toBeTruthy();
+});
+it("permite tentar novamente ao falhar consulta das opções de acesso", async () => {
+  session = null;
+  override = (url) =>
+    url === "/api/auth/providers"
+      ? response("Serviço indisponível", 503)
+      : undefined;
+  render(<App />);
+  await screen.findByText("Serviço indisponível");
+  override = () => undefined;
+  await userEvent.click(
+    screen.getByRole("button", { name: "Tentar novamente" }),
+  );
+  expect(await screen.findByLabelText("E-mail institucional")).toBeTruthy();
+});
+
+it("exibe número e vínculos USP no perfil", async () => {
+  session = {
+    ...student,
+    uspNumber: "1234567",
+    uspAffiliations: [
+      { tipoVinculo: "ALUNOGR", nomeVinculo: "Aluno de graduação" },
+      { tipoVinculo: "ALUNOPOS" },
+    ],
+  };
+  window.history.replaceState(null, "", "/perfil");
+  render(<App />);
+  expect(await screen.findByText("1234567")).toBeTruthy();
+  expect(screen.getByText("Aluno de graduação, ALUNOPOS")).toBeTruthy();
 });

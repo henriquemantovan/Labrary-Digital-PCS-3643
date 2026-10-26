@@ -55,6 +55,27 @@ function Login({
   onLogin: (user: User) => void;
   message: string;
 }) {
+  const [providers, setProviders] = useState<{
+    usp: boolean;
+    local: boolean;
+  } | null>(null);
+  const [providerError, setProviderError] = useState("");
+  async function loadProviders() {
+    setProviderError("");
+    try {
+      setProviders(
+        await api<{ usp: boolean; local: boolean }>("/auth/providers"),
+      );
+    } catch (error) {
+      setProviderError((error as Error).message);
+    }
+  }
+  useEffect(() => {
+    void loadProviders();
+  }, []);
+  const uspError = new URLSearchParams(window.location.search).has("authError")
+    ? "Não foi possível entrar com a USP. Verifique seu vínculo e tente novamente; se persistir, contate o responsável pela turma."
+    : "";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [visible, setVisible] = useState(false);
@@ -135,56 +156,92 @@ function Login({
           <p className="muted login-description">
             Entre com sua conta para acessar seu espaço.
           </p>
-          {(error || message) && <Notice>{error || message}</Notice>}
-          <form onSubmit={submit} aria-label="Entrar na conta">
-            <label htmlFor="email">E-mail institucional</label>
-            <input
-              id="email"
-              type="email"
-              autoComplete="username"
-              placeholder="seu.nome@instituicao.br"
-              required
-              maxLength={254}
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              disabled={busy}
-            />
-            <label htmlFor="password">Senha</label>
-            <div className="password-field">
+          {(error || message || uspError) && (
+            <Notice>{error || message || uspError}</Notice>
+          )}
+          {providerError && (
+            <Notice>
+              {providerError}
+              <button onClick={() => void loadProviders()}>
+                Tentar novamente
+              </button>
+            </Notice>
+          )}
+          {!providers && !providerError && (
+            <p role="status">Carregando opções de acesso…</p>
+          )}
+          {providers?.usp && (
+            <p>
+              <a className="primary login-submit" href="/api/auth/usp">
+                Entrar com Senha Única USP
+              </a>
+            </p>
+          )}
+          {providers?.usp && (
+            <p className="muted">
+              Você será direcionado à USP para autenticar e confirmar seus
+              vínculos.
+            </p>
+          )}
+          {providers?.local && (
+            <form onSubmit={submit} aria-label="Entrar na conta">
+              <label htmlFor="email">E-mail institucional</label>
               <input
-                id="password"
-                type={visible ? "text" : "password"}
-                autoComplete="current-password"
-                placeholder="Digite sua senha"
+                id="email"
+                type="email"
+                autoComplete="username"
+                placeholder="seu.nome@instituicao.br"
                 required
-                maxLength={256}
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
+                maxLength={254}
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
                 disabled={busy}
               />
+              <label htmlFor="password">Senha</label>
+              <div className="password-field">
+                <input
+                  id="password"
+                  type={visible ? "text" : "password"}
+                  autoComplete="current-password"
+                  placeholder="Digite sua senha"
+                  required
+                  maxLength={256}
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  disabled={busy}
+                />
+                <button
+                  type="button"
+                  className="icon-button"
+                  aria-label={visible ? "Ocultar senha" : "Mostrar senha"}
+                  aria-pressed={visible}
+                  onClick={() => setVisible(!visible)}
+                >
+                  <Icon name={visible ? "eyeOff" : "eye"} />
+                </button>
+              </div>
               <button
-                type="button"
-                className="icon-button"
-                aria-label={visible ? "Ocultar senha" : "Mostrar senha"}
-                aria-pressed={visible}
-                onClick={() => setVisible(!visible)}
+                className="primary login-submit"
+                disabled={busy}
+                type="submit"
               >
-                <Icon name={visible ? "eyeOff" : "eye"} />
+                <span>{busy ? "Entrando…" : "Entrar no meu espaço"}</span>
+                {busy ? <span className="spinner" /> : <Icon name="arrow" />}
               </button>
-            </div>
-            <button
-              className="primary login-submit"
-              disabled={busy}
-              type="submit"
-            >
-              <span>{busy ? "Entrando…" : "Entrar no meu espaço"}</span>
-              {busy ? <span className="spinner" /> : <Icon name="arrow" />}
-            </button>
-          </form>
+            </form>
+          )}
           <p className="account-help">
             Precisa de acesso ou esqueceu sua senha?
             <br />
-            <span>Entre em contato com o professor da sua turma.</span>
+            {providers?.usp ? (
+              <span>
+                Para recuperar a senha, acesse o{" "}
+                <a href="https://id.usp.br">portal USP</a>. Para vínculos de
+                turma, fale com o professor.
+              </span>
+            ) : (
+              <span>Entre em contato com o professor da sua turma.</span>
+            )}
           </p>
           <div className="login-security">
             <Icon name="lock" size={15} />
@@ -523,6 +580,22 @@ function Dashboard({
           <dl>
             <dt>E-mail</dt>
             <dd>{user.email}</dd>
+            {user.uspNumber && (
+              <>
+                <dt>Número USP</dt>
+                <dd>{user.uspNumber}</dd>
+              </>
+            )}
+            {user.uspAffiliations && (
+              <>
+                <dt>Vínculos USP</dt>
+                <dd>
+                  {user.uspAffiliations
+                    .map((v) => v.nomeVinculo ?? v.tipoVinculo)
+                    .join(", ")}
+                </dd>
+              </>
+            )}
             <dt>Permissões</dt>
             <dd>{roleDescriptions[user.role]}</dd>
           </dl>
