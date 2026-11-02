@@ -5,7 +5,7 @@
 - Monorepo pnpm com API Express/TypeScript em `packages/api` e interface React/Vite em `packages/web`.
 - Consulte os critérios da HU no `README.md` e o código atual antes de implementar. O README também contém funcionalidades planejadas: não as trate como prontas.
 - Contratos atuais: `docs/api-inicial.md`. Sessões e permissões: `docs/hu01.md`.
-- Projetos, metadados de materiais e sessões ainda ficam em memória. Prisma/PostgreSQL estão modelados; registrar metadados não equivale a persistir arquivos.
+- Desde a HU07, o entrypoint persiste projetos, metadados e mensagens em arquivo privado (`PROJECT_DATA_FILE`), para um processo escritor. A factory de testes continua em memória; sessões ficam em memória. Prisma/PostgreSQL estão modelados; registrar metadados não equivale a persistir arquivos. Veja `docs/hu07.md`.
 - Use as versões de `.nvmrc` e `package.json`, pnpm e o lockfile existente. Não troque dependências para contornar falhas de ambiente.
 
 ## Código acompanhado de testes executados pela IA

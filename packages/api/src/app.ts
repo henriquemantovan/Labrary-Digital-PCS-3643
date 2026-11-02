@@ -62,7 +62,7 @@ export function createApp(options: AppOptions = {}) {
     }),
   );
   app.use("/api/projects", requireAuth(auth, now));
-  app.use("/api", createProjectRouter(repository, auth));
+  app.use("/api", createProjectRouter(repository, auth, now));
 
   app.use((_request, response) => {
     response.status(404).json({

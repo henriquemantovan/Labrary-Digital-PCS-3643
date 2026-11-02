@@ -1,4 +1,4 @@
-# API REST (TEC02 + HU01 + acompanhamento HU06)
+# API REST (TEC02 + HU01 + HU06 + HU07)
 
 Rotas REST usam JSON; início e retorno de OAuth fazem redirecionamentos HTTP. Listas e respostas individuais bem-sucedidas vêm no envelope `{ "data": ... }`; erros usam `{ "error": { "code", "message", "details?" } }`. O servidor responde `401` para ausência de sessão, `403` para operação não permitida/origem inválida, `429` para excesso de tentativas de login, `400` para validação, `404` para recurso/rota ausente, `409` para conflito de grupo e `500` para falhas inesperadas.
 
@@ -17,6 +17,8 @@ Rotas REST usam JSON; início e retorno de OAuth fazem redirecionamentos HTTP. L
 | GET | `/api/projects/:projectId` | Consulta projeto | `200 { data: Project }` |
 | GET | `/api/projects/:projectId/materials` | Lista metadados de materiais | `200 { data: ProjectMaterial[] }` |
 | POST | `/api/projects/:projectId/materials` | Registra metadados de material | `201 { data: ProjectMaterial }` |
+| GET | `/api/projects/:projectId/messages` | Consulta feedback privado | `200 { data: ProjectMessage[] }` |
+| POST | `/api/projects/:projectId/messages` | Envia feedback privado | `201` ou `200` na repetição idêntica |
 
 Todas as rotas de projetos, materiais e escopo exigem sessão válida. `GET /projects` aplica o escopo antes de retornar dados; filtros não ampliam acesso. Um projeto fora do escopo responde com o mesmo `404` de um projeto inexistente. Apenas professor cria projetos para grupos da própria turma; apenas aluno do grupo registra metadados enquanto o projeto está em Preparação/Ajustes (`409 PROJECT_LOCKED` nos demais estados).
 
@@ -48,7 +50,7 @@ Exemplo de erro:
 }
 ```
 
-`POST /materials` registra metadados JSON e gera uma chave `mock/...`; não recebe nem persiste bytes de arquivos. A HU01 autentica e autoriza estas rotas. Limites conforme requisito do projeto, prazos e armazenamento privado real serão adicionados com as histórias de entrega. Projetos e metadados permanecem em memória. No modo local há seed; no modo USP iniciam vazios. Identidades USP e vínculos de autorização são carregados do PostgreSQL; sessões permanecem em memória.
+`POST /materials` registra metadados JSON e gera uma chave `mock/...`; não recebe nem persiste bytes de arquivos. A HU01 autentica e autoriza estas rotas. Limites conforme requisito do projeto, prazos e armazenamento privado real serão adicionados com as histórias de entrega. O entrypoint da API persiste projetos, metadados e mensagens em arquivo privado desde a HU07. Sem snapshot anterior, no modo local há seed; no modo USP iniciam vazios. Identidades USP e vínculos de autorização são carregados do PostgreSQL; sessões permanecem em memória.
 
 ## Acompanhamento — HU06
 
@@ -59,3 +61,15 @@ Lista, detalhe e criação retornam os campos de `Project`, mais `groupName` e `
 `GET /projects/:projectId/materials` permite ao avaliador atribuído consultar todas as versões registradas, inclusive em Preparação/Ajustes, sem permitir alterações. Acesso fora da atribuição recebe `404` tanto no detalhe quanto nos materiais. Revogar a atribuição bloqueia a próxima requisição. As respostas de projeto selecionam explicitamente os campos de acompanhamento; notas e comentários não fazem parte desse contrato.
 
 Não há rota de galeria pública neste incremento. Rotas privadas continuam exigindo sessão mesmo para projetos Finalizados. A abertura do conteúdo dos arquivos depende do armazenamento privado da HU04; a projeção pública deverá ser implementada e validada na HU11/HU12. Veja [escopo e revisão da HU06](hu06.md).
+
+## Feedback privado — HU07
+
+As rotas de mensagens exigem sessão, escopo de leitura do projeto e, em POST, proteção CSRF. Aluno do grupo, avaliador atribuído e professor da turma podem enviar em qualquer estado. Projetos fora do escopo retornam 404; filtros e IDs não ampliam autorização.
+
+Envio: `{ "clientMessageId": "UUID", "body": "Texto de 1 a 5000 caracteres", "materialVersionId": 1 }`. `materialVersionId` é opcional/nulo para contexto geral; quando presente, referencia o `id` de uma versão retornada por `/projects/:projectId/materials` e deve pertencer ao mesmo projeto. Esse ID da base atual de metadados não deve ser confundido com os IDs do schema PostgreSQL planejado.
+
+`ProjectMessage` contém `id`, `projectId`, `clientMessageId`, `author: { id, fullName, role }`, `body`, `createdAt` ISO UTC e `materialVersion: { id, title, versionNumber } | null`. Autor/data/contexto são definidos pelo servidor e preservados; e-mail e dados internos não são expostos. Lista em ordem crescente de data, com ID como desempate. O corpo é texto, não HTML; clientes devem exibi-lo escapado.
+
+Projeto + autor + `clientMessageId` identificam uma tentativa lógica: criação retorna 201; repetição com mesmo texto normalizado e contexto retorna 200 com a mensagem original; payload diferente com a mesma chave retorna `409 MESSAGE_ID_CONFLICT`. Campos adicionais, UUID inválido, texto vazio/excessivo ou ID malformado recebem 400; contexto inexistente/de outro projeto recebe `404 MATERIAL_NOT_FOUND`. Falha de armazenamento retorna 500 sem atualizar o estado em memória.
+
+Persistência do servidor em `.data/projects-<modo>.json`, substituição atômica de snapshot, um processo escritor; `PROJECT_DATA_FILE` configura outro caminho. Não há alterações no schema PostgreSQL nem armazenamento de bytes. Sessões continuam em memória. Limites e roteiro em [docs/hu07.md](hu07.md).

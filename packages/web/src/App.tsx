@@ -1,3 +1,4 @@
+import { ProjectFeedback } from "./ProjectFeedback";
 import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { api, ApiError } from "./api";
@@ -735,6 +736,12 @@ function Dashboard({
           <Icon name="lock" size={17} />
           Acesso restrito ao grupo e à equipe acadêmica vinculada ao projeto.
         </div>
+        <ProjectFeedback
+          key={detail.id}
+          projectId={detail.id}
+          materials={materials}
+          expired={expired}
+        />
       </>
     );
   const filtered = projects.filter(

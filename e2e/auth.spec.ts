@@ -3,6 +3,9 @@ async function login(page: Page, role: string) {
   await page.getByLabel("E-mail institucional").fill(`${role}@labrary.local`);
   await page.getByLabel("Senha", { exact: true }).fill("Labrary@2026");
   await page.getByRole("button", { name: "Entrar no meu espaço" }).click();
+  await expect(
+    page.getByRole("button", { name: "Sair da conta" }),
+  ).toBeVisible();
 }
 async function noHorizontalOverflow(page: Page) {
   expect(
@@ -161,5 +164,106 @@ test("professor consulta turma, filtra e cria projeto no grupo disponível", asy
   await expect(
     page.getByRole("heading", { name: "Contador síncrono" }),
   ).toBeVisible();
+  await noHorizontalOverflow(page);
+});
+
+test("HU07 conserva feedback privado e versão após recarga e falha de resposta", async ({
+  page,
+  context,
+}) => {
+  await page.goto("/");
+  await login(page, "aluno");
+  const materialInput = {
+    kind: "RELATORIO",
+    title: "Relatório de feedback",
+    originalFilename: "feedback.pdf",
+    mimeType: "application/pdf",
+    sizeBytes: 1200,
+  };
+  const first = await context.request.post("/api/projects/2/materials", {
+    headers: { "X-CSRF-Protection": "1" },
+    data: materialInput,
+  });
+  expect(first.status()).toBe(201);
+  const version = (await first.json()).data;
+  await page.goto("/projetos/2");
+  await expect(
+    page.getByText("Nenhuma mensagem ainda. Comece a conversa."),
+  ).toBeVisible();
+  await page
+    .getByLabel("Contexto da mensagem")
+    .selectOption(String(version.id));
+  expect(
+    (
+      await context.request.post("/api/projects/2/materials", {
+        headers: { "X-CSRF-Protection": "1" },
+        data: materialInput,
+      })
+    ).status(),
+  ).toBe(201);
+  const text = '<script>alert("feedback")</script> Podemos revisar o circuito?';
+  await page.getByLabel("Mensagem", { exact: true }).fill(text);
+  await page.route(
+    "**/api/projects/2/messages",
+    async (route) => {
+      if (route.request().method() === "POST") {
+        const response = await route.fetch();
+        expect(response.status()).toBe(201);
+        await route.abort("failed");
+      } else await route.continue();
+    },
+    { times: 1 },
+  );
+  await page.getByRole("button", { name: "Enviar mensagem" }).click();
+  await expect(page.getByRole("alert")).toContainText("Seu texto foi mantido");
+  await expect(page.getByLabel("Mensagem", { exact: true })).toHaveValue(text);
+  await page.getByRole("button", { name: "Enviar mensagem" }).click();
+  await expect(page.getByText("Mensagem enviada.")).toBeVisible();
+  const conversation = page.getByRole("list", { name: "Mensagens do projeto" });
+  await expect(conversation.getByRole("listitem")).toHaveCount(1);
+  await expect(conversation.getByText(text)).toBeVisible();
+  await expect(conversation.locator("script")).toHaveCount(0);
+  await expect(
+    conversation.getByText("Relatório de feedback · v1"),
+  ).toBeVisible();
+  await page.reload();
+  await expect(conversation.getByText(text)).toBeVisible();
+  await noHorizontalOverflow(page);
+  await page.screenshot({
+    path: `test-results/feedback-${test.info().project.name}.png`,
+    fullPage: true,
+  });
+  await page.getByRole("button", { name: "Sair da conta" }).click();
+  await login(page, "professor");
+  await page.goto("/projetos/2");
+  await expect(conversation.getByText(text)).toBeVisible();
+  await page
+    .getByLabel("Mensagem", { exact: true })
+    .fill("Vamos revisar na próxima aula.");
+  await page.getByRole("button", { name: "Enviar mensagem" }).click();
+  await expect(page.getByText("Mensagem enviada.")).toBeVisible();
+  await page.getByRole("button", { name: "Sair da conta" }).click();
+  await login(page, "aluno");
+  await page.goto("/projetos/2");
+  await page.getByRole("button", { name: "Atualizar conversa" }).click();
+  await expect(conversation.getByRole("listitem")).toHaveCount(2);
+  await expect(conversation.getByRole("listitem").nth(1)).toContainText(
+    "Helena Almeida",
+  );
+  await expect(conversation.getByRole("listitem").nth(1)).toContainText(
+    "Vamos revisar na próxima aula.",
+  );
+  await page.getByRole("button", { name: "Sair da conta" }).click();
+  await login(page, "avaliador");
+  expect((await context.request.get("/api/projects/2/messages")).status()).toBe(
+    404,
+  );
+  await page.goto("/projetos/1");
+  await page
+    .getByLabel("Mensagem", { exact: true })
+    .fill("Sugiro revisar a temporização.");
+  await page.getByRole("button", { name: "Enviar mensagem" }).click();
+  await expect(page.getByText("Mensagem enviada.")).toBeVisible();
+  await expect(conversation.getByText("Rafael Costa")).toBeVisible();
   await noHorizontalOverflow(page);
 });

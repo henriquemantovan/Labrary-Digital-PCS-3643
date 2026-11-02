@@ -89,7 +89,8 @@ beforeEach(() => {
           201,
         );
       if (input === "/api/projects") return response(available);
-      if (input.endsWith("/materials")) return response([]);
+      if (input.endsWith("/materials") || input.endsWith("/messages"))
+        return response([]);
       return response(
         available.find((project) => input === `/api/projects/${project.id}`) ??
           projects[0],
