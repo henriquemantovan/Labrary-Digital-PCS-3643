@@ -425,3 +425,67 @@ it("exibe número e vínculos USP no perfil", async () => {
   expect(await screen.findByText("1234567")).toBeTruthy();
   expect(screen.getByText("Aluno de graduação, ALUNOPOS")).toBeTruthy();
 });
+
+it("HU06 combina grupo, estado e pendências e consulta histórico de versões", async () => {
+  session = { ...student, role: "AVALIADOR" };
+  available = [
+    {
+      ...projects[0],
+      status: "PREPARACAO",
+      groupName: "Equipe Alfa",
+      missingMaterials: ["VIDEO", "MANUAL"],
+    },
+    { ...projects[1], missingMaterials: [] },
+  ];
+  override = (url) =>
+    url.endsWith("/materials")
+      ? response([
+          {
+            id: 1,
+            title: "Relatório",
+            kind: "RELATORIO",
+            originalFilename: "inicial.pdf",
+            versionNumber: 1,
+          },
+          {
+            id: 2,
+            title: "Relatório",
+            kind: "RELATORIO",
+            originalFilename: "revisado.pdf",
+            versionNumber: 2,
+          },
+        ])
+      : undefined;
+  render(<App />);
+  await screen.findByText("Semáforo inteligente");
+  const user = userEvent.setup();
+  await user.selectOptions(screen.getByLabelText("Filtrar por grupo"), "1");
+  await user.selectOptions(
+    screen.getByLabelText("Filtrar por estado"),
+    "PREPARACAO",
+  );
+  await user.selectOptions(
+    screen.getByLabelText("Filtrar por pendências"),
+    "true",
+  );
+  expect(screen.queryByText("Monitor de energia")).toBeNull();
+  expect(screen.getByText("Pendentes: Vídeo, Manual")).toBeTruthy();
+  await user.selectOptions(
+    screen.getByLabelText("Filtrar por pendências"),
+    "false",
+  );
+  await screen.findByText("Nenhum resultado por aqui");
+  await user.selectOptions(screen.getByLabelText("Filtrar por grupo"), "");
+  await screen.findByText("Materiais obrigatórios presentes");
+  await user.selectOptions(
+    screen.getByLabelText("Filtrar por pendências"),
+    "true",
+  );
+  await user.click(
+    screen.getByRole("link", { name: "Abrir Semáforo inteligente" }),
+  );
+  await screen.findByText("inicial.pdf");
+  expect(screen.getByText("revisado.pdf")).toBeTruthy();
+  expect(screen.getByText("v1")).toBeTruthy();
+  expect(screen.getByText("v2")).toBeTruthy();
+});

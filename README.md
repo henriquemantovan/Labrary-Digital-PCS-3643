@@ -167,10 +167,12 @@ As funcionalidades foram registradas como issues no formato **Como [papel], eu g
 
 **Critérios de aceitação:**
 
-- [ ] Lista filtra por grupo, estado e pendências.
+- [x] Lista filtra por grupo, estado e pendências.
 - [ ] Detalhe permite visualizar materiais autorizados e versões.
-- [ ] Projetos não atribuídos ficam inacessíveis ao avaliador.
+- [x] Projetos não atribuídos ficam inacessíveis ao avaliador.
 - [ ] Nenhuma nota ou comentário privado aparece na galeria pública.
+
+**Estado local:** acompanhamento de metadados implementado para revisão; filtros combináveis, pendências e histórico de versões disponíveis. Abrir conteúdo de arquivos depende da HU04; o critério da galeria pública será validado com HU11/HU12. Regras, limites e roteiro em [docs/hu06.md](docs/hu06.md). Revisão por outro integrante, refinamento e demonstração permanecem pendentes; a issue não está Done.
 
 ### [HU07 — Trocar feedback no projeto](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/7)
 
@@ -389,6 +391,10 @@ O backlog foi montado nas issues, conforme solicitado. A issue de acompanhamento
 | Concluído | — | Nenhum item marcado como concluído sem aceite da equipe |
 
 Essa atualização documenta o estado no repositório e complementa a issue #21; não altera o quadro remoto do GitHub Projects.
+
+### Atualização local — HU06 (02/11/2026)
+
+Acompanhamento de metadados em revisão: filtros por grupo, estado e pendências, detalhe com histórico de versões e acesso restrito às atribuições. Pendências para concluir a história: conteúdo privado de arquivos (HU04), validação da futura galeria pública (HU11/HU12), revisão de outro integrante, refinamento com o grupo e demonstração. Detalhes em [docs/hu06.md](docs/hu06.md). Este registro não fecha a issue #6 nem altera o backlog remoto #21.
 
 ## 7. Protótipo da interface (telas do sistema)
 

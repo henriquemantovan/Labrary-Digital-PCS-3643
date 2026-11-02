@@ -278,3 +278,64 @@ describe("API REST de projetos e materiais com autorização", () => {
     );
   });
 });
+
+it("HU06 combina filtros e pendências sem ampliar atribuições, preservando versões", async () => {
+  const { auth, repository, client, app } = context();
+  repository.get(1)!.status = "PREPARACAO";
+  Object.assign(repository.get(1)!, { grade: 9, privateComment: "Segredo" });
+  repository.createMaterial(1, { ...materialInput, kind: "OUTRO" });
+  const evaluator = client(2);
+  const list = await evaluator.get(
+    "/api/projects?groupId=1&status=PREPARACAO&pending=true",
+  );
+  expect(list.status).toBe(200);
+  expect(list.body.data).toHaveLength(1);
+  expect(list.body.data[0]).toMatchObject({
+    groupName: "Grupo 01",
+    missingMaterials: ["VIDEO", "RELATORIO", "MANUAL"],
+  });
+  expect(JSON.stringify(list.body)).not.toContain("Segredo");
+  expect((await evaluator.get("/api/projects/1")).body.data).not.toHaveProperty(
+    "grade",
+  );
+  expect(
+    (await evaluator.get("/api/projects?groupId=2&pending=true")).body.data,
+  ).toEqual([]);
+  expect(
+    (await evaluator.get("/api/projects?groupId=1&status=AJUSTES")).body.data,
+  ).toEqual([]);
+  expect(
+    (await evaluator.get("/api/projects?pending=false")).body.data,
+  ).toEqual([]);
+  for (const kind of ["VIDEO", "RELATORIO", "MANUAL"] as const)
+    repository.createMaterial(1, { ...materialInput, title: kind, kind });
+  repository.createMaterial(1, { ...materialInput, title: "RELATORIO" });
+  expect(
+    (await evaluator.get("/api/projects?pending=false")).body.data,
+  ).toHaveLength(1);
+  expect((await evaluator.get("/api/projects?pending=true")).body.data).toEqual(
+    [],
+  );
+  const versions = (await evaluator.get("/api/projects/1/materials")).body.data;
+  expect(
+    versions
+      .filter((item: { title: string }) => item.title === "RELATORIO")
+      .map((item: { versionNumber: number }) => item.versionNumber),
+  ).toEqual([1, 2]);
+  for (const query of [
+    "pending=yes",
+    "pending=",
+    "groupId=0",
+    "groupId=abc",
+    "pending=true&pending=false",
+  ])
+    expect((await evaluator.get(`/api/projects?${query}`)).status).toBe(400);
+  for (const path of [
+    "/api/projects?pending=true",
+    "/api/projects/1",
+    "/api/projects/1/materials",
+  ])
+    expect((await request(app).get(path)).status).toBe(401);
+  auth.directory.assignments = [];
+  expect((await evaluator.get("/api/projects/1/materials")).status).toBe(404);
+});

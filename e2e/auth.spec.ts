@@ -99,6 +99,33 @@ test("avaliador acessa somente projeto atribuído", async ({
     page.getByText("Monitor de consumo energético", { exact: true }),
   ).toHaveCount(0);
   expect((await context.request.get("/api/projects/2")).status()).toBe(404);
+  await page.getByLabel("Filtrar por grupo").selectOption("1");
+  await page.getByLabel("Filtrar por estado").selectOption("EM_AVALIACAO");
+  await page.getByLabel("Filtrar por pendências").selectOption("true");
+  await expect(
+    page.getByText("Pendentes: Vídeo, Relatório, Manual"),
+  ).toBeVisible();
+  await noHorizontalOverflow(page);
+  await page.screenshot({
+    path: `test-results/acompanhamento-${test.info().project.name}.png`,
+    fullPage: true,
+  });
+  await page.getByLabel("Filtrar por pendências").selectOption("false");
+  await expect(page.getByText("Nenhum resultado por aqui")).toBeVisible();
+  await page.getByLabel("Filtrar por pendências").selectOption("");
+  await page.getByLabel("Filtrar por estado").selectOption("PREPARACAO");
+  await expect(page.getByText("Nenhum resultado por aqui")).toBeVisible();
+  await page.getByLabel("Filtrar por estado").selectOption("");
+  expect(
+    (
+      await context.request.get("/api/projects?groupId=2&pending=true")
+    ).status(),
+  ).toBe(200);
+  expect(
+    await (
+      await context.request.get("/api/projects?groupId=2&pending=true")
+    ).json(),
+  ).toEqual({ data: [] });
   await page
     .getByRole("link", { name: "Abrir Controlador de semáforo inteligente" })
     .click();
