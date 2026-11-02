@@ -35,6 +35,15 @@ export interface Material {
   versionNumber: number;
   originalFilename: string;
 }
+export interface ProjectMessage {
+  id: number;
+  projectId: number;
+  clientMessageId: string;
+  author: Pick<User, "id" | "fullName" | "role">;
+  body: string;
+  createdAt: string;
+  materialVersion: { id: number; title: string; versionNumber: number } | null;
+}
 export class ApiError extends Error {
   constructor(
     public status: number,

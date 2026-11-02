@@ -55,7 +55,7 @@ A tela consulta `/api/auth/providers` e oferece **Entrar com Senha Única USP**.
 
 ## Limites e validação
 
-Identidades USP e vínculos de autorização estão integrados ao PostgreSQL. Projetos e metadados continuam no repositório em memória existente; no modo USP começam vazios para evitar associar exemplos aos IDs reais. A persistência de projetos/arquivos é uma etapa separada. Sessões, tentativas OAuth e limites ficam em memória: reinício exige novo login e múltiplas instâncias exigem armazenamento compartilhado/afinidade. O logout encerra a sessão do Labrary; não encerra a sessão de outros serviços USP.
+Identidades USP e vínculos de autorização estão integrados ao PostgreSQL. Desde a HU07, o entrypoint conserva projetos, metadados e mensagens em arquivo privado; no modo USP, usa `.data/projects-usp.json` e inicia sem seed quando o arquivo ainda não existe. Veja [configuração e limites da persistência local](hu07.md). Projetos/mensagens não estão integrados ao PostgreSQL e o armazenamento de arquivos de materiais continua pendente. Sessões, tentativas OAuth e limites ficam em memória: reinício exige novo login e múltiplas instâncias exigem armazenamento compartilhado/afinidade. O logout encerra a sessão do Labrary; não encerra a sessão de outros serviços USP.
 
 `pnpm build`, `pnpm test` e `pnpm test:e2e` validam o fluxo local. Os E2E exercitam o OAuth via HTTP com um provedor isolado em `packages/api/integration/uspFixture.ts`, incluindo verificação independente das assinaturas, aluno, professor, vínculo recusado, recarga e logout em desktop e celular. Esse servidor só é iniciado pelo Playwright e não integra a inicialização de produção. Portas adicionais: 3004, 3005 e 5181.
 

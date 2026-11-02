@@ -1,3 +1,5 @@
+import { createMemoryProjectRepository } from "./repositories/projectRepository.js";
+import { createFileProjectStorage } from "./repositories/fileProjectStorage.js";
 import { loadDirectory } from "./services/configuration.js";
 import { Pool } from "pg";
 import { createPostgresIdentityRepository } from "./repositories/postgresIdentityRepository.js";
@@ -39,7 +41,18 @@ if (uspConfig) {
 } else {
   auth = createAuthRepository(await loadDirectory(process.env));
 }
+const dataFile =
+  process.env.PROJECT_DATA_FILE ??
+  resolve(
+    process.cwd(),
+    `../../.data/projects-${usp ? "usp" : process.env.AUTH_DEMO === "true" ? "demo" : "local"}.json`,
+  );
+const repository = createMemoryProjectRepository(
+  !usp,
+  createFileProjectStorage(dataFile),
+);
 createApp({
+  repository,
   auth,
   usp,
   localLogin: !usp,

@@ -1,4 +1,6 @@
+import { randomUUID } from "node:crypto";
 import { defineConfig, devices } from "@playwright/test";
+const runId = randomUUID();
 const targets = [
   { name: "desktop", webPort: 5179, apiPort: 3002 },
   { name: "mobile", webPort: 5180, apiPort: 3003 },
@@ -24,7 +26,7 @@ export default defineConfig({
     },
   })),
   webServer: [
-    ...targets.flatMap(({ webPort, apiPort }) => [
+    ...targets.flatMap(({ name, webPort, apiPort }) => [
       {
         command: "pnpm --filter @labrary/api dev",
         url: `http://localhost:${apiPort}/api/health`,
@@ -32,6 +34,7 @@ export default defineConfig({
         env: {
           API_PORT: String(apiPort),
           AUTH_DEMO: "true",
+          PROJECT_DATA_FILE: `../../test-results/projects-${runId}-${name}.json`,
           AUTH_USERS_FILE: "",
           APP_ORIGIN: `http://localhost:${webPort}`,
         },
