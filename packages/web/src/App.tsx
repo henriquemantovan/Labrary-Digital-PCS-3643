@@ -15,6 +15,11 @@ const statusLabels: Record<string, string> = {
   AJUSTES: "Em ajustes",
   FINALIZADO: "Finalizado",
 };
+const materialLabels: Record<string, string> = {
+  VIDEO: "Vídeo",
+  RELATORIO: "Relatório",
+  MANUAL: "Manual",
+};
 const roleDescriptions = {
   ALUNO: "Seu grupo, suas ideias e os próximos passos do seu projeto.",
   AVALIADOR: "Um olhar atento para os projetos que você acompanha.",
@@ -491,6 +496,8 @@ function Dashboard({
   const [revision, setRevision] = useState(0);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("");
+  const [group, setGroup] = useState("");
+  const [pending, setPending] = useState("");
   const [creating, setCreating] = useState(false);
   const detailId = /^\/projetos\/(\d+)$/.exec(path)?.[1];
   const knownPath =
@@ -676,7 +683,9 @@ function Dashboard({
           Todos os projetos
         </button>
         <p className="eyebrow">
-          {detail.category} · GRUPO {String(detail.groupId).padStart(2, "0")}
+          {detail.category} ·{" "}
+          {detail.groupName ??
+            `Grupo ${String(detail.groupId).padStart(2, "0")}`}
         </p>
         <h1>{detail.title}</h1>
         <p className="page-intro">
@@ -686,11 +695,22 @@ function Dashboard({
           <span />
           {statusLabels[detail.status]}
         </span>
+        {detail.missingMaterials && (
+          <p>
+            {detail.missingMaterials.length
+              ? `Pendentes: ${detail.missingMaterials.map((kind) => materialLabels[kind]).join(", ")}`
+              : "Materiais obrigatórios presentes"}
+          </p>
+        )}
         <section className="detail-section">
           <div className="section-heading">
             <h2>Materiais do projeto</h2>
             <span>{materials.length} materiais</span>
           </div>
+          <p className="muted">
+            Histórico de versões registradas. O conteúdo dos arquivos ainda não
+            está disponível nesta etapa.
+          </p>
           {materials.length ? (
             <ul className="material-list">
               {materials.map((item) => (
@@ -720,6 +740,9 @@ function Dashboard({
   const filtered = projects.filter(
     (project) =>
       (!status || project.status === status) &&
+      (!group || String(project.groupId) === group) &&
+      (!pending ||
+        (project.missingMaterials?.length ?? 0) > 0 === (pending === "true")) &&
       `${project.title} ${project.category} ${project.groupId}`
         .toLocaleLowerCase("pt-BR")
         .includes(query.toLocaleLowerCase("pt-BR")),
@@ -831,6 +854,32 @@ function Dashboard({
               </option>
             ))}
           </select>
+          <select
+            aria-label="Filtrar por grupo"
+            value={group}
+            onChange={(event) => setGroup(event.target.value)}
+          >
+            <option value="">Todos os grupos</option>
+            {Array.from(
+              new Map(
+                projects.map((project) => [project.groupId, project]),
+              ).values(),
+            ).map((project) => (
+              <option key={project.groupId} value={project.groupId}>
+                {project.groupName ??
+                  `Grupo ${String(project.groupId).padStart(2, "0")}`}
+              </option>
+            ))}
+          </select>
+          <select
+            aria-label="Filtrar por pendências"
+            value={pending}
+            onChange={(event) => setPending(event.target.value)}
+          >
+            <option value="">Todas as pendências</option>
+            <option value="true">Com materiais pendentes</option>
+            <option value="false">Sem materiais pendentes</option>
+          </select>
         </div>
         <div className="project-grid">
           {filtered.map((project, index) => (
@@ -872,10 +921,18 @@ function Dashboard({
                   </a>
                 </h3>
                 <p>{project.description || "Descrição ainda não informada."}</p>
+                {project.missingMaterials && (
+                  <p>
+                    {project.missingMaterials.length
+                      ? `Pendentes: ${project.missingMaterials.map((kind) => materialLabels[kind]).join(", ")}`
+                      : "Materiais obrigatórios presentes"}
+                  </p>
+                )}
                 <div className="card-footer">
                   <span>
                     <Icon name="user" size={15} />
-                    Grupo {String(project.groupId).padStart(2, "0")}
+                    {project.groupName ??
+                      `Grupo ${String(project.groupId).padStart(2, "0")}`}
                   </span>
                   <a
                     className="project-link"
@@ -902,7 +959,7 @@ function Dashboard({
             }
             text={
               projects.length
-                ? "Tente outro termo ou selecione um estado diferente."
+                ? "Tente outro termo ou ajuste os filtros."
                 : "Os projetos aparecerão aqui assim que forem vinculados ao seu perfil."
             }
           />

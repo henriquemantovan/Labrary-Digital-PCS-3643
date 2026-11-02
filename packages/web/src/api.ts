@@ -21,6 +21,8 @@ export interface Project {
   category: string;
   status: string;
   dueAt: string | null;
+  groupName?: string;
+  missingMaterials?: string[];
 }
 export interface Scope {
   classes: { id: number; name: string; academicYear: number }[];

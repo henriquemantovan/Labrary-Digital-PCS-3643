@@ -3,7 +3,7 @@ import { createPermissions } from "../services/permissions.js";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { ApiError } from "../errors.js";
-import { materialKinds, projectStatuses } from "../models/project.js";
+import { Project, materialKinds, projectStatuses } from "../models/project.js";
 import { ProjectRepository } from "../repositories/projectRepository.js";
 
 const positiveInteger = z.coerce.number().int().positive();
@@ -12,6 +12,8 @@ const listQuerySchema = z
   .object({
     status: z.enum(projectStatuses).optional(),
     classId: positiveInteger.optional(),
+    groupId: positiveInteger.optional(),
+    pending: z.enum(["true", "false"]).optional(),
   })
   .strict();
 
@@ -51,23 +53,54 @@ export function createProjectController(
     }
     return project;
   };
+  const presentProject = (project: Project) => {
+    const present = new Set(
+      repository.listMaterials(project.id).map((item) => item.kind),
+    );
+    return {
+      id: project.id,
+      classId: project.classId,
+      groupId: project.groupId,
+      title: project.title,
+      description: project.description,
+      category: project.category,
+      status: project.status,
+      dueAt: project.dueAt,
+      createdAt: project.createdAt,
+      updatedAt: project.updatedAt,
+      groupName:
+        auth.directory.groups.find((group) => group.id === project.groupId)
+          ?.name ?? `Grupo ${project.groupId}`,
+      missingMaterials: (["VIDEO", "RELATORIO", "MANUAL"] as const).filter(
+        (kind) => !present.has(kind),
+      ),
+    };
+  };
   return {
     list(request: Request, response: Response) {
       const query = listQuerySchema.parse(request.query);
-      response
-        .status(200)
-        .json({
-          data: repository
-            .list(query)
-            .filter((project) =>
-              permissions.canRead(response.locals.user, project),
-            ),
-        });
+      response.status(200).json({
+        data: repository
+          .list(query)
+          .filter((project) =>
+            permissions.canRead(response.locals.user, project),
+          )
+          .filter(
+            (project) => !query.groupId || project.groupId === query.groupId,
+          )
+          .map(presentProject)
+          .filter(
+            (project) =>
+              query.pending === undefined ||
+              project.missingMaterials.length > 0 ===
+                (query.pending === "true"),
+          ),
+      });
     },
 
     get(request: Request, response: Response) {
       const project = accessibleProject(request, response);
-      response.status(200).json({ data: project });
+      response.status(200).json({ data: presentProject(project) });
     },
 
     create(request: Request, response: Response) {
@@ -84,7 +117,7 @@ export function createProjectController(
         input.groupId,
       );
       const project = repository.create(input);
-      response.status(201).json({ data: project });
+      response.status(201).json({ data: presentProject(project) });
     },
 
     listMaterials(request: Request, response: Response) {

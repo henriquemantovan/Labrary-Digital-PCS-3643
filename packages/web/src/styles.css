@@ -1656,3 +1656,9 @@ svg {
     transform: none;
   }
 }
+
+/* Os filtros de acompanhamento se reorganizam conforme o espaço disponível. */
+.filter-bar { flex-wrap: wrap; }
+.filter-bar .search-field { min-width: 0; }
+.material-list li > div { min-width: 0; overflow-wrap: anywhere; }
+.filter-bar select { min-width: 210px; max-width: 100%; }
