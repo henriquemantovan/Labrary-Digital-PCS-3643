@@ -6,7 +6,9 @@ permissions:
   contents: read
 jobs:
   validate:
-    runs-on: ubuntu-latest
+    # Playwright 1.56.1 suporta Ubuntu 24.04; fixe a imagem para evitar
+    # incompatibilidade quando ubuntu-latest migrar para uma nova versão.
+    runs-on: ubuntu-24.04
     services:
       postgres:
         image: postgres:18
