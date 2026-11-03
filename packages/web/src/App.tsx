@@ -1,3 +1,4 @@
+import { AdminUsers } from "./AdminUsers";
 import { ProjectFeedback } from "./ProjectFeedback";
 import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
@@ -6,6 +7,7 @@ import type { Material, Project, Scope, User } from "./api";
 import { Icon } from "./Icons";
 
 const roleLabels = {
+  ADMIN: "Administrador",
   ALUNO: "Aluno",
   AVALIADOR: "Avaliador",
   PROFESSOR: "Professor",
@@ -22,6 +24,7 @@ const materialLabels: Record<string, string> = {
   MANUAL: "Manual",
 };
 const roleDescriptions = {
+  ADMIN: "Administre contas e acompanhe os projetos de todas as turmas.",
   ALUNO: "Seu grupo, suas ideias e os próximos passos do seu projeto.",
   AVALIADOR: "Um olhar atento para os projetos que você acompanha.",
   PROFESSOR: "Uma visão dos projetos e grupos da sua turma.",
@@ -62,7 +65,7 @@ function Login({
   message: string;
 }) {
   const [providers, setProviders] = useState<{
-    usp: boolean;
+    google: boolean;
     local: boolean;
   } | null>(null);
   const [providerError, setProviderError] = useState("");
@@ -70,7 +73,7 @@ function Login({
     setProviderError("");
     try {
       setProviders(
-        await api<{ usp: boolean; local: boolean }>("/auth/providers"),
+        await api<{ google: boolean; local: boolean }>("/auth/providers"),
       );
     } catch (error) {
       setProviderError((error as Error).message);
@@ -79,9 +82,17 @@ function Login({
   useEffect(() => {
     void loadProviders();
   }, []);
-  const uspError = new URLSearchParams(window.location.search).has("authError")
-    ? "Não foi possível entrar com a USP. Verifique seu vínculo e tente novamente; se persistir, contate o responsável pela turma."
-    : "";
+  const authError = new URLSearchParams(window.location.search).get(
+    "authError",
+  );
+  const googleError =
+    authError === "account_conflict"
+      ? "Já existe uma conta com esse e-mail. Solicite ao responsável a vinculação da conta Google."
+      : authError === "inactive"
+        ? "Sua conta está desativada. Contate o responsável."
+        : authError
+          ? "Não foi possível entrar com o Google. Tente novamente; se persistir, contate o responsável."
+          : "";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [visible, setVisible] = useState(false);
@@ -155,15 +166,14 @@ function Login({
           </span>
           <p className="eyebrow">BEM-VINDO DE VOLTA</p>
           <h2 id="login-title">
-            Seu próximo projeto
-            <br />
+            Seu próximo projeto <br />
             começa aqui.
           </h2>
           <p className="muted login-description">
             Entre com sua conta para acessar seu espaço.
           </p>
-          {(error || message || uspError) && (
-            <Notice>{error || message || uspError}</Notice>
+          {(error || message || googleError) && (
+            <Notice>{error || message || googleError}</Notice>
           )}
           {providerError && (
             <Notice>
@@ -176,17 +186,26 @@ function Login({
           {!providers && !providerError && (
             <p role="status">Carregando opções de acesso…</p>
           )}
-          {providers?.usp && (
+          {providers?.google && (
             <p>
-              <a className="primary login-submit" href="/api/auth/usp">
-                Entrar com Senha Única USP
+              <a
+                className="primary login-submit google-login"
+                href="/api/auth/google"
+              >
+                <img
+                  src="/google-logo.webp"
+                  alt=""
+                  aria-hidden="true"
+                  width={28}
+                  height={28}
+                />
+                <span>Entrar com Google</span>
               </a>
             </p>
           )}
-          {providers?.usp && (
+          {providers?.google && (
             <p className="muted">
-              Você será direcionado à USP para autenticar e confirmar seus
-              vínculos.
+              Use sua conta Google para acessar seu espaço.
             </p>
           )}
           {providers?.local && (
@@ -239,11 +258,11 @@ function Login({
           <p className="account-help">
             Precisa de acesso ou esqueceu sua senha?
             <br />
-            {providers?.usp ? (
+            {providers?.google ? (
               <span>
                 Para recuperar a senha, acesse o{" "}
-                <a href="https://id.usp.br">portal USP</a>. Para vínculos de
-                turma, fale com o professor.
+                <a href="https://accounts.google.com/signin/recovery">Google</a>
+                . Para vínculos de turma, fale com o professor.
               </span>
             ) : (
               <span>Entre em contato com o professor da sua turma.</span>
@@ -270,6 +289,8 @@ export function App() {
   const [path, setPath] = useState(window.location.pathname);
   const [busy, setBusy] = useState(false);
   const [logoutError, setLogoutError] = useState("");
+  const [viewBusy, setViewBusy] = useState(false);
+  const [viewError, setViewError] = useState("");
   const navigate = useCallback((next: string) => {
     window.history.pushState(null, "", next);
     setPath(next);
@@ -330,6 +351,23 @@ export function App() {
       setBusy(false);
     }
   }
+  async function changeView(role: string) {
+    setViewBusy(true);
+    setViewError("");
+    try {
+      const current = await api<User>("/auth/view-role", {
+        method: "POST",
+        body: JSON.stringify({ role: role === "ADMIN" ? null : role }),
+      });
+      setUser(current);
+      navigate("/projetos");
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) expired();
+      else setViewError((error as Error).message);
+    } finally {
+      setViewBusy(false);
+    }
+  }
   if (initializing)
     return (
       <main className="startup">
@@ -359,8 +397,14 @@ export function App() {
         }}
       />
     );
+  const visibleUser: User =
+    user.role === "ADMIN" && user.viewRole
+      ? { ...user, role: user.viewRole }
+      : user;
   return (
-    <div className="workspace">
+    <div
+      className={`workspace${user.role === "ADMIN" ? " workspace-admin" : ""}`}
+    >
       <a className="skip-link" href="#main">
         Pular para o conteúdo
       </a>
@@ -389,16 +433,25 @@ export function App() {
             onClick={() => navigate("/projetos")}
           >
             <Icon name="grid" />
-            {user.role === "ALUNO" ? "Meu projeto" : "Projetos"}
+            {visibleUser.role === "ALUNO" ? "Meu projeto" : "Projetos"}
             <span className="nav-active-dot" />
           </button>
-          {user.role === "PROFESSOR" && (
+          {["PROFESSOR", "ADMIN"].includes(visibleUser.role) && (
             <button
               className={`nav-item ${path === "/turmas" ? "active" : ""}`}
               onClick={() => navigate("/turmas")}
             >
               <Icon name="book" />
               Minhas turmas
+            </button>
+          )}
+          {user.role === "ADMIN" && (
+            <button
+              className={`nav-item ${path === "/administracao" ? "active" : ""}`}
+              onClick={() => navigate("/administracao")}
+            >
+              <Icon name="user" />
+              Administrar usuários
             </button>
           )}
           <button
@@ -447,11 +500,13 @@ export function App() {
           <span>
             Meu espaço <span className="breadcrumb">/</span>{" "}
             <strong>
-              {path === "/perfil"
-                ? "Perfil"
-                : path === "/turmas"
-                  ? "Turmas"
-                  : "Projetos"}
+              {path === "/administracao"
+                ? "Administração"
+                : path === "/perfil"
+                  ? "Perfil"
+                  : path === "/turmas"
+                    ? "Turmas"
+                    : "Projetos"}
             </strong>
           </span>
           <span className="profile-badge">
@@ -461,12 +516,45 @@ export function App() {
         </header>
         <main id="main" className="workspace-main">
           {logoutError && <Notice>{logoutError}</Notice>}
-          <Dashboard
-            user={user}
-            path={path}
-            navigate={navigate}
-            expired={expired}
-          />
+          {user.role === "ADMIN" && (
+            <section className="admin-view" aria-label="Visualização de perfis">
+              <label htmlFor="view-role">Visualizar como</label>
+              <select
+                id="view-role"
+                value={user.viewRole ?? "ADMIN"}
+                disabled={viewBusy}
+                onChange={(event) => void changeView(event.target.value)}
+              >
+                <option value="ADMIN">Administrador</option>
+                <option value="ALUNO">Aluno</option>
+                <option value="AVALIADOR">Avaliador</option>
+                <option value="PROFESSOR">Professor</option>
+              </select>
+              <p>
+                {user.viewRole
+                  ? `Visualização de ${roleLabels[user.viewRole]}. Sua conta continua sendo Administrador; o acesso segue seus vínculos nesse perfil.`
+                  : "Visão administrativa de todas as turmas e projetos."}
+              </p>
+            </section>
+          )}
+          {viewError && <Notice>{viewError}</Notice>}
+          {path === "/administracao" && user.role === "ADMIN" ? (
+            <AdminUsers
+              expired={expired}
+              onSessionChanged={(current) => {
+                setUser(current);
+                if (current.role !== "ADMIN") navigate("/projetos");
+              }}
+            />
+          ) : (
+            <Dashboard
+              key={`${user.id}-${user.role}-${user.viewRole ?? ""}`}
+              user={path === "/perfil" ? user : visibleUser}
+              path={path}
+              navigate={navigate}
+              expired={expired}
+            />
+          )}
         </main>
         <footer className="workspace-footer">
           <span>LABRARY DIGITAL</span>
@@ -504,7 +592,7 @@ function Dashboard({
   const knownPath =
     ["/", "/projetos", "/perfil"].includes(path) ||
     !!detailId ||
-    (path === "/turmas" && user.role === "PROFESSOR");
+    (path === "/turmas" && ["PROFESSOR", "ADMIN"].includes(user.role));
   useEffect(() => {
     let active = true;
     setLoading(true);
@@ -588,20 +676,10 @@ function Dashboard({
           <dl>
             <dt>E-mail</dt>
             <dd>{user.email}</dd>
-            {user.uspNumber && (
+            {user.googleLinked && (
               <>
-                <dt>Número USP</dt>
-                <dd>{user.uspNumber}</dd>
-              </>
-            )}
-            {user.uspAffiliations && (
-              <>
-                <dt>Vínculos USP</dt>
-                <dd>
-                  {user.uspAffiliations
-                    .map((v) => v.nomeVinculo ?? v.tipoVinculo)
-                    .join(", ")}
-                </dd>
+                <dt>Autenticação</dt>
+                <dd>Conta Google vinculada</dd>
               </>
             )}
             <dt>Permissões</dt>
@@ -765,7 +843,7 @@ function Dashboard({
           </h1>
           <p className="page-intro">{roleDescriptions[user.role]}</p>
         </div>
-        {user.role === "PROFESSOR" && (
+        {["PROFESSOR", "ADMIN"].includes(user.role) && (
           <button className="primary" onClick={() => setCreating(!creating)}>
             {creating ? "Fechar formulário" : "+ Novo projeto"}
           </button>
@@ -790,7 +868,9 @@ function Dashboard({
                 ? "Projetos do meu grupo"
                 : user.role === "AVALIADOR"
                   ? "Projetos atribuídos"
-                  : "Projetos da minha turma"}
+                  : user.role === "ADMIN"
+                    ? "Projetos de todas as turmas"
+                    : "Projetos da minha turma"}
             </span>
             <strong>
               {String(projects.length).padStart(2, "0")}

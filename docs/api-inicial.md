@@ -4,10 +4,13 @@ Rotas REST usam JSON; início e retorno de OAuth fazem redirecionamentos HTTP. L
 
 | Método | Rota | Uso | Sucesso |
 | --- | --- | --- | --- |
-| GET | `/api/auth/providers` | Opções disponíveis `{ usp, local }` | `200` |
-| GET | `/api/auth/usp` | Inicia OAuth 1.0 na USP | `302` |
-| GET | `/api/auth/usp/callback` | Valida tentativa e cria sessão | `302` para `/projetos` ou `/login?authError=usp` |
+| GET | `/api/auth/providers` | Opções disponíveis `{ google, local }` | `200` |
+| GET | `/api/auth/google` | Inicia OpenID Connect no Google | `302` |
+| GET | `/api/auth/google/callback` | Valida tentativa e cria sessão | `302` para `/projetos` ou `/login?authError=google` |
 | POST | `/api/auth/login` | Autentica `{ email, password }` e emite cookie HttpOnly | `200 { data: PublicUser }` |
+| POST | `/api/auth/view-role` | ADMIN seleciona `{ role: "ALUNO" | "AVALIADOR" | "PROFESSOR" | null }` para sua sessão | `200 { data: PublicUser }` |
+| GET | `/api/admin/users` | ADMIN lista contas com ID, nome, e-mail, papel e estado | `200 { data: ManagedUser[] }` |
+| PATCH | `/api/admin/users/:userId/role` | ADMIN altera `{ role: "ALUNO" | "AVALIADOR" | "PROFESSOR" | "ADMIN" }` | `200 { data: ManagedUser }` |
 | GET | `/api/auth/me` | Restaura a sessão | `200 { data: PublicUser }` |
 | POST | `/api/auth/logout` | Revoga a sessão e limpa o cookie (idempotente) | `204` |
 | GET | `/api/scope` | Turmas/grupos permitidos, sem integrantes | `200 { data: { classes, groups } }` |
@@ -22,7 +25,7 @@ Rotas REST usam JSON; início e retorno de OAuth fazem redirecionamentos HTTP. L
 
 Todas as rotas de projetos, materiais e escopo exigem sessão válida. `GET /projects` aplica o escopo antes de retornar dados; filtros não ampliam acesso. Um projeto fora do escopo responde com o mesmo `404` de um projeto inexistente. Apenas professor cria projetos para grupos da própria turma; apenas aluno do grupo registra metadados enquanto o projeto está em Preparação/Ajustes (`409 PROJECT_LOCKED` nos demais estados).
 
-`PublicUser` contém `id`, `fullName`, `email`, `role`; contas USP incluem `uspNumber` e `uspAffiliations` (tipo/nome do vínculo, função e unidade). Segredos OAuth não são retornados. Em modo USP, o login local responde `403 LOCAL_LOGIN_DISABLED`. Veja [configuração USP e migrations](senha-unica-usp.md). Credenciais inválidas/inativas retornam `401 INVALID_CREDENTIALS`, sempre com `E-mail ou senha inválidos.`. Cada POST exige o cabeçalho `X-CSRF-Protection: 1`; `Origin`, se informado, deve ser igual a `APP_ORIGIN`. Não há CORS. Use a mesma origem para frontend e `/api`.
+`PublicUser` contém `id`, `fullName`, `email`, `role`; contas Google incluem `googleLinked: true`. Segredos OAuth não são retornados. Em modo Google, o login local responde `403 LOCAL_LOGIN_DISABLED`. Veja [configuração Google e migrations](login-google.md). Credenciais inválidas/inativas retornam `401 INVALID_CREDENTIALS`, sempre com `E-mail ou senha inválidos.`. Cada POST exige o cabeçalho `X-CSRF-Protection: 1`; `Origin`, se informado, deve ser igual a `APP_ORIGIN`. Não há CORS. Use a mesma origem para frontend e `/api`.
 
 As respostas da API incluem `Cache-Control: no-store`. Veja [HU01](hu01.md) para matriz de permissões, configurações, contas e ciclo da sessão.
 
@@ -50,7 +53,7 @@ Exemplo de erro:
 }
 ```
 
-`POST /materials` registra metadados JSON e gera uma chave `mock/...`; não recebe nem persiste bytes de arquivos. A HU01 autentica e autoriza estas rotas. Limites conforme requisito do projeto, prazos e armazenamento privado real serão adicionados com as histórias de entrega. O entrypoint da API persiste projetos, metadados e mensagens em arquivo privado desde a HU07. Sem snapshot anterior, no modo local há seed; no modo USP iniciam vazios. Identidades USP e vínculos de autorização são carregados do PostgreSQL; sessões permanecem em memória.
+`POST /materials` registra metadados JSON e gera uma chave `mock/...`; não recebe nem persiste bytes de arquivos. A HU01 autentica e autoriza estas rotas. Limites conforme requisito do projeto, prazos e armazenamento privado real serão adicionados com as histórias de entrega. O entrypoint da API persiste projetos, metadados e mensagens em arquivo privado desde a HU07. Sem snapshot anterior, no modo local há seed; no modo Google iniciam vazios. Identidades, vínculos de autorização, sessões e tentativas OAuth usam PostgreSQL no modo Google; no modo local, sessões ficam em memória.
 
 ## Acompanhamento — HU06
 
@@ -72,4 +75,20 @@ Envio: `{ "clientMessageId": "UUID", "body": "Texto de 1 a 5000 caracteres", "ma
 
 Projeto + autor + `clientMessageId` identificam uma tentativa lógica: criação retorna 201; repetição com mesmo texto normalizado e contexto retorna 200 com a mensagem original; payload diferente com a mesma chave retorna `409 MESSAGE_ID_CONFLICT`. Campos adicionais, UUID inválido, texto vazio/excessivo ou ID malformado recebem 400; contexto inexistente/de outro projeto recebe `404 MATERIAL_NOT_FOUND`. Falha de armazenamento retorna 500 sem atualizar o estado em memória.
 
-Persistência do servidor em `.data/projects-<modo>.json`, substituição atômica de snapshot, um processo escritor; `PROJECT_DATA_FILE` configura outro caminho. Não há alterações no schema PostgreSQL nem armazenamento de bytes. Sessões continuam em memória. Limites e roteiro em [docs/hu07.md](hu07.md).
+Persistência do servidor em `.data/projects-<modo>.json`, substituição atômica de snapshot, um processo escritor; `PROJECT_DATA_FILE` configura outro caminho. Não há alterações no schema PostgreSQL nem armazenamento de bytes. Sessões do modo Google usam PostgreSQL; no modo local continuam em memória. Limites e roteiro em [docs/hu07.md](hu07.md).
+
+## Login Google
+
+`GET /api/auth/google` emite cookie HttpOnly `labrary_google` SameSite=Lax com validade de dez minutos e redireciona para o Google. `GET /api/auth/google/callback` valida state/cookie, consome a tentativa de uso único, troca o código com PKCE, verifica o ID token e persiste a conta e a sessão. Retorna `302` para `/projetos`, ou `/login?authError=google|inactive|account_conflict`. Não aceita papel ou identidade enviados pelo navegador. O e-mail precisa ser verificado. Novas contas recebem `ALUNO`; papéis existentes são mantidos.
+
+O cookie `labrary_session` é HttpOnly, SameSite=Lax e Secure em produção; só seu SHA-256 fica no banco. A sessão é restaurada em `/auth/me`, tem expiração absoluta de oito horas, pode ser usada entre instâncias e é revogada no logout/desativação. `POST /auth/logout` mantém proteção CSRF e revogação idempotente. Tokens Google e segredos não são retornados nem persistidos. A API não oferece cadastro por senha no modo Google.
+
+## Administração e visualização de perfis
+
+O papel `ADMIN` é persistido em `app_user.role`, mantido pelos próximos logins Google e não atribuído a cadastros novos. A área `/administracao` permite buscar contas, atualizar a lista e alterar perfis, inclusive promover administradores. Não aceita alteração de estado, e-mail, identificador Google ou autor da ação. A API exige sessão ativa de um administrador real, CSRF e origem válida. Dados de credenciais não aparecem na listagem.
+
+`PublicUser.role` sempre informa o papel real da conta. Administradores podem receber `viewRole` com o perfil acadêmico selecionado na sessão. `/auth/view-role` persiste a escolha no banco por sessão; `null` retorna à administração. A API usa o perfil selecionado nas autorizações acadêmicas, com os vínculos da própria conta. Não troca usuário nem simula a identidade de outra pessoa. Administradores continuam podendo acessar a gestão de contas durante a prévia; usuários comuns não podem selecionar perfis. Mensagens registram o autor e o papel real, inclusive quando enviadas na prévia.
+
+Na visão administrativa, ADMIN vê todos os projetos, turmas e grupos e pode criar projetos para grupos existentes. Registro de materiais conserva as regras de aluno/grupo/estado: a administração não ignora essas regras. Mudar apenas a visualização não cria vínculos com turma, grupo ou projeto.
+
+Mudanças de papel usam transação com bloqueio para impedir que remoções concorrentes deixem zero administradores ativos. Remover o último ADMIN ativo retorna `409 LAST_ADMIN`. A transação limpa as prévias das sessões da conta alterada e registra autor, alvo, papel anterior, novo papel e data em `user_role_audit`. Um administrador destituído perde acesso administrativo na próxima requisição. O estado das contas e os vínculos acadêmicos são preservados.

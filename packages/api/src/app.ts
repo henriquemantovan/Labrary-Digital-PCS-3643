@@ -13,10 +13,17 @@ import {
 } from "./repositories/projectRepository.js";
 import { createProjectRouter } from "./routes/projectRoutes.js";
 
-import { UspAuthOptions } from "./controllers/uspAuthController.js";
+import { GoogleAuthOptions } from "./controllers/googleAuthController.js";
+
+import { createAdminRouter } from "./routes/adminRoutes.js";
+import {
+  AdminRepository,
+  createMemoryAdminRepository,
+} from "./repositories/adminRepository.js";
 
 export interface AppOptions {
-  usp?: UspAuthOptions;
+  admin?: AdminRepository;
+  google?: GoogleAuthOptions;
   localLogin?: boolean;
   repository?: ProjectRepository;
   auth?: AuthRepository;
@@ -30,7 +37,7 @@ export interface AppOptions {
 export function createApp(options: AppOptions = {}) {
   const app = express();
   const repository =
-    options.repository ?? createMemoryProjectRepository(!options.usp);
+    options.repository ?? createMemoryProjectRepository(!options.google);
 
   const auth = options.auth ?? createAuthRepository();
   const now = options.now ?? Date.now;
@@ -53,13 +60,21 @@ export function createApp(options: AppOptions = {}) {
   app.use(
     "/api",
     createAuthRouter(auth, {
-      usp: options.usp,
-      localLogin: options.localLogin ?? !options.usp,
+      google: options.google,
+      localLogin: options.localLogin ?? !options.google,
       now,
       secureCookies: options.secureCookies ?? false,
       sessionTtlMs: options.sessionTtlMs ?? 8 * 60 * 60_000,
       loginLimit: options.loginLimit ?? 20,
     }),
+  );
+  app.use(
+    "/api/admin",
+    createAdminRouter(
+      auth,
+      options.admin ?? createMemoryAdminRepository(auth),
+      now,
+    ),
   );
   app.use("/api/projects", requireAuth(auth, now));
   app.use("/api", createProjectRouter(repository, auth, now));

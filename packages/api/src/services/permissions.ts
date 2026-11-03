@@ -5,9 +5,11 @@ import { AuthRepository } from "../repositories/authRepository.js";
 
 export function createPermissions(auth: AuthRepository) {
   const ownsClass = (user: User, classId: number) =>
-    user.role === "PROFESSOR" &&
+    (user.role === "ADMIN" || user.role === "PROFESSOR") &&
     auth.directory.classes.some(
-      (item) => item.id === classId && item.professorId === user.id,
+      (item) =>
+        item.id === classId &&
+        (user.role === "ADMIN" || item.professorId === user.id),
     );
   const belongsToGroup = (user: User, project: Project) =>
     auth.directory.groups.some(
@@ -19,6 +21,7 @@ export function createPermissions(auth: AuthRepository) {
   return {
     ownsClass,
     canRead(user: User, project: Project) {
+      if (user.role === "ADMIN") return true;
       if (user.role === "PROFESSOR") return ownsClass(user, project.classId);
       if (user.role === "ALUNO") return belongsToGroup(user, project);
       return auth.directory.assignments.some(

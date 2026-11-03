@@ -48,7 +48,7 @@ export function createMessageController(
           "MATERIAL_NOT_FOUND",
           "Versão de material não encontrada.",
         );
-      const user = response.locals.user;
+      const user = response.locals.accountUser;
       const result = repository.createMessage({
         projectId: project.id,
         clientMessageId: input.clientMessageId,

@@ -69,7 +69,7 @@ beforeEach(() => {
       const custom = await override(input, init);
       if (custom) return custom;
       if (input === "/api/auth/providers")
-        return response({ usp: false, local: true });
+        return response({ google: false, local: true });
       if (input === "/api/auth/me")
         return session
           ? response(session)
@@ -381,21 +381,21 @@ describe("HU01: interface", () => {
   });
 });
 
-it("oferece Senha Única sem pedir senha local e mostra erro de retorno", async () => {
+it("oferece Google sem pedir senha local e mostra erro de retorno", async () => {
   session = null;
-  window.history.replaceState(null, "", "/login?authError=usp");
+  window.history.replaceState(null, "", "/login?authError=google");
   override = (url) =>
     url === "/api/auth/providers"
-      ? response({ usp: true, local: false })
+      ? response({ google: true, local: false })
       : undefined;
   render(<App />);
   expect(
     (
-      await screen.findByRole("link", { name: "Entrar com Senha Única USP" })
+      await screen.findByRole("link", { name: "Entrar com Google" })
     ).getAttribute("href"),
-  ).toBe("/api/auth/usp");
+  ).toBe("/api/auth/google");
   expect(screen.queryByLabelText("Senha", { exact: true })).toBeNull();
-  expect(screen.getByText(/Não foi possível entrar com a USP/)).toBeTruthy();
+  expect(screen.getByText(/Não foi possível entrar com o Google/)).toBeTruthy();
 });
 it("permite tentar novamente ao falhar consulta das opções de acesso", async () => {
   session = null;
@@ -412,19 +412,11 @@ it("permite tentar novamente ao falhar consulta das opções de acesso", async (
   expect(await screen.findByLabelText("E-mail institucional")).toBeTruthy();
 });
 
-it("exibe número e vínculos USP no perfil", async () => {
-  session = {
-    ...student,
-    uspNumber: "1234567",
-    uspAffiliations: [
-      { tipoVinculo: "ALUNOGR", nomeVinculo: "Aluno de graduação" },
-      { tipoVinculo: "ALUNOPOS" },
-    ],
-  };
+it("exibe autenticação Google no perfil", async () => {
+  session = { ...student, googleLinked: true };
   window.history.replaceState(null, "", "/perfil");
   render(<App />);
-  expect(await screen.findByText("1234567")).toBeTruthy();
-  expect(screen.getByText("Aluno de graduação, ALUNOPOS")).toBeTruthy();
+  expect(await screen.findByText("Conta Google vinculada")).toBeTruthy();
 });
 
 it("HU06 combina grupo, estado e pendências e consulta histórico de versões", async () => {
@@ -489,4 +481,123 @@ it("HU06 combina grupo, estado e pendências e consulta histórico de versões",
   expect(screen.getByText("revisado.pdf")).toBeTruthy();
   expect(screen.getByText("v1")).toBeTruthy();
   expect(screen.getByText("v2")).toBeTruthy();
+});
+
+it.each([
+  [
+    "account_conflict",
+    "Já existe uma conta com esse e-mail. Solicite ao responsável a vinculação da conta Google.",
+  ],
+  ["inactive", "Sua conta está desativada. Contate o responsável."],
+])("mostra orientação para erro Google %s", async (code, message) => {
+  session = null;
+  window.history.replaceState(null, "", `/login?authError=${code}`);
+  override = (url) =>
+    url === "/api/auth/providers"
+      ? response({ google: true, local: false })
+      : undefined;
+  render(<App />);
+  expect(await screen.findByText(message)).toBeTruthy();
+});
+
+it("administrador alterna visualização sem alterar sua identidade e conserva acesso à administração", async () => {
+  session = { ...student, id: 4, role: "ADMIN" };
+  available = [...projects];
+  override = (url, init) => {
+    if (url === "/api/auth/view-role") {
+      const role = JSON.parse(String(init?.body)).role;
+      session = { ...session!, viewRole: role ?? undefined };
+      return response(session);
+    }
+    if (url === "/api/projects")
+      return response(session?.viewRole ? [] : available);
+    if (url === "/api/admin/users")
+      return response([
+        { ...student, active: true },
+        { ...session, active: true },
+      ]);
+    return undefined;
+  };
+  render(<App />);
+  const picker = await screen.findByLabelText("Visualizar como");
+  expect(
+    screen.getByRole("button", { name: "Administrar usuários" }),
+  ).toBeTruthy();
+  await userEvent.selectOptions(picker, "ALUNO");
+  await screen.findByRole("button", { name: "Meu projeto" });
+  expect(session).toMatchObject({ id: 4, role: "ADMIN", viewRole: "ALUNO" });
+  await userEvent.click(
+    screen.getByRole("button", { name: "Administrar usuários" }),
+  );
+  await screen.findByRole("heading", { name: "Administrar usuários" });
+  await userEvent.selectOptions(
+    screen.getByLabelText("Visualizar como"),
+    "PROFESSOR",
+  );
+  await screen.findByRole("button", { name: "Minhas turmas" });
+  await userEvent.selectOptions(
+    screen.getByLabelText("Visualizar como"),
+    "ADMIN",
+  );
+  await screen.findByRole("button", { name: "+ Novo projeto" });
+  expect(session?.role).toBe("ADMIN");
+  expect(session?.viewRole).toBeUndefined();
+});
+it("mostra falha de mudança de visualização sem trocar o perfil e trata expiração", async () => {
+  session = { ...student, role: "ADMIN" };
+  let fail = 503;
+  override = (url) =>
+    url === "/api/auth/view-role"
+      ? response(
+          fail === 401 ? "Sessão expirada" : "Falha ao mudar visualização",
+          fail,
+        )
+      : undefined;
+  render(<App />);
+  await screen.findByLabelText("Visualizar como");
+  await userEvent.selectOptions(
+    screen.getByLabelText("Visualizar como"),
+    "ALUNO",
+  );
+  await screen.findByText("Falha ao mudar visualização");
+  expect(session?.viewRole).toBeUndefined();
+  fail = 401;
+  await userEvent.selectOptions(
+    screen.getByLabelText("Visualizar como"),
+    "ALUNO",
+  );
+  expect(
+    await screen.findByRole("heading", {
+      name: "Seu próximo projeto começa aqui.",
+    }),
+  ).toBeTruthy();
+});
+it("ao perder administrador na gestão de usuários, sai da área administrativa", async () => {
+  session = { ...student, id: 4, role: "ADMIN" };
+  window.history.replaceState(null, "", "/administracao");
+  override = (url, init) => {
+    if (url === "/api/admin/users")
+      return response([
+        { ...session, active: true },
+        { ...teacher, id: 5, role: "ADMIN", active: true },
+      ]);
+    if (url === "/api/admin/users/4/role" && init?.method === "PATCH") {
+      session = { ...session!, role: "ALUNO" };
+      return response({ ...session, active: true });
+    }
+    return undefined;
+  };
+  render(<App />);
+  await screen.findByRole("heading", { name: "Administrar usuários" });
+  await userEvent.selectOptions(
+    await screen.findByLabelText("Perfil de Marina Oliveira"),
+    "ALUNO",
+  );
+  await userEvent.click(
+    screen.getByRole("button", { name: "Salvar perfil de Marina Oliveira" }),
+  );
+  await screen.findByRole("button", { name: "Meu projeto" });
+  expect(
+    screen.queryByRole("button", { name: "Administrar usuários" }),
+  ).toBeNull();
 });

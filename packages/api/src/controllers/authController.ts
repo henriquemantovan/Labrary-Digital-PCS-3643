@@ -15,10 +15,10 @@ const credentialsSchema = z
     password: z.string().min(1).max(256),
   })
   .strict();
-import { UspAuthOptions } from "./uspAuthController.js";
+import { GoogleAuthOptions } from "./googleAuthController.js";
 
 export interface AuthOptions {
-  usp?: UspAuthOptions;
+  google?: GoogleAuthOptions;
   localLogin?: boolean;
   now: () => number;
   secureCookies: boolean;
@@ -42,7 +42,7 @@ export function createAuthController(
         throw new ApiError(
           403,
           "LOCAL_LOGIN_DISABLED",
-          "Entre com a Senha Única USP.",
+          "Entre com sua conta Google.",
         );
       const now = options.now();
       for (const [key, value] of attempts)
@@ -79,8 +79,8 @@ export function createAuthController(
           "INVALID_CREDENTIALS",
           "E-mail ou senha inválidos.",
         );
-      auth.deleteSession(readSessionToken(request));
-      const token = auth.createSession(
+      await auth.deleteSession(readSessionToken(request));
+      const token = await auth.createSession(
         user.id,
         options.now(),
         options.sessionTtlMs,
@@ -92,22 +92,28 @@ export function createAuthController(
       response.status(200).json({ data: publicUser(user) });
     },
     me(_request: Request, response: Response) {
-      response.json({ data: publicUser(response.locals.user) });
+      response.json({
+        data: publicUser(response.locals.accountUser, response.locals.viewRole),
+      });
     },
-    logout(request: Request, response: Response) {
-      auth.deleteSession(readSessionToken(request));
+    async logout(request: Request, response: Response) {
+      await auth.deleteSession(readSessionToken(request));
       response.clearCookie(sessionCookie, cookie);
       response.status(204).end();
     },
     scope(_request: Request, response: Response) {
       const user = response.locals.user;
       const classes = auth.directory.classes.filter(
-        (item) => user.role === "PROFESSOR" && item.professorId === user.id,
+        (item) =>
+          user.role === "ADMIN" ||
+          (user.role === "PROFESSOR" && item.professorId === user.id),
       );
-      const groups = auth.directory.groups.filter((group) =>
-        user.role === "ALUNO"
-          ? group.memberIds.includes(user.id)
-          : classes.some((item) => item.id === group.classId),
+      const groups = auth.directory.groups.filter(
+        (group) =>
+          user.role === "ADMIN" ||
+          (user.role === "ALUNO"
+            ? group.memberIds.includes(user.id)
+            : classes.some((item) => item.id === group.classId)),
       );
       response.json({
         data: {
