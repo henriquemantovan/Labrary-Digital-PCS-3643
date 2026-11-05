@@ -4,7 +4,7 @@ Autenticação e administração: [SSO Google, perfis, PostgreSQL e migrations](
 
 > Documento de definição do projeto e planejamento Scrum — PCS3643, Laboratório de Engenharia de Software I.
 > Plataforma voltada aos projetos de Laboratório de Projeto de Sistemas Digitais.
-> Versão inicial: 04/10/2026. Situação atual: base MVC/REST e HU01 implementadas localmente; revisão da equipe pendente.
+> Versão inicial: 04/10/2026. Situação atual: base MVC/REST, HU01 e HU04 implementadas localmente; revisão da equipe pendente.
 
 **Programando com IA:** veja o [guia de desenvolvimento com IA](docs/desenvolvimento-com-ia.md), o [AGENTS.md](AGENTS.md) e as [skills compartilhadas](.agents/skills/). O fluxo inclui gerar código com testes, a própria IA executá-los, corrigir falhas e relatar os resultados.
 
@@ -139,10 +139,12 @@ As funcionalidades foram registradas como issues no formato **Como [papel], eu g
 
 **Critérios de aceitação:**
 
-- [ ] Arquivos válidos são persistidos e vinculados ao projeto; nenhum acesso público é criado na etapa de rascunho.
-- [ ] Formato e tamanho são validados no servidor; falhas exibem mensagem e permitem tentar novamente.
-- [ ] Tela mostra progresso, data, autor e versão; substituição mantém histórico.
-- [ ] Envio é permitido somente ao próprio grupo, enquanto a entrega está aberta.
+- [x] Arquivos válidos são persistidos e vinculados ao projeto; nenhum acesso público é criado na etapa de rascunho.
+- [x] Formato e tamanho são validados no servidor; falhas exibem mensagem e permitem tentar novamente.
+- [x] Tela mostra progresso, data, autor e versão; substituição mantém histórico.
+- [x] Envio é permitido somente ao próprio grupo, enquanto a entrega está aberta.
+
+**Estado local:** implementação e testes da HU04 prontos para revisão. Formatos e limites usam uma política padrão até a HU03 permitir a configuração pelo professor. Regras, segurança, limitações e roteiro de validação em [docs/hu04.md](docs/hu04.md). Aprovação por outro integrante, refinamento com o grupo e demonstração da sprint ainda pendentes.
 
 ### [HU05 — Concluir a entrega do projeto](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/5)
 
@@ -172,7 +174,7 @@ As funcionalidades foram registradas como issues no formato **Como [papel], eu g
 - [x] Projetos não atribuídos ficam inacessíveis ao avaliador.
 - [ ] Nenhuma nota ou comentário privado aparece na galeria pública.
 
-**Estado local:** acompanhamento de metadados implementado para revisão; filtros combináveis, pendências e histórico de versões disponíveis. Abrir conteúdo de arquivos depende da HU04; o critério da galeria pública será validado com HU11/HU12. Regras, limites e roteiro em [docs/hu06.md](docs/hu06.md). Revisão por outro integrante, refinamento e demonstração permanecem pendentes; a issue não está Done.
+**Estado local:** acompanhamento de metadados implementado para revisão; filtros combináveis, pendências e histórico de versões disponíveis. O conteúdo dos arquivos abre pelo download protegido da HU04; o critério da galeria pública será validado com HU11/HU12. Regras, limites e roteiro em [docs/hu06.md](docs/hu06.md). Revisão por outro integrante, refinamento e demonstração permanecem pendentes; a issue não está Done.
 
 ### [HU07 — Trocar feedback no projeto](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/7)
 

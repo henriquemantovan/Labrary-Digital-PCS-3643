@@ -1,6 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 import request from "supertest";
-import { context, materialInput, projectInput } from "../test/context.js";
+import {
+  context,
+  materialInput,
+  projectInput,
+  storedMaterial,
+  versionInput,
+} from "../test/context.js";
 
 describe("API REST de projetos e materiais com autorização", () => {
   it("mantém saúde pública e exige sessão em cada rota privada", async () => {
@@ -10,12 +16,17 @@ describe("API REST de projetos e materiais com autorização", () => {
       "/api/projects",
       "/api/projects/1",
       "/api/projects/1/materials",
+      "/api/projects/1/material-rules",
       "/api/scope",
       "/api/auth/me",
     ]) {
       expect((await request(app).get(path)).status).toBe(401);
     }
-    for (const path of ["/api/projects", "/api/projects/1/materials"]) {
+    for (const path of [
+      "/api/projects",
+      "/api/projects/1/materials",
+      "/api/projects/1/materials/1/versions",
+    ]) {
       expect(
         (await request(app).post(path).set("X-CSRF-Protection", "1").send({}))
           .status,
@@ -170,61 +181,6 @@ describe("API REST de projetos e materiais com autorização", () => {
       expect((await professor.get(path)).status).toBe(400);
     }
   });
-  it("registra metadados somente para aluno do grupo em entrega aberta", async () => {
-    const { client, repository } = context();
-    const student = client(1);
-    expect((await student.get("/api/projects/2/materials")).body.data).toEqual(
-      [],
-    );
-    const first = await student
-      .post("/api/projects/2/materials")
-      .send(materialInput);
-    expect(first.status).toBe(201);
-    expect(first.body.data).toMatchObject({
-      projectId: 2,
-      versionNumber: 1,
-      storageKey: "mock/2/1",
-    });
-    const second = await student
-      .post("/api/projects/2/materials")
-      .send(materialInput);
-    expect(second.body.data.versionNumber).toBe(2);
-    expect(
-      (
-        await student
-          .post("/api/projects/2/materials")
-          .send({ ...materialInput, title: "Manual" })
-      ).body.data.versionNumber,
-    ).toBe(1);
-    expect(
-      (await student.get("/api/projects/2/materials")).body.data,
-    ).toHaveLength(3);
-    expect(
-      (
-        await student
-          .post("/api/projects/2/materials")
-          .send({ kind: "INVALID" })
-      ).status,
-    ).toBe(400);
-    expect(
-      (await client(3).post("/api/projects/2/materials").send(materialInput))
-        .status,
-    ).toBe(403);
-    expect(
-      (await client(2).post("/api/projects/1/materials").send(materialInput))
-        .status,
-    ).toBe(403);
-    repository.get(2)!.status = "EM_AVALIACAO";
-    expect(
-      (await student.post("/api/projects/2/materials").send(materialInput))
-        .status,
-    ).toBe(409);
-    repository.get(2)!.status = "AJUSTES";
-    expect(
-      (await student.post("/api/projects/2/materials").send(materialInput))
-        .status,
-    ).toBe(201);
-  });
   it("remove acesso imediatamente quando o vínculo muda", async () => {
     const { auth, client } = context();
     const student = client(1),
@@ -283,7 +239,7 @@ it("HU06 combina filtros e pendências sem ampliar atribuições, preservando ve
   const { auth, repository, client, app } = context();
   repository.get(1)!.status = "PREPARACAO";
   Object.assign(repository.get(1)!, { grade: 9, privateComment: "Segredo" });
-  repository.createMaterial(1, { ...materialInput, kind: "OUTRO" });
+  storedMaterial(repository, 1, { kind: "OUTRO" });
   const evaluator = client(2);
   const list = await evaluator.get(
     "/api/projects?groupId=1&status=PREPARACAO&pending=true",
@@ -307,9 +263,11 @@ it("HU06 combina filtros e pendências sem ampliar atribuições, preservando ve
   expect(
     (await evaluator.get("/api/projects?pending=false")).body.data,
   ).toEqual([]);
-  for (const kind of ["VIDEO", "RELATORIO", "MANUAL"] as const)
-    repository.createMaterial(1, { ...materialInput, title: kind, kind });
-  repository.createMaterial(1, { ...materialInput, title: "RELATORIO" });
+  for (const kind of ["VIDEO", "RELATORIO", "MANUAL"] as const) {
+    const material = storedMaterial(repository, 1, { title: kind, kind });
+    if (kind === "RELATORIO")
+      repository.addVersion(1, material.id, versionInput);
+  }
   expect(
     (await evaluator.get("/api/projects?pending=false")).body.data,
   ).toHaveLength(1);
@@ -319,9 +277,9 @@ it("HU06 combina filtros e pendências sem ampliar atribuições, preservando ve
   const versions = (await evaluator.get("/api/projects/1/materials")).body.data;
   expect(
     versions
-      .filter((item: { title: string }) => item.title === "RELATORIO")
-      .map((item: { versionNumber: number }) => item.versionNumber),
-  ).toEqual([1, 2]);
+      .find((item: { title: string }) => item.title === "RELATORIO")
+      .versions.map((item: { versionNumber: number }) => item.versionNumber),
+  ).toEqual([2, 1]);
   for (const query of [
     "pending=yes",
     "pending=",
