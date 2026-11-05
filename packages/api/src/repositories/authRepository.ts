@@ -1,9 +1,10 @@
 import { createHash, randomBytes } from "node:crypto";
-import { Directory, User } from "../models/auth.js";
+import { AcademicRole, Directory, User } from "../models/auth.js";
 
 export interface Session {
   userId: number;
   expiresAt: number;
+  viewRole?: AcademicRole;
 }
 export function createAuthRepository(
   directory: Directory = {
@@ -40,9 +41,30 @@ export function createAuthRepository(
       }
       return session;
     },
+    setViewRole(token: string, viewRole: AcademicRole | null, now: number) {
+      const session = sessions.get(tokenHash(token));
+      if (!session || session.expiresAt <= now) return false;
+      if (viewRole) session.viewRole = viewRole;
+      else delete session.viewRole;
+      return true;
+    },
     deleteSession(token: string) {
       sessions.delete(tokenHash(token));
     },
   };
 }
-export type AuthRepository = ReturnType<typeof createAuthRepository>;
+type Awaitable<T> = T | Promise<T>;
+export interface AuthRepository {
+  directory: Directory;
+  refresh?: () => Promise<void>;
+  findByEmail(email: string): User | undefined;
+  findById(id: number): User | undefined;
+  createSession(userId: number, now: number, ttl: number): Awaitable<string>;
+  getSession(token: string, now: number): Awaitable<Session | undefined>;
+  deleteSession(token: string): Awaitable<void>;
+  setViewRole(
+    token: string,
+    viewRole: AcademicRole | null,
+    now: number,
+  ): Awaitable<boolean>;
+}

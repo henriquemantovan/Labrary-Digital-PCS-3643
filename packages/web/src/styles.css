@@ -532,6 +532,15 @@ svg {
   min-height: 49px;
   padding: 0 17px;
 }
+.google-login {
+  justify-content: center;
+  gap: 10px;
+}
+.google-login img {
+  display: block;
+  flex: 0 0 28px;
+  object-fit: contain;
+}
 .account-help {
   font-size: 11px;
   color: #aa9cb8;
@@ -1691,4 +1700,140 @@ svg {
 .create-panel input,
 .create-panel textarea {
   max-width: 100%;
+}
+/* Os filtros de acompanhamento se reorganizam conforme o espaço disponível. */
+.filter-bar {
+  flex-wrap: wrap;
+}
+.filter-bar .search-field {
+  min-width: 0;
+}
+.material-list li > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.filter-bar select {
+  min-width: 210px;
+  max-width: 100%;
+}
+
+.feedback .section-heading {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.feedback-field {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.feedback textarea,
+.feedback select {
+  width: 100%;
+  min-width: 0;
+}
+.feedback-messages {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 16px;
+}
+.feedback-messages li {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px;
+  min-width: 0;
+}
+.feedback-meta {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.feedback-meta time {
+  font-size: 12px;
+  color: var(--muted);
+}
+.feedback-body {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.admin-view {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 18px;
+  margin-bottom: 28px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.admin-view label {
+  font-weight: 650;
+}
+.admin-view select {
+  width: auto;
+  max-width: 100%;
+}
+.admin-view p {
+  flex: 1 1 260px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+.admin-search {
+  width: 100%;
+  max-width: 520px;
+  display: block;
+  margin: 10px 0 24px;
+}
+.admin-users {
+  display: grid;
+  gap: 16px;
+}
+.admin-user-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  background: var(--surface);
+  padding: 22px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.admin-user-card > div {
+  flex: 1 1 220px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.admin-user-card h2 {
+  font-size: 17px;
+  margin: 0 0 8px;
+}
+.admin-user-card p {
+  color: var(--muted);
+  font-size: 13px;
+}
+.admin-user-card form {
+  display: grid;
+  gap: 10px;
+  flex: 0 1 280px;
+  min-width: 0;
+  width: 100%;
+}
+.admin-user-card select {
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .workspace-admin .sidebar nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .workspace-admin .nav-item {
+    min-width: 0;
+    white-space: normal;
+  }
 }

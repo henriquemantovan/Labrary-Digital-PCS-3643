@@ -1,3 +1,5 @@
+import { AdminUsers } from "./AdminUsers";
+import { ProjectFeedback } from "./ProjectFeedback";
 import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { api, ApiError } from "./api";
@@ -6,6 +8,7 @@ import { GroupManager, ProjectPlanning } from "./Planning";
 import { Icon } from "./Icons";
 
 const roleLabels = {
+  ADMIN: "Administrador",
   ALUNO: "Aluno",
   AVALIADOR: "Avaliador",
   PROFESSOR: "Professor",
@@ -16,7 +19,13 @@ const statusLabels: Record<string, string> = {
   AJUSTES: "Em ajustes",
   FINALIZADO: "Finalizado",
 };
+const materialLabels: Record<string, string> = {
+  VIDEO: "Vídeo",
+  RELATORIO: "Relatório",
+  MANUAL: "Manual",
+};
 const roleDescriptions = {
+  ADMIN: "Administre contas e acompanhe os projetos de todas as turmas.",
   ALUNO: "Seu grupo, suas ideias e os próximos passos do seu projeto.",
   AVALIADOR: "Um olhar atento para os projetos que você acompanha.",
   PROFESSOR: "Uma visão dos projetos e grupos da sua turma.",
@@ -56,6 +65,35 @@ function Login({
   onLogin: (user: User) => void;
   message: string;
 }) {
+  const [providers, setProviders] = useState<{
+    google: boolean;
+    local: boolean;
+  } | null>(null);
+  const [providerError, setProviderError] = useState("");
+  async function loadProviders() {
+    setProviderError("");
+    try {
+      setProviders(
+        await api<{ google: boolean; local: boolean }>("/auth/providers"),
+      );
+    } catch (error) {
+      setProviderError((error as Error).message);
+    }
+  }
+  useEffect(() => {
+    void loadProviders();
+  }, []);
+  const authError = new URLSearchParams(window.location.search).get(
+    "authError",
+  );
+  const googleError =
+    authError === "account_conflict"
+      ? "Já existe uma conta com esse e-mail. Solicite ao responsável a vinculação da conta Google."
+      : authError === "inactive"
+        ? "Sua conta está desativada. Contate o responsável."
+        : authError
+          ? "Não foi possível entrar com o Google. Tente novamente; se persistir, contate o responsável."
+          : "";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [visible, setVisible] = useState(false);
@@ -129,63 +167,107 @@ function Login({
           </span>
           <p className="eyebrow">BEM-VINDO DE VOLTA</p>
           <h2 id="login-title">
-            Seu próximo projeto
-            <br />
+            Seu próximo projeto <br />
             começa aqui.
           </h2>
           <p className="muted login-description">
             Entre com sua conta para acessar seu espaço.
           </p>
-          {(error || message) && <Notice>{error || message}</Notice>}
-          <form onSubmit={submit} aria-label="Entrar na conta">
-            <label htmlFor="email">E-mail institucional</label>
-            <input
-              id="email"
-              type="email"
-              autoComplete="username"
-              placeholder="seu.nome@instituicao.br"
-              required
-              maxLength={254}
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              disabled={busy}
-            />
-            <label htmlFor="password">Senha</label>
-            <div className="password-field">
+          {(error || message || googleError) && (
+            <Notice>{error || message || googleError}</Notice>
+          )}
+          {providerError && (
+            <Notice>
+              {providerError}
+              <button onClick={() => void loadProviders()}>
+                Tentar novamente
+              </button>
+            </Notice>
+          )}
+          {!providers && !providerError && (
+            <p role="status">Carregando opções de acesso…</p>
+          )}
+          {providers?.google && (
+            <p>
+              <a
+                className="primary login-submit google-login"
+                href="/api/auth/google"
+              >
+                <img
+                  src="/google-logo.webp"
+                  alt=""
+                  aria-hidden="true"
+                  width={28}
+                  height={28}
+                />
+                <span>Entrar com Google</span>
+              </a>
+            </p>
+          )}
+          {providers?.google && (
+            <p className="muted">
+              Use sua conta Google para acessar seu espaço.
+            </p>
+          )}
+          {providers?.local && (
+            <form onSubmit={submit} aria-label="Entrar na conta">
+              <label htmlFor="email">E-mail institucional</label>
               <input
-                id="password"
-                type={visible ? "text" : "password"}
-                autoComplete="current-password"
-                placeholder="Digite sua senha"
+                id="email"
+                type="email"
+                autoComplete="username"
+                placeholder="seu.nome@instituicao.br"
                 required
-                maxLength={256}
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
+                maxLength={254}
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
                 disabled={busy}
               />
+              <label htmlFor="password">Senha</label>
+              <div className="password-field">
+                <input
+                  id="password"
+                  type={visible ? "text" : "password"}
+                  autoComplete="current-password"
+                  placeholder="Digite sua senha"
+                  required
+                  maxLength={256}
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  disabled={busy}
+                />
+                <button
+                  type="button"
+                  className="icon-button"
+                  aria-label={visible ? "Ocultar senha" : "Mostrar senha"}
+                  aria-pressed={visible}
+                  onClick={() => setVisible(!visible)}
+                >
+                  <Icon name={visible ? "eyeOff" : "eye"} />
+                </button>
+              </div>
               <button
-                type="button"
-                className="icon-button"
-                aria-label={visible ? "Ocultar senha" : "Mostrar senha"}
-                aria-pressed={visible}
-                onClick={() => setVisible(!visible)}
+                className="primary login-submit"
+                disabled={busy}
+                type="submit"
               >
-                <Icon name={visible ? "eyeOff" : "eye"} />
+                <span>{busy ? "Entrando…" : "Entrar no meu espaço"}</span>
+                {busy ? <span className="spinner" /> : <Icon name="arrow" />}
               </button>
-            </div>
-            <button
-              className="primary login-submit"
-              disabled={busy}
-              type="submit"
-            >
-              <span>{busy ? "Entrando…" : "Entrar no meu espaço"}</span>
-              {busy ? <span className="spinner" /> : <Icon name="arrow" />}
-            </button>
-          </form>
+            </form>
+          )}
           <p className="account-help">
             Precisa de acesso ou esqueceu sua senha?
             <br />
-            <span>Entre em contato com o professor da sua turma.</span>
+            {providers?.google ? (
+              <span>
+                Para recuperar a senha, acesse o{" "}
+                <a href="https://accounts.google.com/signin/recovery">Google</a>
+                . Para vínculos de turma, fale com o professor.
+              </span>
+            ) : (
+              <span>Entre em contato com o professor da sua turma.</span>
+            )}
           </p>
           <div className="login-security">
             <Icon name="lock" size={15} />
@@ -208,6 +290,8 @@ export function App() {
   const [path, setPath] = useState(window.location.pathname);
   const [busy, setBusy] = useState(false);
   const [logoutError, setLogoutError] = useState("");
+  const [viewBusy, setViewBusy] = useState(false);
+  const [viewError, setViewError] = useState("");
   const navigate = useCallback((next: string) => {
     window.history.pushState(null, "", next);
     setPath(next);
@@ -268,6 +352,23 @@ export function App() {
       setBusy(false);
     }
   }
+  async function changeView(role: string) {
+    setViewBusy(true);
+    setViewError("");
+    try {
+      const current = await api<User>("/auth/view-role", {
+        method: "POST",
+        body: JSON.stringify({ role: role === "ADMIN" ? null : role }),
+      });
+      setUser(current);
+      navigate("/projetos");
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) expired();
+      else setViewError((error as Error).message);
+    } finally {
+      setViewBusy(false);
+    }
+  }
   if (initializing)
     return (
       <main className="startup">
@@ -297,8 +398,14 @@ export function App() {
         }}
       />
     );
+  const visibleUser: User =
+    user.role === "ADMIN" && user.viewRole
+      ? { ...user, role: user.viewRole }
+      : user;
   return (
-    <div className="workspace">
+    <div
+      className={`workspace${user.role === "ADMIN" ? " workspace-admin" : ""}`}
+    >
       <a className="skip-link" href="#main">
         Pular para o conteúdo
       </a>
@@ -327,16 +434,25 @@ export function App() {
             onClick={() => navigate("/projetos")}
           >
             <Icon name="grid" />
-            {user.role === "ALUNO" ? "Meu projeto" : "Projetos"}
+            {visibleUser.role === "ALUNO" ? "Meu projeto" : "Projetos"}
             <span className="nav-active-dot" />
           </button>
-          {user.role === "PROFESSOR" && (
+          {["PROFESSOR", "ADMIN"].includes(visibleUser.role) && (
             <button
               className={`nav-item ${path === "/turmas" ? "active" : ""}`}
               onClick={() => navigate("/turmas")}
             >
               <Icon name="book" />
               Minhas turmas
+            </button>
+          )}
+          {user.role === "ADMIN" && (
+            <button
+              className={`nav-item ${path === "/administracao" ? "active" : ""}`}
+              onClick={() => navigate("/administracao")}
+            >
+              <Icon name="user" />
+              Administrar usuários
             </button>
           )}
           <button
@@ -385,11 +501,13 @@ export function App() {
           <span>
             Meu espaço <span className="breadcrumb">/</span>{" "}
             <strong>
-              {path === "/perfil"
-                ? "Perfil"
-                : path === "/turmas"
-                  ? "Turmas"
-                  : "Projetos"}
+              {path === "/administracao"
+                ? "Administração"
+                : path === "/perfil"
+                  ? "Perfil"
+                  : path === "/turmas"
+                    ? "Turmas"
+                    : "Projetos"}
             </strong>
           </span>
           <span className="profile-badge">
@@ -399,12 +517,45 @@ export function App() {
         </header>
         <main id="main" className="workspace-main">
           {logoutError && <Notice>{logoutError}</Notice>}
-          <Dashboard
-            user={user}
-            path={path}
-            navigate={navigate}
-            expired={expired}
-          />
+          {user.role === "ADMIN" && (
+            <section className="admin-view" aria-label="Visualização de perfis">
+              <label htmlFor="view-role">Visualizar como</label>
+              <select
+                id="view-role"
+                value={user.viewRole ?? "ADMIN"}
+                disabled={viewBusy}
+                onChange={(event) => void changeView(event.target.value)}
+              >
+                <option value="ADMIN">Administrador</option>
+                <option value="ALUNO">Aluno</option>
+                <option value="AVALIADOR">Avaliador</option>
+                <option value="PROFESSOR">Professor</option>
+              </select>
+              <p>
+                {user.viewRole
+                  ? `Visualização de ${roleLabels[user.viewRole]}. Sua conta continua sendo Administrador; o acesso segue seus vínculos nesse perfil.`
+                  : "Visão administrativa de todas as turmas e projetos."}
+              </p>
+            </section>
+          )}
+          {viewError && <Notice>{viewError}</Notice>}
+          {path === "/administracao" && user.role === "ADMIN" ? (
+            <AdminUsers
+              expired={expired}
+              onSessionChanged={(current) => {
+                setUser(current);
+                if (current.role !== "ADMIN") navigate("/projetos");
+              }}
+            />
+          ) : (
+            <Dashboard
+              key={`${user.id}-${user.role}-${user.viewRole ?? ""}`}
+              user={path === "/perfil" ? user : visibleUser}
+              path={path}
+              navigate={navigate}
+              expired={expired}
+            />
+          )}
         </main>
         <footer className="workspace-footer">
           <span>LABRARY DIGITAL</span>
@@ -435,6 +586,8 @@ function Dashboard({
   const [revision, setRevision] = useState(0);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("");
+  const [group, setGroup] = useState("");
+  const [pending, setPending] = useState("");
   const [creating, setCreating] = useState(false);
   const [managingClass, setManagingClass] = useState<number | null>(null);
   const [planning, setPlanning] = useState(false);
@@ -442,7 +595,7 @@ function Dashboard({
   const knownPath =
     ["/", "/projetos", "/perfil"].includes(path) ||
     !!detailId ||
-    (path === "/turmas" && user.role === "PROFESSOR");
+    (path === "/turmas" && ["PROFESSOR", "ADMIN"].includes(user.role));
   useEffect(() => {
     let active = true;
     setLoading(true);
@@ -526,6 +679,12 @@ function Dashboard({
           <dl>
             <dt>E-mail</dt>
             <dd>{user.email}</dd>
+            {user.googleLinked && (
+              <>
+                <dt>Autenticação</dt>
+                <dd>Conta Google vinculada</dd>
+              </>
+            )}
             <dt>Permissões</dt>
             <dd>{roleDescriptions[user.role]}</dd>
           </dl>
@@ -622,7 +781,9 @@ function Dashboard({
           Todos os projetos
         </button>
         <p className="eyebrow">
-          {detail.category} · GRUPO {String(detail.groupId).padStart(2, "0")}
+          {detail.category} ·{" "}
+          {detail.groupName ??
+            `Grupo ${String(detail.groupId).padStart(2, "0")}`}
         </p>
         <h1>{detail.title}</h1>
         <p className="page-intro">
@@ -652,11 +813,22 @@ function Dashboard({
             expired={expired}
           />
         )}
+        {detail.missingMaterials && (
+          <p>
+            {detail.missingMaterials.length
+              ? `Pendentes: ${detail.missingMaterials.map((kind) => materialLabels[kind]).join(", ")}`
+              : "Materiais obrigatórios presentes"}
+          </p>
+        )}
         <section className="detail-section">
           <div className="section-heading">
             <h2>Materiais do projeto</h2>
             <span>{materials.length} materiais</span>
           </div>
+          <p className="muted">
+            Histórico de versões registradas. O conteúdo dos arquivos ainda não
+            está disponível nesta etapa.
+          </p>
           {materials.length ? (
             <ul className="material-list">
               {materials.map((item) => (
@@ -681,11 +853,20 @@ function Dashboard({
           <Icon name="lock" size={17} />
           Acesso restrito ao grupo e à equipe acadêmica vinculada ao projeto.
         </div>
+        <ProjectFeedback
+          key={detail.id}
+          projectId={detail.id}
+          materials={materials}
+          expired={expired}
+        />
       </>
     );
   const filtered = projects.filter(
     (project) =>
       (!status || project.status === status) &&
+      (!group || String(project.groupId) === group) &&
+      (!pending ||
+        (project.missingMaterials?.length ?? 0) > 0 === (pending === "true")) &&
       `${project.title} ${project.category} ${project.groupId}`
         .toLocaleLowerCase("pt-BR")
         .includes(query.toLocaleLowerCase("pt-BR")),
@@ -701,7 +882,7 @@ function Dashboard({
           </h1>
           <p className="page-intro">{roleDescriptions[user.role]}</p>
         </div>
-        {user.role === "PROFESSOR" && (
+        {["PROFESSOR", "ADMIN"].includes(user.role) && (
           <button className="primary" onClick={() => setCreating(!creating)}>
             {creating ? "Fechar formulário" : "+ Novo projeto"}
           </button>
@@ -726,7 +907,9 @@ function Dashboard({
                 ? "Projetos do meu grupo"
                 : user.role === "AVALIADOR"
                   ? "Projetos atribuídos"
-                  : "Projetos da minha turma"}
+                  : user.role === "ADMIN"
+                    ? "Projetos de todas as turmas"
+                    : "Projetos da minha turma"}
             </span>
             <strong>
               {String(projects.length).padStart(2, "0")}
@@ -797,6 +980,32 @@ function Dashboard({
               </option>
             ))}
           </select>
+          <select
+            aria-label="Filtrar por grupo"
+            value={group}
+            onChange={(event) => setGroup(event.target.value)}
+          >
+            <option value="">Todos os grupos</option>
+            {Array.from(
+              new Map(
+                projects.map((project) => [project.groupId, project]),
+              ).values(),
+            ).map((project) => (
+              <option key={project.groupId} value={project.groupId}>
+                {project.groupName ??
+                  `Grupo ${String(project.groupId).padStart(2, "0")}`}
+              </option>
+            ))}
+          </select>
+          <select
+            aria-label="Filtrar por pendências"
+            value={pending}
+            onChange={(event) => setPending(event.target.value)}
+          >
+            <option value="">Todas as pendências</option>
+            <option value="true">Com materiais pendentes</option>
+            <option value="false">Sem materiais pendentes</option>
+          </select>
         </div>
         <div className="project-grid">
           {filtered.map((project, index) => (
@@ -838,10 +1047,18 @@ function Dashboard({
                   </a>
                 </h3>
                 <p>{project.description || "Descrição ainda não informada."}</p>
+                {project.missingMaterials && (
+                  <p>
+                    {project.missingMaterials.length
+                      ? `Pendentes: ${project.missingMaterials.map((kind) => materialLabels[kind]).join(", ")}`
+                      : "Materiais obrigatórios presentes"}
+                  </p>
+                )}
                 <div className="card-footer">
                   <span>
                     <Icon name="user" size={15} />
-                    Grupo {String(project.groupId).padStart(2, "0")}
+                    {project.groupName ??
+                      `Grupo ${String(project.groupId).padStart(2, "0")}`}
                   </span>
                   <a
                     className="project-link"
@@ -868,7 +1085,7 @@ function Dashboard({
             }
             text={
               projects.length
-                ? "Tente outro termo ou selecione um estado diferente."
+                ? "Tente outro termo ou ajuste os filtros."
                 : "Os projetos aparecerão aqui assim que forem vinculados ao seu perfil."
             }
           />

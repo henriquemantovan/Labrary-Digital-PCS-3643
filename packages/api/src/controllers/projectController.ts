@@ -12,6 +12,8 @@ const listQuerySchema = z
   .object({
     status: z.enum(projectStatuses).optional(),
     classId: positiveInteger.optional(),
+    groupId: positiveInteger.optional(),
+    pending: z.enum(["true", "false"]).optional(),
   })
   .strict();
 
@@ -43,12 +45,6 @@ export function createProjectController(
   auth: AuthRepository,
 ) {
   const permissions = createPermissions(auth);
-  const view = (project: Project) => ({
-    ...project,
-    academicYear:
-      auth.directory.classes.find((item) => item.id === project.classId)
-        ?.academicYear ?? null,
-  });
   const accessibleProject = (request: Request, response: Response) => {
     const { projectId } = projectIdSchema.parse(request.params);
     const project = repository.get(projectId);
@@ -56,6 +52,32 @@ export function createProjectController(
       throw new ApiError(404, "PROJECT_NOT_FOUND", "Projeto não encontrado.");
     }
     return project;
+  };
+  const presentProject = (project: Project) => {
+    const present = new Set(
+      repository.listMaterials(project.id).map((item) => item.kind),
+    );
+    return {
+      id: project.id,
+      classId: project.classId,
+      groupId: project.groupId,
+      title: project.title,
+      description: project.description,
+      category: project.category,
+      status: project.status,
+      dueAt: project.dueAt,
+      createdAt: project.createdAt,
+      updatedAt: project.updatedAt,
+      academicYear:
+        auth.directory.classes.find((item) => item.id === project.classId)
+          ?.academicYear ?? null,
+      groupName:
+        auth.directory.groups.find((group) => group.id === project.groupId)
+          ?.name ?? `Grupo ${project.groupId}`,
+      missingMaterials: (["VIDEO", "RELATORIO", "MANUAL"] as const).filter(
+        (kind) => !present.has(kind),
+      ),
+    };
   };
   return {
     list(request: Request, response: Response) {
@@ -66,17 +88,26 @@ export function createProjectController(
           .filter((project) =>
             permissions.canRead(response.locals.user, project),
           )
-          .map(view),
+          .filter(
+            (project) => !query.groupId || project.groupId === query.groupId,
+          )
+          .map(presentProject)
+          .filter(
+            (project) =>
+              query.pending === undefined ||
+              project.missingMaterials.length > 0 ===
+                (query.pending === "true"),
+          ),
       });
     },
 
     get(request: Request, response: Response) {
       const project = accessibleProject(request, response);
-      response.status(200).json({ data: view(project) });
+      response.status(200).json({ data: presentProject(project) });
     },
 
     create(request: Request, response: Response) {
-      if (response.locals.user.role !== "PROFESSOR")
+      if (!["PROFESSOR", "ADMIN"].includes(response.locals.user.role))
         throw new ApiError(
           403,
           "FORBIDDEN",
@@ -89,7 +120,7 @@ export function createProjectController(
         input.groupId,
       );
       const project = repository.create(input);
-      response.status(201).json({ data: view(project) });
+      response.status(201).json({ data: presentProject(project) });
     },
 
     listMaterials(request: Request, response: Response) {

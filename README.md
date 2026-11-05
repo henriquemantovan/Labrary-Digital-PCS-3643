@@ -1,5 +1,7 @@
 # Labrary Digital
 
+Autenticação e administração: [SSO Google, perfis, PostgreSQL e migrations](docs/login-google.md). Os arquivos `schema.sql` são o snapshot histórico já implantado; novas instalações e alterações usam `pnpm db:deploy`.
+
 > Documento de definição do projeto e planejamento Scrum — PCS3643, Laboratório de Engenharia de Software I.
 > Plataforma voltada aos projetos de Laboratório de Projeto de Sistemas Digitais.
 > Versão inicial: 04/10/2026. Situação atual: base MVC/REST e HU01 implementadas localmente; revisão da equipe pendente.
@@ -28,7 +30,7 @@ Arquivos, comentários e avaliações dispersos dificultam acompanhar pendência
 - Finalização e publicação explícita de materiais autorizados.
 - Galeria pública de projetos concluídos, com busca e filtros.
 
-Histórico, favoritos, estatísticas e sugestões são complementos propostos no backlog P2. Chat em tempo real, pagamentos e integração com autenticação USP não fazem parte do MVP; qualquer ampliação depende de refinamento.
+Histórico, favoritos, estatísticas e sugestões são complementos propostos no backlog P2. Chat em tempo real e pagamentos não fazem parte do MVP. O SSO Google foi adicionado ao escopo: [configuração de login e migrations](docs/login-google.md).
 
 ### Alinhamento com o enunciado geral
 
@@ -167,10 +169,12 @@ As funcionalidades foram registradas como issues no formato **Como [papel], eu g
 
 **Critérios de aceitação:**
 
-- [ ] Lista filtra por grupo, estado e pendências.
+- [x] Lista filtra por grupo, estado e pendências.
 - [ ] Detalhe permite visualizar materiais autorizados e versões.
-- [ ] Projetos não atribuídos ficam inacessíveis ao avaliador.
+- [x] Projetos não atribuídos ficam inacessíveis ao avaliador.
 - [ ] Nenhuma nota ou comentário privado aparece na galeria pública.
+
+**Estado local:** acompanhamento de metadados implementado para revisão; filtros combináveis, pendências e histórico de versões disponíveis. Abrir conteúdo de arquivos depende da HU04; o critério da galeria pública será validado com HU11/HU12. Regras, limites e roteiro em [docs/hu06.md](docs/hu06.md). Revisão por outro integrante, refinamento e demonstração permanecem pendentes; a issue não está Done.
 
 ### [HU07 — Trocar feedback no projeto](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/7)
 
@@ -181,11 +185,13 @@ As funcionalidades foram registradas como issues no formato **Como [papel], eu g
 
 **Critérios de aceitação:**
 
-- [ ] Somente integrantes do grupo e equipe docente autorizada podem ler e enviar mensagens.
-- [ ] Mensagens persistem com autor, data e contexto da versão do material.
-- [ ] Atualizar ou reabrir a página conserva a conversa em ordem cronológica.
-- [ ] Erros de envio são indicados sem duplicar mensagens; conteúdo é escapado para prevenir scripts.
-- [ ] MVP usa comentários com atualização manual, sem exigir chat em tempo real.
+- [x] Somente integrantes do grupo e equipe docente autorizada podem ler e enviar mensagens.
+- [x] Mensagens persistem com autor, data e contexto da versão do material.
+- [x] Atualizar ou reabrir a página conserva a conversa em ordem cronológica.
+- [x] Erros de envio são indicados sem duplicar mensagens; conteúdo é escapado para prevenir scripts.
+- [x] MVP usa comentários com atualização manual, sem exigir chat em tempo real.
+
+**Estado local:** implementação e testes da conversa privada prontos para revisão. Persistência local de projetos/metadados/mensagens, contexto de versão, atualização manual e repetição de envio sem duplicação descritos em [docs/hu07.md](docs/hu07.md). Revisão de outro integrante, refinamento e demonstração permanecem pendentes; a issue não está Done.
 
 ### [HU08 — Avaliar projetos por rubrica](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/8)
 
@@ -390,6 +396,14 @@ O backlog foi montado nas issues, conforme solicitado. A issue de acompanhamento
 
 Essa atualização documenta o estado no repositório e complementa a issue #21; não altera o quadro remoto do GitHub Projects.
 
+### Atualização local — HU06 (02/11/2026)
+
+Acompanhamento de metadados em revisão: filtros por grupo, estado e pendências, detalhe com histórico de versões e acesso restrito às atribuições. Pendências para concluir a história: conteúdo privado de arquivos (HU04), validação da futura galeria pública (HU11/HU12), revisão de outro integrante, refinamento com o grupo e demonstração. Detalhes em [docs/hu06.md](docs/hu06.md). Este registro não fecha a issue #6 nem altera o backlog remoto #21.
+
+### Atualização local — HU07 (02/11/2026)
+
+Conversa privada implementada para revisão, com persistência local, contexto de versão e atualização manual. Critérios funcionais cobertos por testes; refinamento, revisão e demonstração pendentes. Veja [docs/hu07.md](docs/hu07.md). Esse registro não fecha a issue #7 nem altera o backlog remoto #21.
+
 ## 7. Protótipo da interface (telas do sistema)
 
 Os SVGs abaixo são **wireframes estáticos de desktop**, com dados fictícios. Não representam telas implementadas. A validação de navegação mobile integra a TEC03 e o desenvolvimento das histórias.
@@ -487,9 +501,9 @@ Preparação e Ajustes permitem edição conforme prazo/reabertura. Em avaliaç�
 
 **Baseline da TEC02 (15/10/2026):** Node.js 24.19.0, pnpm 11.25.0, React 19.3.1, Vite 8.3.4, Express 5.3.0, TypeScript 5.9.3 e Prisma 7.10.0. Os manifests fixam versões diretas; o lockfile fixa a árvore completa. O frontend e a API TypeScript têm build configurado. A API oferece `GET /api/health`, listagem/criação/detalhe de projetos e listagem/registro de metadados de materiais. O [contrato inicial](docs/api-inicial.md) descreve rotas, validações, envelopes e erros. A HU01 acrescenta login, sessão com cookie HttpOnly, autorização por vínculo e uma área por perfil em tema escuro roxo/rosa. O [registro da HU01](docs/hu01.md) detalha regras e limitações.
 
-**Instalação e desenvolvimento local:** requer Node.js 24.19.0 e pnpm 11.25.0. Na raiz do repositório, copie `.env.example` para `.env`, instale com `pnpm install --frozen-lockfile` e inicie as duas aplicações com `pnpm dev`. O frontend fica em `http://localhost:5173` e encaminha `/api` para a API em `http://localhost:3000`. `pnpm build` compila os workspaces e `pnpm test` executa os testes da API e da interface com cobertura mínima de 85% nas quatro métricas. `pnpm test:e2e` verifica os três perfis em desktop e celular (instale Chromium com `pnpm exec playwright install --with-deps chromium`). As contas de demonstração e o uso de `AUTH_USERS_FILE` estão em [docs/hu01.md](docs/hu01.md). A API ainda usa projetos, metadados e sessões em memória; PostgreSQL e arquivos serão conectados em uma etapa posterior. `pnpm db:generate` continua disponível para gerar o cliente Prisma, sem ser necessário para executar a HU01.
+**Instalação e desenvolvimento local:** requer Node.js 24.19.0 e pnpm 11.25.0. Na raiz do repositório, copie `.env.example` para `.env`, instale com `pnpm install --frozen-lockfile` e inicie as duas aplicações com `pnpm dev`. O frontend fica em `http://localhost:5173` e encaminha `/api` para a API em `http://localhost:3000`. `pnpm build` compila os workspaces e `pnpm test` executa os testes da API e da interface com cobertura mínima de 85% nas quatro métricas. `pnpm test:e2e` verifica os três perfis em desktop e celular (instale Chromium com `pnpm exec playwright install --with-deps chromium`). As contas de demonstração e o uso de `AUTH_USERS_FILE` estão em [docs/hu01.md](docs/hu01.md). A API persiste projetos, metadados e mensagens em arquivo privado desde a HU07 (um processo escritor; configuração em [docs/hu07.md](docs/hu07.md)); no modo local, sessões ficam em memória; no modo Google, identidades, sessões e tentativas OAuth são persistidas no PostgreSQL. O conteúdo dos arquivos de materiais ainda não é armazenado. `pnpm db:generate` continua disponível para gerar o cliente Prisma, sem ser necessário para executar a HU01.
 
-O DER está em [docs/diagrama-er.md](docs/diagrama-er.md), o diagrama de classes inicial em [docs/diagrama-classes.md](docs/diagrama-classes.md) e o model Prisma em `packages/api/prisma/schema.prisma`. O script SQL de TEC01 permanece em `db/schema.sql` como schema completo do banco; a integração física do Prisma e a validação em ambiente limpo continuam pendentes.
+O DER está em [docs/diagrama-er.md](docs/diagrama-er.md), o diagrama de classes inicial em [docs/diagrama-classes.md](docs/diagrama-classes.md) e o model Prisma em `packages/api/prisma/schema.prisma`. O SQL de TEC01 permanece em `db/schema.sql` como snapshot histórico. A evolução usa migrations versionadas do Prisma; identidades Google e sessões usam o adapter PostgreSQL. Consulte o [guia de migrations](docs/login-google.md).
 
 **CI:** o workflow [Build e testes](.github/workflows/ci.yml) executa build, cobertura e testes de navegador. Sua primeira execução remota depende da publicação das alterações; não foram inseridos badges com resultados presumidos.
 
@@ -499,15 +513,16 @@ O DER está em [docs/diagrama-er.md](docs/diagrama-er.md), o diagrama de classes
 
 O DER detalhado está em [docs/diagrama-er.md](docs/diagrama-er.md). O schema inicial para PostgreSQL está em [db/schema.sql](db/schema.sql), com tabelas, chaves, índices, restrições e tipos enumerados para usuários, turmas, grupos, projetos, entregas, materiais versionados, feedback, rubricas, avaliações, liberação de resultados e publicação.
 
-Com PostgreSQL instalado e um banco vazio criado, execute na raiz do repositório:
+Com PostgreSQL instalado, banco vazio criado e `DATABASE_URL` configurada no `.env`, execute na raiz:
 
 ```sh
-psql -d nome_do_banco -f db/schema.sql
+pnpm db:deploy
+pnpm db:status
 ```
 
-O script cria os objetos dentro de uma transação. Não inclui seed nem armazena arquivos binários; os arquivos ficam em armazenamento privado e `storage_key` guarda sua referência. A HU01 impõe autorização por perfil e vínculo. A aplicação ainda deverá impor outras regras que dependem de múltiplas linhas, como soma dos pesos da rubrica igual a 100% e compatibilidade de papel.
+As migrations criam os objetos dentro de transações. Em banco onde `schema.sql` já foi aplicado, registre primeiro a baseline conforme o [guia de implantação](docs/login-google.md). Não inclui seed nem armazena arquivos binários; os arquivos ficam em armazenamento privado e `storage_key` guarda sua referência. A HU01 impõe autorização por perfil e vínculo. A aplicação ainda deverá impor outras regras que dependem de múltiplas linhas, como soma dos pesos da rubrica igual a 100% e compatibilidade de papel.
 
-O script SQL e o model Prisma descrevem as entidades do MVP. A API ainda não consulta PostgreSQL: usa um repositório em memória para esta etapa, e a criação/migração do banco não foi verificada em uma instância real. A instalação limpa e a validação de ponta a ponta permanecem no escopo da TEC05.
+O model Prisma descreve as entidades do MVP. O modo Google consulta PostgreSQL para identidades, vínculos de autorização, sessões e tentativas OAuth; projetos, metadados e mensagens usam o adapter de arquivo privado da HU07. `pnpm db:test` verifica instalação limpa e adoção do schema existente em PostgreSQL real e descartável. A validação no Google real exige Client ID, Client Secret e URI de redirecionamento cadastrados no Google Cloud.
 
 ### Visão dos componentes e separação MVC
 

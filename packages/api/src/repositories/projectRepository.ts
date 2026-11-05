@@ -1,3 +1,4 @@
+import { NewMessage, ProjectMessage } from "../models/message.js";
 import { ApiError } from "../errors.js";
 import {
   NewMaterial,
@@ -18,44 +19,102 @@ export interface ProjectRepository {
   create(input: NewProject): Project;
   listMaterials(projectId: number): ProjectMaterial[];
   createMaterial(projectId: number, input: NewMaterial): ProjectMaterial;
+  listMessages(projectId: number): ProjectMessage[];
+  createMessage(input: NewMessage): {
+    message: ProjectMessage;
+    created: boolean;
+  };
+}
+
+export interface ProjectSnapshot {
+  projects: Project[];
+  materials: ProjectMaterial[];
+  messages: ProjectMessage[];
+}
+export interface ProjectStorage {
+  load(): ProjectSnapshot | undefined;
+  save(snapshot: ProjectSnapshot): void;
 }
 
 const demoTimestamp = "2026-10-15T12:00:00.000Z";
 
-export function createMemoryProjectRepository(): ProjectRepository {
-  const projects: Project[] = [
-    {
-      id: 1,
-      classId: 1,
-      groupId: 1,
-      title: "Controlador de semáforo inteligente",
-      description:
-        "Controlador digital com temporização configurável e modo de travessia para pedestres.",
-      category: "Sistemas digitais",
-      status: "EM_AVALIACAO",
-      dueAt: null,
-      createdAt: demoTimestamp,
-      updatedAt: demoTimestamp,
-    },
-    {
-      id: 2,
-      classId: 1,
-      groupId: 2,
-      title: "Monitor de consumo energético",
-      description:
-        "Protótipo de leitura e sinalização local do consumo de um circuito.",
-      category: "Instrumentação",
-      status: "PREPARACAO",
-      dueAt: null,
-      createdAt: demoTimestamp,
-      updatedAt: demoTimestamp,
-    },
-  ];
-  const materials: ProjectMaterial[] = [];
-  let nextProjectId = 3;
-  let nextMaterialId = 1;
+export function createMemoryProjectRepository(
+  withDemo = true,
+  storage?: ProjectStorage,
+): ProjectRepository {
+  let projects: Project[] = withDemo
+    ? [
+        {
+          id: 1,
+          classId: 1,
+          groupId: 1,
+          title: "Controlador de semáforo inteligente",
+          description:
+            "Controlador digital com temporização configurável e modo de travessia para pedestres.",
+          category: "Sistemas digitais",
+          status: "EM_AVALIACAO",
+          dueAt: null,
+          createdAt: demoTimestamp,
+          updatedAt: demoTimestamp,
+        },
+        {
+          id: 2,
+          classId: 1,
+          groupId: 2,
+          title: "Monitor de consumo energético",
+          description:
+            "Protótipo de leitura e sinalização local do consumo de um circuito.",
+          category: "Instrumentação",
+          status: "PREPARACAO",
+          dueAt: null,
+          createdAt: demoTimestamp,
+          updatedAt: demoTimestamp,
+        },
+      ]
+    : [];
+  let materials: ProjectMaterial[] = [];
+  let messages: ProjectMessage[] = [];
+  const saved = storage?.load();
+  if (saved) ({ projects, materials, messages } = saved);
+  let nextProjectId = Math.max(2, ...projects.map((item) => item.id)) + 1;
+  let nextMaterialId = Math.max(0, ...materials.map((item) => item.id)) + 1;
+  let nextMessageId = Math.max(0, ...messages.map((item) => item.id)) + 1;
+  const commit = (snapshot: ProjectSnapshot) => {
+    storage?.save(snapshot);
+    ({ projects, materials, messages } = snapshot);
+  };
 
   return {
+    listMessages(projectId) {
+      return messages
+        .filter((item) => item.projectId === projectId)
+        .sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id - b.id);
+    },
+    createMessage(input) {
+      const existing = messages.find(
+        (item) =>
+          item.projectId === input.projectId &&
+          item.author.id === input.author.id &&
+          item.clientMessageId === input.clientMessageId,
+      );
+      if (existing) {
+        if (
+          existing.body !== input.body ||
+          existing.materialVersion?.id !== input.materialVersion?.id
+        ) {
+          throw new ApiError(
+            409,
+            "MESSAGE_ID_CONFLICT",
+            "Este identificador já foi usado para outra mensagem.",
+          );
+        }
+        return { message: existing, created: false };
+      }
+      const message = { ...input, id: nextMessageId };
+      commit({ projects, materials, messages: [...messages, message] });
+      nextMessageId += 1;
+      return { message, created: true };
+    },
     list(filter) {
       return projects.filter((project) => {
         return (
@@ -78,14 +137,15 @@ export function createMemoryProjectRepository(): ProjectRepository {
 
       const timestamp = new Date().toISOString();
       const project: Project = {
-        id: nextProjectId++,
+        id: nextProjectId,
         ...input,
         dueAt: input.dueAt ?? null,
         status: "PREPARACAO",
         createdAt: timestamp,
         updatedAt: timestamp,
       };
-      projects.push(project);
+      commit({ projects: [...projects, project], materials, messages });
+      nextProjectId += 1;
       return project;
     },
     listMaterials(projectId) {
@@ -110,8 +170,8 @@ export function createMemoryProjectRepository(): ProjectRepository {
         storageKey: `mock/${projectId}/${nextMaterialId}`,
         uploadedAt: new Date().toISOString(),
       };
+      commit({ projects, materials: [...materials, material], messages });
       nextMaterialId += 1;
-      materials.push(material);
       return material;
     },
   };

@@ -1,6 +1,8 @@
 import { z } from "zod";
 
-export const roles = ["ALUNO", "AVALIADOR", "PROFESSOR"] as const;
+export const academicRoles = ["ALUNO", "AVALIADOR", "PROFESSOR"] as const;
+export type AcademicRole = (typeof academicRoles)[number];
+export const roles = [...academicRoles, "ADMIN"] as const;
 const id = z.number().int().positive();
 export const directorySchema = z
   .object({
@@ -15,7 +17,9 @@ export const directorySchema = z
             .transform((value) => value.toLowerCase()),
           passwordHash: z
             .string()
-            .regex(/^scrypt\$[a-f0-9]{32}\$[a-f0-9]{128}$/),
+            .regex(/^scrypt\$[a-f0-9]{32}\$[a-f0-9]{128}$/)
+            .nullable(),
+          googleLinked: z.boolean().optional(),
           role: z.enum(roles),
           active: z.boolean(),
         })
@@ -59,7 +63,10 @@ export const directorySchema = z
     )
       fail();
     const hasRole = (userId: number, role: string) =>
-      data.users.some((user) => user.id === userId && user.role === role);
+      data.users.some(
+        (user) =>
+          user.id === userId && (user.role === role || user.role === "ADMIN"),
+      );
     if (data.classes.some((item) => !hasRole(item.professorId, "PROFESSOR")))
       fail();
     if (
@@ -78,12 +85,16 @@ export const directorySchema = z
 
 export type Directory = z.infer<typeof directorySchema>;
 export type User = Directory["users"][number];
-export type PublicUser = Omit<User, "passwordHash" | "active">;
-export function publicUser(user: User): PublicUser {
+export type PublicUser = Omit<User, "passwordHash" | "active"> & {
+  viewRole?: AcademicRole;
+};
+export function publicUser(user: User, viewRole?: AcademicRole): PublicUser {
   return {
     id: user.id,
     fullName: user.fullName,
     email: user.email,
     role: user.role,
+    ...(user.role === "ADMIN" && viewRole ? { viewRole } : {}),
+    ...(user.googleLinked ? { googleLinked: true } : {}),
   };
 }

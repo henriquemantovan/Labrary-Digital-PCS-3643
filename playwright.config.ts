@@ -1,4 +1,6 @@
+import { randomUUID } from "node:crypto";
 import { defineConfig, devices } from "@playwright/test";
+const runId = randomUUID();
 const targets = [
   { name: "desktop", webPort: 5179, apiPort: 3002 },
   { name: "mobile", webPort: 5180, apiPort: 3003 },
@@ -23,25 +25,41 @@ export default defineConfig({
       baseURL: `http://localhost:${webPort}`,
     },
   })),
-  webServer: targets.flatMap(({ webPort, apiPort }) => [
-    {
-      // No watcher/IPC is needed for an isolated test server.
-      command:
-        "pnpm --filter @labrary/api exec node --import tsx src/server.ts",
-      url: `http://localhost:${apiPort}/api/health`,
-      reuseExistingServer: false,
-      env: {
-        API_PORT: String(apiPort),
-        AUTH_DEMO: "true",
-        AUTH_USERS_FILE: "",
-        APP_ORIGIN: `http://localhost:${webPort}`,
+  webServer: [
+    ...targets.flatMap(({ name, webPort, apiPort }) => [
+      {
+        // No watcher/IPC is needed for an isolated test server.
+        command:
+          "pnpm --filter @labrary/api exec node --import tsx src/server.ts",
+        url: `http://localhost:${apiPort}/api/health`,
+        reuseExistingServer: false,
+        env: {
+          API_PORT: String(apiPort),
+          AUTH_DEMO: "true",
+          AUTH_PROVIDER: "local",
+          PROJECT_DATA_FILE: `../../test-results/projects-${runId}-${name}.json`,
+          AUTH_USERS_FILE: "",
+          APP_ORIGIN: `http://localhost:${webPort}`,
+        },
       },
+      {
+        command: `pnpm --filter @labrary/web dev --port ${webPort} --strictPort`,
+        url: `http://localhost:${webPort}`,
+        reuseExistingServer: false,
+        env: { API_PORT: String(apiPort), WEB_PORT: String(webPort) },
+      },
+    ]),
+    {
+      command:
+        "pnpm --filter @labrary/api exec tsx integration/googleFixture.ts",
+      url: "http://localhost:3004/api/health",
+      reuseExistingServer: false,
     },
     {
-      command: `pnpm --filter @labrary/web dev --port ${webPort} --strictPort`,
-      url: `http://localhost:${webPort}`,
+      command: "pnpm --filter @labrary/web dev --port 5181 --strictPort",
+      url: "http://localhost:5181",
       reuseExistingServer: false,
-      env: { API_PORT: String(apiPort), WEB_PORT: String(webPort) },
+      env: { API_PORT: "3004", WEB_PORT: "5181" },
     },
-  ]),
+  ],
 });

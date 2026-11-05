@@ -1,6 +1,6 @@
 # Diagrama entidade-relacionamento
 
-Modelo lógico inicial do MVP do Labrary Digital. Os arquivos binários permanecem em armazenamento privado; o banco guarda metadados e chaves de armazenamento. A criação física está em [`db/schema.sql`](../db/schema.sql).
+Modelo lógico inicial do MVP do Labrary Digital. Os arquivos binários permanecem em armazenamento privado; o banco guarda metadados e chaves de armazenamento. O snapshot original está em [`db/schema.sql`](../db/schema.sql); a evolução física usa [migrations](login-google.md). `app_user` também contém `usp_number` único, `usp_affiliations` JSONB e `usp_synced_at`, e permite `password_hash` nulo para contas institucionais.
 
 ```mermaid
 erDiagram
@@ -170,3 +170,9 @@ erDiagram
 - A rubrica e seus critérios são versionados; cada avaliação registra qual versão usou.
 - Mensagens, notas, versões de materiais e resultados são privados. A publicação é explícita e associa somente versões autorizadas.
 - A soma dos pesos da rubrica, a autorização por papel e as regras de transição de estado devem ser validadas pela camada de serviço/transação da aplicação.
+
+
+A migration Google acrescenta `google_subject` único (identificador `sub`), `email_verified` e `google_synced_at` em `app_user`, além de unicidade do e-mail sem distinguir maiúsculas. `auth_session` referencia `app_user` e guarda somente hash do token e expiração. `oauth_login_attempt` guarda hash de state, nonce, verificador PKCE e expiração, com consumo atômico. Os campos USP permanecem preservados como histórico; não há integração USP ativa.
+
+
+A migration administrativa adiciona ADMIN ao enum `user_role`, `auth_session.view_role` opcional restrito a papéis acadêmicos, e `user_role_audit` com FKs `actor_id`/`target_id` para `app_user`. A prévia fica vinculada à sessão, e a conta mantém seu papel real. São 23 tabelas de domínio, além de `_prisma_migrations`.

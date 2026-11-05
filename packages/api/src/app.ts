@@ -12,15 +12,24 @@ import {
   ProjectRepository,
 } from "./repositories/projectRepository.js";
 import { createProjectRouter } from "./routes/projectRoutes.js";
-
 import { createPlanningRouter } from "./routes/planningRoutes.js";
 import {
   createMemoryPlanningRepository,
   PlanningRepository,
 } from "./repositories/planningRepository.js";
+import { GoogleAuthOptions } from "./controllers/googleAuthController.js";
+
+import { createAdminRouter } from "./routes/adminRoutes.js";
+import {
+  AdminRepository,
+  createMemoryAdminRepository,
+} from "./repositories/adminRepository.js";
 
 export interface AppOptions {
   planning?: PlanningRepository;
+  admin?: AdminRepository;
+  google?: GoogleAuthOptions;
+  localLogin?: boolean;
   repository?: ProjectRepository;
   auth?: AuthRepository;
   now?: () => number;
@@ -32,7 +41,8 @@ export interface AppOptions {
 
 export function createApp(options: AppOptions = {}) {
   const app = express();
-  const repository = options.repository ?? createMemoryProjectRepository();
+  const repository =
+    options.repository ?? createMemoryProjectRepository(!options.google);
 
   const auth = options.auth ?? createAuthRepository();
   const now = options.now ?? Date.now;
@@ -55,11 +65,21 @@ export function createApp(options: AppOptions = {}) {
   app.use(
     "/api",
     createAuthRouter(auth, {
+      google: options.google,
+      localLogin: options.localLogin ?? !options.google,
       now,
       secureCookies: options.secureCookies ?? false,
       sessionTtlMs: options.sessionTtlMs ?? 8 * 60 * 60_000,
       loginLimit: options.loginLimit ?? 20,
     }),
+  );
+  app.use(
+    "/api/admin",
+    createAdminRouter(
+      auth,
+      options.admin ?? createMemoryAdminRepository(auth),
+      now,
+    ),
   );
   app.use("/api/projects", requireAuth(auth, now));
   app.use("/api/classes", requireAuth(auth, now));
@@ -72,7 +92,7 @@ export function createApp(options: AppOptions = {}) {
       now,
     ),
   );
-  app.use("/api", createProjectRouter(repository, auth));
+  app.use("/api", createProjectRouter(repository, auth, now));
 
   app.use((_request, response) => {
     response.status(404).json({
