@@ -34,6 +34,7 @@ export default defineConfig({
         env: {
           API_PORT: String(apiPort),
           AUTH_DEMO: "true",
+          AUTH_PROVIDER: "local",
           PROJECT_DATA_FILE: `../../test-results/projects-${runId}-${name}.json`,
           AUTH_USERS_FILE: "",
           APP_ORIGIN: `http://localhost:${webPort}`,
@@ -47,7 +48,8 @@ export default defineConfig({
       },
     ]),
     {
-      command: "pnpm --filter @labrary/api exec tsx integration/uspFixture.ts",
+      command:
+        "pnpm --filter @labrary/api exec tsx integration/googleFixture.ts",
       url: "http://localhost:3004/api/health",
       reuseExistingServer: false,
     },

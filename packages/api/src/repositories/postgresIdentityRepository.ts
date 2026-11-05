@@ -1,8 +1,7 @@
 import { Pool } from "pg";
 import { ApiError } from "../errors.js";
 import { Directory, User } from "../models/auth.js";
-import { profileEmail, profileRole, UspProfile } from "../services/uspOAuth.js";
-
+import { GoogleProfile } from "../services/googleOAuth.js";
 type UserRow = {
   id: string;
   full_name: string;
@@ -10,8 +9,7 @@ type UserRow = {
   password_hash: string | null;
   role: User["role"];
   active: boolean;
-  usp_number: string | null;
-  usp_affiliations: User["uspAffiliations"];
+  google_subject: string | null;
 };
 function userFromRow(row: UserRow): User {
   const id = Number(row.id);
@@ -24,46 +22,43 @@ function userFromRow(row: UserRow): User {
     passwordHash: row.password_hash,
     role: row.role,
     active: row.active,
-    ...(row.usp_number
-      ? { uspNumber: row.usp_number, uspAffiliations: row.usp_affiliations }
-      : {}),
+    googleLinked: Boolean(row.google_subject),
   };
 }
 export function createPostgresIdentityRepository(pool: Pool) {
   return {
-    async saveProfile(profile: UspProfile): Promise<User> {
-      const role = profileRole(profile),
-        email = profileEmail(profile);
+    async saveProfile(profile: GoogleProfile): Promise<User> {
+      if (!profile.emailVerified)
+        throw new ApiError(
+          403,
+          "GOOGLE_EMAIL_UNVERIFIED",
+          "Confirme seu e-mail na conta Google.",
+        );
       try {
         const result = await pool.query<UserRow>(
           `
-          INSERT INTO app_user (full_name, email, password_hash, role, usp_number, usp_affiliations, usp_synced_at)
-          VALUES ($1, $2, NULL, $3, $4, $5::jsonb, now())
-          ON CONFLICT (usp_number) DO UPDATE SET full_name = EXCLUDED.full_name, email = EXCLUDED.email,
-            role = CASE WHEN app_user.role = 'AVALIADOR' AND EXCLUDED.role = 'ALUNO' THEN app_user.role ELSE EXCLUDED.role END,
-            usp_affiliations = EXCLUDED.usp_affiliations, usp_synced_at = now()
+          INSERT INTO app_user (full_name,email,password_hash,role,google_subject,email_verified,google_synced_at)
+          VALUES ($1,$2,NULL,'ALUNO',$3,TRUE,now())
+          ON CONFLICT (google_subject) DO UPDATE SET full_name=EXCLUDED.full_name,email=EXCLUDED.email,
+            email_verified=TRUE,google_synced_at=now()
           RETURNING *`,
-          [
-            profile.nomeUsuario,
-            email,
-            role,
-            profile.loginUsuario,
-            JSON.stringify(profile.vinculo),
-          ],
+          [profile.fullName, profile.email.toLowerCase(), profile.subject],
         );
         return userFromRow(result.rows[0]);
       } catch (error) {
         if ((error as { code?: string }).code === "23505")
           throw new ApiError(
             409,
-            "USP_ACCOUNT_CONFLICT",
-            "Conta existente: solicite ao responsável a vinculação pelo número USP.",
+            "GOOGLE_ACCOUNT_CONFLICT",
+            "Já existe uma conta com esse e-mail. Solicite ao responsável a vinculação da conta Google.",
           );
         throw error;
       }
     },
     async refresh(directory: Directory) {
-      const users = await pool.query<UserRow>("SELECT * FROM app_user");
+      const users = await pool.query<UserRow>(
+        "SELECT id,full_name,email,password_hash,role,active,google_subject FROM app_user",
+      );
       const classes = await pool.query(
         'SELECT id::integer, name, academic_year AS "academicYear", professor_id::integer AS "professorId" FROM course_class',
       );

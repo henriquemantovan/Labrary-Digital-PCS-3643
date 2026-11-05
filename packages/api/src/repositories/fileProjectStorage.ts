@@ -1,6 +1,7 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { z } from "zod";
+import { roles } from "../models/auth.js";
 import { materialKinds, projectStatuses } from "../models/project.js";
 import { ProjectStorage } from "./projectRepository.js";
 
@@ -45,7 +46,7 @@ const snapshotSchema = z.object({
       author: z.object({
         id,
         fullName: z.string(),
-        role: z.enum(["ALUNO", "AVALIADOR", "PROFESSOR"]),
+        role: z.enum(roles),
       }),
       materialVersion: z
         .object({ id, title: z.string(), versionNumber: id })

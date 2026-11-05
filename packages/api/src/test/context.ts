@@ -15,6 +15,10 @@ export function context(options: AppOptions = {}) {
       (options.now ?? Date.now)(),
       options.sessionTtlMs ?? 60_000,
     );
+    if (typeof token !== "string")
+      throw new Error(
+        "Use request.agent para testar sessões assíncronas PostgreSQL.",
+      );
     return {
       get: (path: string) =>
         request(app).get(path).set("Cookie", `labrary_session=${token}`),

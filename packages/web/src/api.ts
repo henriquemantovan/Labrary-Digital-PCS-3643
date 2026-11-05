@@ -2,15 +2,16 @@ export interface User {
   id: number;
   fullName: string;
   email: string;
-  role: "ALUNO" | "AVALIADOR" | "PROFESSOR";
-  uspNumber?: string;
-  uspAffiliations?: {
-    tipoVinculo: string;
-    nomeVinculo?: string;
-    tipoFuncao?: string;
-    codigoUnidade?: string;
-    nomeUnidade?: string;
-  }[];
+  role: "ALUNO" | "AVALIADOR" | "PROFESSOR" | "ADMIN";
+  viewRole?: "ALUNO" | "AVALIADOR" | "PROFESSOR";
+  googleLinked?: boolean;
+}
+export interface ManagedUser {
+  id: number;
+  fullName: string;
+  email: string;
+  role: User["role"];
+  active: boolean;
 }
 export interface Project {
   id: number;

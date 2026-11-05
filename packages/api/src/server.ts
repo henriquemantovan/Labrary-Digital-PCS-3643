@@ -1,10 +1,15 @@
 import { createMemoryProjectRepository } from "./repositories/projectRepository.js";
 import { createFileProjectStorage } from "./repositories/fileProjectStorage.js";
 import { loadDirectory } from "./services/configuration.js";
+import { createPostgresAdminRepository } from "./repositories/postgresAdminRepository.js";
 import { Pool } from "pg";
 import { createPostgresIdentityRepository } from "./repositories/postgresIdentityRepository.js";
-import { createUspOAuth } from "./services/uspOAuth.js";
-import { loadUspConfig } from "./services/uspConfiguration.js";
+import { createGoogleOAuth } from "./services/googleOAuth.js";
+import {
+  createPostgresAuthRepository,
+  createPostgresOAuthAttempts,
+} from "./repositories/postgresAuthRepository.js";
+import { loadGoogleConfig } from "./services/googleConfiguration.js";
 import {
   AuthRepository,
   createAuthRepository,
@@ -24,17 +29,19 @@ if (
 ) {
   throw new Error("APP_ORIGIN deve usar HTTPS em produção.");
 }
-const uspConfig = loadUspConfig(process.env, origin);
+const googleConfig = loadGoogleConfig(process.env, origin);
 let auth: AuthRepository;
-let usp;
-if (uspConfig) {
+let google;
+let admin;
+if (googleConfig) {
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
   const identity = createPostgresIdentityRepository(pool);
-  auth = createAuthRepository();
-  auth.refresh = () => identity.refresh(auth.directory);
-  await auth.refresh();
-  usp = {
-    client: createUspOAuth(uspConfig),
+  admin = createPostgresAdminRepository(pool);
+  auth = createPostgresAuthRepository(pool);
+  await auth.refresh!();
+  google = {
+    attempts: createPostgresOAuthAttempts(pool),
+    client: createGoogleOAuth(googleConfig),
     saveProfile: identity.saveProfile,
     origin,
   };
@@ -45,17 +52,18 @@ const dataFile =
   process.env.PROJECT_DATA_FILE ??
   resolve(
     process.cwd(),
-    `../../.data/projects-${usp ? "usp" : process.env.AUTH_DEMO === "true" ? "demo" : "local"}.json`,
+    `../../.data/projects-${google ? "google" : process.env.AUTH_DEMO === "true" ? "demo" : "local"}.json`,
   );
 const repository = createMemoryProjectRepository(
-  !usp,
+  !google,
   createFileProjectStorage(dataFile),
 );
 createApp({
   repository,
+  admin,
   auth,
-  usp,
-  localLogin: !usp,
+  google,
+  localLogin: !google,
   origin,
   secureCookies: process.env.NODE_ENV === "production",
 }).listen(port, () => {

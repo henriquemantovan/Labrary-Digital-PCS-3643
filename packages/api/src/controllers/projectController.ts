@@ -104,7 +104,7 @@ export function createProjectController(
     },
 
     create(request: Request, response: Response) {
-      if (response.locals.user.role !== "PROFESSOR")
+      if (!["PROFESSOR", "ADMIN"].includes(response.locals.user.role))
         throw new ApiError(
           403,
           "FORBIDDEN",

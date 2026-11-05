@@ -1,6 +1,6 @@
 # Labrary Digital
 
-Autenticação institucional: [Senha Única USP e implantação por migrations](docs/senha-unica-usp.md). Os arquivos `schema.sql` são o snapshot histórico já implantado; novas instalações e alterações usam `pnpm db:deploy`.
+Autenticação e administração: [SSO Google, perfis, PostgreSQL e migrations](docs/login-google.md). Os arquivos `schema.sql` são o snapshot histórico já implantado; novas instalações e alterações usam `pnpm db:deploy`.
 
 > Documento de definição do projeto e planejamento Scrum — PCS3643, Laboratório de Engenharia de Software I.
 > Plataforma voltada aos projetos de Laboratório de Projeto de Sistemas Digitais.
@@ -30,7 +30,7 @@ Arquivos, comentários e avaliações dispersos dificultam acompanhar pendência
 - Finalização e publicação explícita de materiais autorizados.
 - Galeria pública de projetos concluídos, com busca e filtros.
 
-Histórico, favoritos, estatísticas e sugestões são complementos propostos no backlog P2. Chat em tempo real e pagamentos não fazem parte do MVP. A autenticação USP foi adicionada como ampliação do escopo: [configuração da Senha Única e migrations](docs/senha-unica-usp.md).
+Histórico, favoritos, estatísticas e sugestões são complementos propostos no backlog P2. Chat em tempo real e pagamentos não fazem parte do MVP. O SSO Google foi adicionado ao escopo: [configuração de login e migrations](docs/login-google.md).
 
 ### Alinhamento com o enunciado geral
 
@@ -499,9 +499,9 @@ Preparação e Ajustes permitem edição conforme prazo/reabertura. Em avaliaç�
 
 **Baseline da TEC02 (15/10/2026):** Node.js 24.19.0, pnpm 11.25.0, React 19.3.1, Vite 8.3.4, Express 5.3.0, TypeScript 5.9.3 e Prisma 7.10.0. Os manifests fixam versões diretas; o lockfile fixa a árvore completa. O frontend e a API TypeScript têm build configurado. A API oferece `GET /api/health`, listagem/criação/detalhe de projetos e listagem/registro de metadados de materiais. O [contrato inicial](docs/api-inicial.md) descreve rotas, validações, envelopes e erros. A HU01 acrescenta login, sessão com cookie HttpOnly, autorização por vínculo e uma área por perfil em tema escuro roxo/rosa. O [registro da HU01](docs/hu01.md) detalha regras e limitações.
 
-**Instalação e desenvolvimento local:** requer Node.js 24.19.0 e pnpm 11.25.0. Na raiz do repositório, copie `.env.example` para `.env`, instale com `pnpm install --frozen-lockfile` e inicie as duas aplicações com `pnpm dev`. O frontend fica em `http://localhost:5173` e encaminha `/api` para a API em `http://localhost:3000`. `pnpm build` compila os workspaces e `pnpm test` executa os testes da API e da interface com cobertura mínima de 85% nas quatro métricas. `pnpm test:e2e` verifica os três perfis em desktop e celular (instale Chromium com `pnpm exec playwright install --with-deps chromium`). As contas de demonstração e o uso de `AUTH_USERS_FILE` estão em [docs/hu01.md](docs/hu01.md). A API persiste projetos, metadados e mensagens em arquivo privado desde a HU07 (um processo escritor; configuração em [docs/hu07.md](docs/hu07.md)); sessões continuam em memória. No modo USP, identidades e vínculos de autorização são persistidos/lidos no PostgreSQL. O conteúdo dos arquivos de materiais ainda não é armazenado. `pnpm db:generate` continua disponível para gerar o cliente Prisma, sem ser necessário para executar a HU01.
+**Instalação e desenvolvimento local:** requer Node.js 24.19.0 e pnpm 11.25.0. Na raiz do repositório, copie `.env.example` para `.env`, instale com `pnpm install --frozen-lockfile` e inicie as duas aplicações com `pnpm dev`. O frontend fica em `http://localhost:5173` e encaminha `/api` para a API em `http://localhost:3000`. `pnpm build` compila os workspaces e `pnpm test` executa os testes da API e da interface com cobertura mínima de 85% nas quatro métricas. `pnpm test:e2e` verifica os três perfis em desktop e celular (instale Chromium com `pnpm exec playwright install --with-deps chromium`). As contas de demonstração e o uso de `AUTH_USERS_FILE` estão em [docs/hu01.md](docs/hu01.md). A API persiste projetos, metadados e mensagens em arquivo privado desde a HU07 (um processo escritor; configuração em [docs/hu07.md](docs/hu07.md)); no modo local, sessões ficam em memória; no modo Google, identidades, sessões e tentativas OAuth são persistidas no PostgreSQL. O conteúdo dos arquivos de materiais ainda não é armazenado. `pnpm db:generate` continua disponível para gerar o cliente Prisma, sem ser necessário para executar a HU01.
 
-O DER está em [docs/diagrama-er.md](docs/diagrama-er.md), o diagrama de classes inicial em [docs/diagrama-classes.md](docs/diagrama-classes.md) e o model Prisma em `packages/api/prisma/schema.prisma`. O SQL de TEC01 permanece em `db/schema.sql` como snapshot histórico. A evolução usa migrations versionadas do Prisma; identidades USP usam o adapter PostgreSQL. Consulte o [guia de migrations](docs/senha-unica-usp.md).
+O DER está em [docs/diagrama-er.md](docs/diagrama-er.md), o diagrama de classes inicial em [docs/diagrama-classes.md](docs/diagrama-classes.md) e o model Prisma em `packages/api/prisma/schema.prisma`. O SQL de TEC01 permanece em `db/schema.sql` como snapshot histórico. A evolução usa migrations versionadas do Prisma; identidades Google e sessões usam o adapter PostgreSQL. Consulte o [guia de migrations](docs/login-google.md).
 
 **CI:** o workflow [Build e testes](.github/workflows/ci.yml) executa build, cobertura e testes de navegador. Sua primeira execução remota depende da publicação das alterações; não foram inseridos badges com resultados presumidos.
 
@@ -518,9 +518,9 @@ pnpm db:deploy
 pnpm db:status
 ```
 
-As migrations criam os objetos dentro de transações. Em banco onde `schema.sql` já foi aplicado, registre primeiro a baseline conforme o [guia de implantação](docs/senha-unica-usp.md). Não inclui seed nem armazena arquivos binários; os arquivos ficam em armazenamento privado e `storage_key` guarda sua referência. A HU01 impõe autorização por perfil e vínculo. A aplicação ainda deverá impor outras regras que dependem de múltiplas linhas, como soma dos pesos da rubrica igual a 100% e compatibilidade de papel.
+As migrations criam os objetos dentro de transações. Em banco onde `schema.sql` já foi aplicado, registre primeiro a baseline conforme o [guia de implantação](docs/login-google.md). Não inclui seed nem armazena arquivos binários; os arquivos ficam em armazenamento privado e `storage_key` guarda sua referência. A HU01 impõe autorização por perfil e vínculo. A aplicação ainda deverá impor outras regras que dependem de múltiplas linhas, como soma dos pesos da rubrica igual a 100% e compatibilidade de papel.
 
-O model Prisma descreve as entidades do MVP. O modo USP consulta PostgreSQL para identidades e vínculos de autorização; projetos, metadados e mensagens usam o adapter de arquivo privado da HU07, enquanto sessões usam memória. `pnpm db:test` verifica instalação limpa e adoção do schema existente em PostgreSQL real e descartável. A validação contra o serviço oficial da USP exige credenciais de consumidor e callback cadastrados.
+O model Prisma descreve as entidades do MVP. O modo Google consulta PostgreSQL para identidades, vínculos de autorização, sessões e tentativas OAuth; projetos, metadados e mensagens usam o adapter de arquivo privado da HU07. `pnpm db:test` verifica instalação limpa e adoção do schema existente em PostgreSQL real e descartável. A validação no Google real exige Client ID, Client Secret e URI de redirecionamento cadastrados no Google Cloud.
 
 ### Visão dos componentes e separação MVC
 
