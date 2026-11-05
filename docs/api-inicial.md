@@ -1,31 +1,23 @@
-# API REST (TEC02 + HU01 + HU06 + HU07)
+# API REST (TEC02 + HU01)
 
-Rotas REST usam JSON; início e retorno de OAuth fazem redirecionamentos HTTP. Listas e respostas individuais bem-sucedidas vêm no envelope `{ "data": ... }`; erros usam `{ "error": { "code", "message", "details?" } }`. O servidor responde `401` para ausência de sessão, `403` para operação não permitida/origem inválida, `429` para excesso de tentativas de login, `400` para validação, `404` para recurso/rota ausente, `409` para conflito de grupo e `500` para falhas inesperadas.
+Todas as rotas usam JSON. Listas e respostas individuais bem-sucedidas vêm no envelope `{ "data": ... }`; erros usam `{ "error": { "code", "message", "details?" } }`. O servidor responde `401` para ausência de sessão, `403` para operação não permitida/origem inválida, `429` para excesso de tentativas de login, `400` para validação, `404` para recurso/rota ausente, `409` para conflito de grupo e `500` para falhas inesperadas.
 
 | Método | Rota | Uso | Sucesso |
 | --- | --- | --- | --- |
-| GET | `/api/auth/providers` | Opções disponíveis `{ google, local }` | `200` |
-| GET | `/api/auth/google` | Inicia OpenID Connect no Google | `302` |
-| GET | `/api/auth/google/callback` | Valida tentativa e cria sessão | `302` para `/projetos` ou `/login?authError=google` |
 | POST | `/api/auth/login` | Autentica `{ email, password }` e emite cookie HttpOnly | `200 { data: PublicUser }` |
-| POST | `/api/auth/view-role` | ADMIN seleciona `{ role: "ALUNO" | "AVALIADOR" | "PROFESSOR" | null }` para sua sessão | `200 { data: PublicUser }` |
-| GET | `/api/admin/users` | ADMIN lista contas com ID, nome, e-mail, papel e estado | `200 { data: ManagedUser[] }` |
-| PATCH | `/api/admin/users/:userId/role` | ADMIN altera `{ role: "ALUNO" | "AVALIADOR" | "PROFESSOR" | "ADMIN" }` | `200 { data: ManagedUser }` |
 | GET | `/api/auth/me` | Restaura a sessão | `200 { data: PublicUser }` |
 | POST | `/api/auth/logout` | Revoga a sessão e limpa o cookie (idempotente) | `204` |
 | GET | `/api/scope` | Turmas/grupos permitidos, sem integrantes | `200 { data: { classes, groups } }` |
 | GET | `/api/health` | Estado da API | `200 { data: { status: "ok" } }` |
-| GET | `/api/projects?status=&classId=&groupId=&pending=` | Lista e filtra projetos | `200 { data: Project[] }` |
+| GET | `/api/projects?status=&classId=` | Lista e filtra projetos | `200 { data: Project[] }` |
 | POST | `/api/projects` | Cria projeto | `201 { data: Project }` |
 | GET | `/api/projects/:projectId` | Consulta projeto | `200 { data: Project }` |
 | GET | `/api/projects/:projectId/materials` | Lista metadados de materiais | `200 { data: ProjectMaterial[] }` |
 | POST | `/api/projects/:projectId/materials` | Registra metadados de material | `201 { data: ProjectMaterial }` |
-| GET | `/api/projects/:projectId/messages` | Consulta feedback privado | `200 { data: ProjectMessage[] }` |
-| POST | `/api/projects/:projectId/messages` | Envia feedback privado | `201` ou `200` na repetição idêntica |
 
 Todas as rotas de projetos, materiais e escopo exigem sessão válida. `GET /projects` aplica o escopo antes de retornar dados; filtros não ampliam acesso. Um projeto fora do escopo responde com o mesmo `404` de um projeto inexistente. Apenas professor cria projetos para grupos da própria turma; apenas aluno do grupo registra metadados enquanto o projeto está em Preparação/Ajustes (`409 PROJECT_LOCKED` nos demais estados).
 
-`PublicUser` contém `id`, `fullName`, `email`, `role`; contas Google incluem `googleLinked: true`. Segredos OAuth não são retornados. Em modo Google, o login local responde `403 LOCAL_LOGIN_DISABLED`. Veja [configuração Google e migrations](login-google.md). Credenciais inválidas/inativas retornam `401 INVALID_CREDENTIALS`, sempre com `E-mail ou senha inválidos.`. Cada POST exige o cabeçalho `X-CSRF-Protection: 1`; `Origin`, se informado, deve ser igual a `APP_ORIGIN`. Não há CORS. Use a mesma origem para frontend e `/api`.
+`PublicUser` contém apenas `id`, `fullName`, `email`, `role`. Credenciais inválidas/inativas retornam `401 INVALID_CREDENTIALS`, sempre com `E-mail ou senha inválidos.`. Cada POST exige o cabeçalho `X-CSRF-Protection: 1`; `Origin`, se informado, deve ser igual a `APP_ORIGIN`. Não há CORS. Use a mesma origem para frontend e `/api`.
 
 As respostas da API incluem `Cache-Control: no-store`. Veja [HU01](hu01.md) para matriz de permissões, configurações, contas e ciclo da sessão.
 
@@ -53,42 +45,91 @@ Exemplo de erro:
 }
 ```
 
-`POST /materials` registra metadados JSON e gera uma chave `mock/...`; não recebe nem persiste bytes de arquivos. A HU01 autentica e autoriza estas rotas. Limites conforme requisito do projeto, prazos e armazenamento privado real serão adicionados com as histórias de entrega. O entrypoint da API persiste projetos, metadados e mensagens em arquivo privado desde a HU07. Sem snapshot anterior, no modo local há seed; no modo Google iniciam vazios. Identidades, vínculos de autorização, sessões e tentativas OAuth usam PostgreSQL no modo Google; no modo local, sessões ficam em memória.
+`POST /materials` registra metadados JSON e gera uma chave `mock/...`; não recebe nem persiste bytes de arquivos. A HU01 autentica e autoriza estas rotas. Limites conforme requisito do projeto, prazos e armazenamento privado real serão adicionados com as histórias de entrega. O repositório é em memória e volta ao seed ao reiniciar a API.
 
-## Acompanhamento — HU06
+## Incremento HU02/HU03 — gestão e configuração
 
-`GET /projects` combina os filtros opcionais `classId`, `groupId` (inteiros positivos), `status` (estado existente) e `pending` (somente `true` ou `false`). Filtros inválidos ou desconhecidos recebem `400 VALIDATION_ERROR`. A autorização por atribuição é aplicada antes do cálculo das pendências; filtros nunca ampliam o escopo.
+Todas as rotas abaixo exigem a sessão HU01; PUT/POST exigem a mesma proteção CSRF.
+A resposta de projeto agora inclui `academicYear`, derivado da turma (não é um ano
+livre enviado pelo cliente). O restante do contrato de criação é preservado.
 
-Lista, detalhe e criação retornam os campos de `Project`, mais `groupName` e `missingMaterials`: array dos tipos obrigatórios ausentes, na ordem `VIDEO`, `RELATORIO`, `MANUAL`. Um tipo está presente quando existe ao menos uma versão de seus metadados; `OUTRO` não substitui requisito obrigatório. `pending=true` seleciona ao menos um tipo ausente; `pending=false` seleciona nenhum. Isso não comprova upload, validade de arquivo ou submissão completa. Requisitos configuráveis e prazos dependem da HU03/HU05.
+| Método | Rota | Perfil e resposta |
+| --- | --- | --- |
+| GET | `/api/classes/:classId/administration` | Professor da turma; `{ groups, people }` |
+| POST | `/api/classes/:classId/groups` | Professor da turma; `{ name }` → `201` com grupo vazio |
+| PUT | `/api/classes/:classId/groups/:groupId/members` | Professor da turma; `{ memberIds: number[] }` → grupo com histórico |
+| GET | `/api/projects/:projectId/evaluators` | Professor da turma; `{ evaluatorIds, history }` |
+| PUT | `/api/projects/:projectId/evaluators` | Professor da turma; `{ evaluatorIds: number[] }` → vínculos e histórico |
+| GET | `/api/projects/:projectId/requirements` | Usuário com acesso ao projeto; `Requirement[]` |
+| PUT | `/api/projects/:projectId/requirements` | Professor da turma; `{ requirements: Requirement[] }` |
+| GET | `/api/projects/:projectId/rubrics` | Usuário com acesso ao projeto; versões em ordem de criação |
+| POST | `/api/projects/:projectId/rubrics` | Professor da turma; cria versão explícita, `201` |
 
-`GET /projects/:projectId/materials` permite ao avaliador atribuído consultar todas as versões registradas, inclusive em Preparação/Ajustes, sem permitir alterações. Acesso fora da atribuição recebe `404` tanto no detalhe quanto nos materiais. Revogar a atribuição bloqueia a próxima requisição. As respostas de projeto selecionam explicitamente os campos de acompanhamento; notas e comentários não fazem parte desse contrato.
+`administration` não expõe senhas, hashes, e-mails ou sessões. `people` contém
+somente `{ id, fullName, role }` das contas ativas de aluno/avaliador provisionadas
+na instância, para seleção pelo professor. Não existe cadastro de contas nem um
+cadastro separado de matrícula individual na turma nesta etapa. `groups` contém
+os grupos da turma, `memberIds` atuais e seu histórico. O escopo público da HU01
+(`/scope`) continua sem lista de integrantes. Alunos podem manter mais de um
+vínculo explícito, conforme o contrato já existente da HU01.
 
-Não há rota de galeria pública neste incremento. Rotas privadas continuam exigindo sessão mesmo para projetos Finalizados. A abertura do conteúdo dos arquivos depende do armazenamento privado da HU04; a projeção pública deverá ser implementada e validada na HU11/HU12. Veja [escopo e revisão da HU06](hu06.md).
+As listas de integrantes/avaliadores substituem o conjunto atual, aceitam `[]`
+para remoção e rejeitam IDs repetidos, inexistentes, inativos ou de perfil incorreto.
+Cada alteração registra `{ target, targetId, before, after, changedBy, changedAt }`.
+Ator e horário vêm do servidor. A próxima requisição com uma sessão já existente
+reflete a remoção/inclusão do vínculo. Nome duplicado de grupo na mesma turma
+retorna `409 GROUP_EXISTS`; vínculo inválido retorna `400 INVALID_LINK`.
 
-## Feedback privado — HU07
+Um requisito tem:
 
-As rotas de mensagens exigem sessão, escopo de leitura do projeto e, em POST, proteção CSRF. Aluno do grupo, avaliador atribuído e professor da turma podem enviar em qualquer estado. Projetos fora do escopo retornam 404; filtros e IDs não ampliam autorização.
+```json
+{
+  "kind": "RELATORIO",
+  "label": "Relatório",
+  "required": true,
+  "allowedMimeTypes": ["application/pdf"],
+  "maxSizeBytes": 5000000,
+  "dueAt": "2026-10-28T23:59:00Z"
+}
+```
 
-Envio: `{ "clientMessageId": "UUID", "body": "Texto de 1 a 5000 caracteres", "materialVersionId": 1 }`. `materialVersionId` é opcional/nulo para contexto geral; quando presente, referencia o `id` de uma versão retornada por `/projects/:projectId/materials` e deve pertencer ao mesmo projeto. Esse ID da base atual de metadados não deve ser confundido com os IDs do schema PostgreSQL planejado.
+A lista deve ter exatamente um VIDEO, um RELATORIO e um MANUAL, todos obrigatórios.
+Formatos MIME exatos (sem curingas), tamanho inteiro positivo e prazo ISO com fuso
+são definidos pelo professor. O exemplo não define os limites/prazos do curso.
+Antes da configuração, GET retorna `[]`; a interface oferece os três campos
+obrigatórios sem inventar limites ou datas. Ela converte o prazo local para UTC.
+Este incremento configura requisitos; o endpoint antigo de metadados ainda não
+aplica esses requisitos nem recebe bytes. A integração da entrega é HU04/HU05.
 
-`ProjectMessage` contém `id`, `projectId`, `clientMessageId`, `author: { id, fullName, role }`, `body`, `createdAt` ISO UTC e `materialVersion: { id, title, versionNumber } | null`. Autor/data/contexto são definidos pelo servidor e preservados; e-mail e dados internos não são expostos. Lista em ordem crescente de data, com ID como desempate. O corpo é texto, não HTML; clientes devem exibi-lo escapado.
+Uma nova rubrica recebe:
 
-Projeto + autor + `clientMessageId` identificam uma tentativa lógica: criação retorna 201; repetição com mesmo texto normalizado e contexto retorna 200 com a mensagem original; payload diferente com a mesma chave retorna `409 MESSAGE_ID_CONFLICT`. Campos adicionais, UUID inválido, texto vazio/excessivo ou ID malformado recebem 400; contexto inexistente/de outro projeto recebe `404 MATERIAL_NOT_FOUND`. Falha de armazenamento retorna 500 sem atualizar o estado em memória.
+```json
+{
+  "baseVersion": 0,
+  "title": "Avaliação do projeto",
+  "criteria": [
+    { "title": "Funcionamento", "description": "", "weight": 70, "minScore": 0, "maxScore": 10 },
+    { "title": "Documentação", "description": "", "weight": 30, "minScore": 0, "maxScore": 10 }
+  ]
+}
+```
 
-Persistência do servidor em `.data/projects-<modo>.json`, substituição atômica de snapshot, um processo escritor; `PROJECT_DATA_FILE` configura outro caminho. Não há alterações no schema PostgreSQL nem armazenamento de bytes. Sessões do modo Google usam PostgreSQL; no modo local continuam em memória. Limites e roteiro em [docs/hu07.md](hu07.md).
+`baseVersion` é o **ID** da última versão do projeto, ou `0` para a primeira.
+Um editor desatualizado recebe `409 RUBRIC_VERSION_CONFLICT` e precisa recarregar.
+Cada POST cria snapshot novo; não há endpoint para sobrescrever/apagar versões.
+Pesos positivos têm no máximo duas casas e somam exatamente 100% (soma em
+centésimos); a escala é fixada em 0–10. O servidor atribui autor, data, ID e
+`versionNumber` crescente por turma, alinhado à chave de `RubricVersion` no Prisma.
+Projetos diferentes da mesma turma podem ter números de versão não consecutivos.
 
-## Login Google
+Acesso a projeto de outro escopo segue `404 PROJECT_NOT_FOUND`; turma externa
+usa `404 CLASS_NOT_FOUND`; operação docente com outro perfil usa `403`.
 
-`GET /api/auth/google` emite cookie HttpOnly `labrary_google` SameSite=Lax com validade de dez minutos e redireciona para o Google. `GET /api/auth/google/callback` valida state/cookie, consome a tentativa de uso único, troca o código com PKCE, verifica o ID token e persiste a conta e a sessão. Retorna `302` para `/projetos`, ou `/login?authError=google|inactive|account_conflict`. Não aceita papel ou identidade enviados pelo navegador. O e-mail precisa ser verificado. Novas contas recebem `ALUNO`; papéis existentes são mantidos.
-
-O cookie `labrary_session` é HttpOnly, SameSite=Lax e Secure em produção; só seu SHA-256 fica no banco. A sessão é restaurada em `/auth/me`, tem expiração absoluta de oito horas, pode ser usada entre instâncias e é revogada no logout/desativação. `POST /auth/logout` mantém proteção CSRF e revogação idempotente. Tokens Google e segredos não são retornados nem persistidos. A API não oferece cadastro por senha no modo Google.
-
-## Administração e visualização de perfis
-
-O papel `ADMIN` é persistido em `app_user.role`, mantido pelos próximos logins Google e não atribuído a cadastros novos. A área `/administracao` permite buscar contas, atualizar a lista e alterar perfis, inclusive promover administradores. Não aceita alteração de estado, e-mail, identificador Google ou autor da ação. A API exige sessão ativa de um administrador real, CSRF e origem válida. Dados de credenciais não aparecem na listagem.
-
-`PublicUser.role` sempre informa o papel real da conta. Administradores podem receber `viewRole` com o perfil acadêmico selecionado na sessão. `/auth/view-role` persiste a escolha no banco por sessão; `null` retorna à administração. A API usa o perfil selecionado nas autorizações acadêmicas, com os vínculos da própria conta. Não troca usuário nem simula a identidade de outra pessoa. Administradores continuam podendo acessar a gestão de contas durante a prévia; usuários comuns não podem selecionar perfis. Mensagens registram o autor e o papel real, inclusive quando enviadas na prévia.
-
-Na visão administrativa, ADMIN vê todos os projetos, turmas e grupos e pode criar projetos para grupos existentes. Registro de materiais conserva as regras de aluno/grupo/estado: a administração não ignora essas regras. Mudar apenas a visualização não cria vínculos com turma, grupo ou projeto.
-
-Mudanças de papel usam transação com bloqueio para impedir que remoções concorrentes deixem zero administradores ativos. Remover o último ADMIN ativo retorna `409 LAST_ADMIN`. A transação limpa as prévias das sessões da conta alterada e registra autor, alvo, papel anterior, novo papel e data em `user_role_audit`. Um administrador destituído perde acesso administrativo na próxima requisição. O estado das contas e os vínculos acadêmicos são preservados.
+**Persistência:** `createMemoryPlanningRepository` mantém requisitos, versões e
+históricos somente no processo. Grupos/vínculos usam o diretório de autenticação
+já existente. Nada escreve de volta em `AUTH_USERS_FILE`. Reiniciar restaura os
+seeds e perde essas alterações. Os modelos Prisma existentes (`GroupMembership`,
+`ProjectRequirement`, `RubricVersion`, `RubricCriterion`, `ProjectRubric`,
+`Evaluation.rubricVersionId`) orientam a integração futura, mas não há adapter
+PostgreSQL conectado nem fluxo de avaliação implementado. Não considerar o
+histórico durável ou a preservação da versão usada por avaliações já concluídos.

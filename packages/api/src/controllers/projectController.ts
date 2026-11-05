@@ -68,6 +68,9 @@ export function createProjectController(
       dueAt: project.dueAt,
       createdAt: project.createdAt,
       updatedAt: project.updatedAt,
+      academicYear:
+        auth.directory.classes.find((item) => item.id === project.classId)
+          ?.academicYear ?? null,
       groupName:
         auth.directory.groups.find((group) => group.id === project.groupId)
           ?.name ?? `Grupo ${project.groupId}`,

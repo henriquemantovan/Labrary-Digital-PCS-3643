@@ -12,7 +12,11 @@ import {
   ProjectRepository,
 } from "./repositories/projectRepository.js";
 import { createProjectRouter } from "./routes/projectRoutes.js";
-
+import { createPlanningRouter } from "./routes/planningRoutes.js";
+import {
+  createMemoryPlanningRepository,
+  PlanningRepository,
+} from "./repositories/planningRepository.js";
 import { GoogleAuthOptions } from "./controllers/googleAuthController.js";
 
 import { createAdminRouter } from "./routes/adminRoutes.js";
@@ -22,6 +26,7 @@ import {
 } from "./repositories/adminRepository.js";
 
 export interface AppOptions {
+  planning?: PlanningRepository;
   admin?: AdminRepository;
   google?: GoogleAuthOptions;
   localLogin?: boolean;
@@ -77,6 +82,16 @@ export function createApp(options: AppOptions = {}) {
     ),
   );
   app.use("/api/projects", requireAuth(auth, now));
+  app.use("/api/classes", requireAuth(auth, now));
+  app.use(
+    "/api",
+    createPlanningRouter(
+      repository,
+      auth,
+      options.planning ?? createMemoryPlanningRepository(),
+      now,
+    ),
+  );
   app.use("/api", createProjectRouter(repository, auth, now));
 
   app.use((_request, response) => {
