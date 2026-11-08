@@ -1,5 +1,11 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { App } from "./App";
 import type { Material, MaterialRules, Project, Scope, User } from "./api";
@@ -98,6 +104,17 @@ beforeEach(() => {
         session = null;
         return new Response(null, { status: 204 });
       }
+      if (input.endsWith("/administration"))
+        return response({
+          groups: scope.groups.map((group) => ({
+            ...group,
+            memberIds: [],
+            history: [],
+          })),
+          people: [],
+        });
+      if (input.endsWith("/evaluators"))
+        return response({ evaluatorIds: [], history: [] });
       if (input === "/api/scope") return response(scope);
       if (input === "/api/projects" && init?.method === "POST")
         return response(
@@ -573,7 +590,9 @@ it("HU06 combina grupo, estado e pendências e consulta histórico de versões",
   await user.click(
     screen.getByRole("link", { name: "Abrir Semáforo inteligente" }),
   );
-  await user.click(await screen.findByRole("button", { name: "Histórico (2)" }));
+  await user.click(
+    await screen.findByRole("button", { name: "Histórico (2)" }),
+  );
   const versions = within(screen.getByRole("list", { name: /^Versões de/ }));
   expect(versions.getByText(/^inicial\.pdf/)).toBeTruthy();
   expect(versions.getByText(/^revisado\.pdf/)).toBeTruthy();
@@ -698,4 +717,17 @@ it("ao perder administrador na gestão de usuários, sai da área administrativa
   expect(
     screen.queryByRole("button", { name: "Administrar usuários" }),
   ).toBeNull();
+});
+
+it("abre gestão de avaliadores e feedback sem colisões na identidade dos componentes", async () => {
+  session = teacher;
+  available = projects;
+  window.history.replaceState(null, "", "/projetos/1");
+  const errors = vi.spyOn(console, "error").mockImplementation(() => undefined);
+  render(<App />);
+  await screen.findByRole("heading", { name: "Avaliadores do projeto" });
+  await screen.findByLabelText("Mensagem", { exact: true });
+  expect(errors.mock.calls.flat().join(" ")).not.toMatch(
+    /same key|unique.*key/i,
+  );
 });

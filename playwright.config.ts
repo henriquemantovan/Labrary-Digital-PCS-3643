@@ -36,6 +36,7 @@ export default defineConfig({
           AUTH_DEMO: "true",
           AUTH_PROVIDER: "local",
           PROJECT_DATA_FILE: `../../test-results/projects-${runId}-${name}.json`,
+          GROUP_DATA_FILE: `../../test-results/groups-${runId}-${name}.json`,
           AUTH_USERS_FILE: "",
           APP_ORIGIN: `http://localhost:${webPort}`,
           UPLOAD_DIR: `test-results/uploads-${runId}-${name}`,

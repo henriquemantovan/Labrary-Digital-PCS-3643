@@ -16,6 +16,7 @@ export interface ManagedUser {
 export interface Project {
   id: number;
   classId: number;
+  academicYear?: number | null;
   groupId: number;
   title: string;
   description: string;
@@ -159,7 +160,7 @@ export function uploadFile<T>(
 export interface Person {
   id: number;
   fullName: string;
-  role: "ALUNO" | "AVALIADOR";
+  role: "ALUNO" | "AVALIADOR" | "ADMIN";
 }
 export interface LinkChange {
   before: number[];
@@ -177,4 +178,8 @@ export interface ManagedGroup {
 export interface Administration {
   groups: ManagedGroup[];
   people: Person[];
+}
+export interface Evaluators {
+  evaluatorIds: number[];
+  history: LinkChange[];
 }
