@@ -27,6 +27,8 @@ A prévia de ADMIN segue o perfil acadêmico e vínculos efetivos. `resultadoLib
 
 `PublicPublicationProvider.list(filter)` recebe `q`, `academicYear`, `classId`, `category`; retorna `PublicProject[]`. Filtros se combinam por AND; `q` procura no título sem diferenciar maiúsculas/minúsculas, usando a mesma normalização no consumidor e produtor. Sem resultados: `[]`. `get(projectId)` retorna DTO ativo ou `undefined`; o adapter HTTP mapeia ausência para 404.
 
+O consumidor S5 reutiliza este schema e o exemplo JSON nos testes. A normalização adotada pelo consumidor é `trim()` no termo e `toLocaleLowerCase("pt-BR")` em termo/título, preservando acentos; confirmar com o produtor na integração. [Componentes, cliente HTTP e limites da demonstração](../catalogo-semana-5.md). Este registro não presume confirmação conjunta nem endpoints já implementados.
+
 | Método e rota previstos | Resposta |
 | --- | --- |
 | `GET /api/catalog` | `200 {data: PublicProject[]}` |
