@@ -255,6 +255,8 @@ As funcionalidades foram registradas como issues no formato **Como [papel], eu g
 
 ### [HU12 — Explorar projetos publicados](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/12)
 
+**Incremento S5 (#35):** catálogo/detalhe responsivos, busca e filtros combinados sobre C4, demonstráveis em `/demo/acervo` somente no servidor de desenvolvimento. Cliente HTTP separado, sem fallback de fixtures em produção. Publicação real e aceite permanecem na S6/S7. [Demonstração, regressão HU06 e evidências](docs/catalogo-semana-5.md).
+
 **Como visitante ou usuário, eu gostaria de buscar e visualizar projetos publicados, de forma que possa conhecer os trabalhos concluídos.**
 
 - Prioridade P0; sprint sugerida 6; 5 pontos; responsável @kiyochii.

@@ -1,7 +1,9 @@
 import { GroupManager, EvaluatorManager } from "./Groups";
 import { AdminUsers } from "./AdminUsers";
 import { ProjectFeedback } from "./ProjectFeedback";
-import { useCallback, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
+import { Catalog } from "./Catalog";
+import { httpCatalog } from "./catalogClient";
 import type { FormEvent } from "react";
 import { api, ApiError } from "./api";
 import type { Material, MaterialRules, Project, Scope, User } from "./api";
@@ -283,7 +285,27 @@ function Login({
   );
 }
 
+const CatalogDemo = import.meta.env.DEV
+  ? lazy(() => import("./CatalogDemo"))
+  : null;
+
 export function App() {
+  const path = window.location.pathname;
+  if (
+    CatalogDemo &&
+    (path === "/demo/acervo" || path.startsWith("/demo/acervo/"))
+  )
+    return (
+      <Suspense fallback={<p role="status">Carregando demonstração…</p>}>
+        <CatalogDemo />
+      </Suspense>
+    );
+  if (path === "/acervo" || path.startsWith("/acervo/"))
+    return <Catalog provider={httpCatalog} />;
+  return <PrivateApp />;
+}
+
+function PrivateApp() {
   const [user, setUser] = useState<User | null>(null);
   const [initializing, setInitializing] = useState(true);
   const [startupError, setStartupError] = useState("");
