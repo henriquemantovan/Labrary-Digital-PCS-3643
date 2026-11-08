@@ -155,3 +155,26 @@ export function uploadFile<T>(
   });
   return { promise, abort: () => request.abort() };
 }
+
+export interface Person {
+  id: number;
+  fullName: string;
+  role: "ALUNO" | "AVALIADOR";
+}
+export interface LinkChange {
+  before: number[];
+  after: number[];
+  changedBy: number;
+  changedAt: string;
+}
+export interface ManagedGroup {
+  id: number;
+  classId: number;
+  name: string;
+  memberIds: number[];
+  history: LinkChange[];
+}
+export interface Administration {
+  groups: ManagedGroup[];
+  people: Person[];
+}
