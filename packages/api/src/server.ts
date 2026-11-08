@@ -1,4 +1,6 @@
 import { createMemoryGroupRepository } from "./repositories/groupRepository.js";
+import { createMemoryRubricRepository } from "./repositories/rubricRepository.js";
+import { createFileRubricStorage } from "./repositories/fileRubricStorage.js";
 import { createFileGroupStorage } from "./repositories/fileGroupStorage.js";
 import { createPostgresGroupRepository } from "./repositories/postgresGroupRepository.js";
 import { createMemoryProjectRepository } from "./repositories/projectRepository.js";
@@ -72,6 +74,9 @@ groups ??= createMemoryGroupRepository(
   ),
 );
 createApp({
+  rubrics: createMemoryRubricRepository(createFileRubricStorage(
+    process.env.RUBRIC_DATA_FILE ?? `${dataFile}.rubrics.json`,
+  )),
   groups,
   repository,
   admin,

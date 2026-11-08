@@ -87,6 +87,16 @@ afterEach(() => {
 });
 
 describe("painel de materiais", () => {
+  it("mostra prazo específico e bloqueia somente o material vencido", () => {
+    renderPanel([], { rules: rules.rules.map((item) => item.kind === "RELATORIO" ? {
+      ...item, dueAt: "2026-11-08T12:00:00Z", lock: "DEADLINE_PASSED", canUpload: false,
+    } : item) });
+    expect(screen.getByText(/Prazo de Relatório do projeto:/)).toBeDefined();
+    expect(screen.getByText("Prazo deste material encerrado.")).toBeDefined();
+    expect(screen.queryByLabelText("Arquivo para Relatório do projeto")).toBeNull();
+    expect(screen.getByLabelText("Arquivo para Vídeo de apresentação")).not.toBeNull();
+    expect(screen.getByLabelText("Arquivo para Manual de uso")).not.toBeNull();
+  });
   it("lista obrigatórios pendentes com formatos, limite e prazo", () => {
     renderPanel();
     expect(

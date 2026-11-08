@@ -6,6 +6,7 @@ import {
   detectMimeType,
   MaterialPolicy,
   MaterialRule,
+  materialUploadLock,
   ruleFor,
   uploadLock,
 } from "../services/materialPolicy.js";
@@ -140,6 +141,10 @@ export function createProjectController(
   };
   const largestRule = (project: Project) =>
     Math.max(...policy.rulesFor(project).map((rule) => rule.maxSizeBytes));
+  const assertMaterialDeadline = (project: Project, rule: MaterialRule, startedAt: number) => {
+    if (materialUploadLock(project, rule, startedAt) === "DEADLINE_PASSED")
+      throw new ApiError(409, "DEADLINE_PASSED", "O prazo de entrega deste material terminou.");
+  };
   const accessibleProject = (request: Request, response: Response) => {
     const { projectId } = projectIdSchema.parse(request.params);
     const project = repository.get(projectId);
@@ -227,14 +232,19 @@ export function createProjectController(
 
     materialRules(request: Request, response: Response) {
       const project = accessibleProject(request, response);
-      const lock = uploadLock(project, now());
+      const checkedAt = now();
+      const lock = uploadLock(project, checkedAt);
       response.status(200).json({
         data: {
           dueAt: project.dueAt,
           lock,
           canUpload:
             !lock && permissions.canUpload(response.locals.user, project),
-          rules: policy.rulesFor(project),
+          rules: policy.rulesFor(project).map((rule) => ({
+            ...rule,
+            lock: materialUploadLock(project, rule, checkedAt),
+            canUpload: !materialUploadLock(project, rule, checkedAt) && permissions.canUpload(response.locals.user, project),
+          })),
         },
       });
     },
@@ -269,6 +279,7 @@ export function createProjectController(
         maxBytes(fields) {
           const { kind } = materialKindSchema.parse(fields);
           rule = ruleFor(policy, project, kind);
+          assertMaterialDeadline(project, rule, startedAt);
           return rule.maxSizeBytes;
         },
       });
@@ -299,6 +310,7 @@ export function createProjectController(
       const startedAt = now();
       permissions.assertUpload(user, project, startedAt);
       const rule = ruleFor(policy, project, existing.kind);
+      assertMaterialDeadline(project, rule, startedAt);
       assertDeclaredLength(request, rule.maxSizeBytes);
       const upload = await receiveUpload(request, storage, {
         maxBytes: () => rule.maxSizeBytes,

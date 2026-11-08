@@ -27,6 +27,8 @@ export interface MaterialRule {
   required: boolean;
   formats: FileFormat[];
   maxSizeBytes: number;
+  /** Prazo configurado para este tipo de material pela HU03. */
+  dueAt?: string;
 }
 
 /**
@@ -137,6 +139,12 @@ export function uploadLock(project: Project, now: number): UploadLock | null {
   if (project.dueAt && now >= Date.parse(project.dueAt))
     return "DEADLINE_PASSED";
   return null;
+}
+
+export function materialUploadLock(project: Project, rule: MaterialRule, now: number): UploadLock | null {
+  const lock = uploadLock(project, now);
+  if (lock || project.status === "AJUSTES") return lock;
+  return rule.dueAt && now >= Date.parse(rule.dueAt) ? "DEADLINE_PASSED" : null;
 }
 
 const startsWith = (data: Buffer, bytes: number[], offset = 0) =>

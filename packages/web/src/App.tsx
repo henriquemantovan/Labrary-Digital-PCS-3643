@@ -1,7 +1,7 @@
 import { GroupManager, EvaluatorManager } from "./Groups";
 import { AdminUsers } from "./AdminUsers";
 import { ProjectFeedback } from "./ProjectFeedback";
-import { lazy, Suspense, useCallback, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Catalog } from "./Catalog";
 import { httpCatalog } from "./catalogClient";
 import type { FormEvent } from "react";
@@ -9,6 +9,7 @@ import { api, ApiError } from "./api";
 import type { Material, MaterialRules, Project, Scope, User } from "./api";
 import { Icon } from "./Icons";
 import { MaterialsPanel } from "./Materials";
+import { ProjectAssessment } from "./ProjectAssessment";
 
 const roleLabels = {
   ADMIN: "Administrador",
@@ -616,6 +617,12 @@ function Dashboard({
   const [pending, setPending] = useState("");
   const [creating, setCreating] = useState(false);
   const detailId = /^\/projetos\/(\d+)$/.exec(path)?.[1];
+  const activeDetailId = useRef(detailId);
+  activeDetailId.current = detailId;
+  async function refreshMaterialRules() {
+    const rules = await api<MaterialRules>(`/projects/${detailId}/material-rules`);
+    if (activeDetailId.current === detailId) setMaterialRules(rules);
+  }
   const knownPath =
     ["/", "/projetos", "/perfil"].includes(path) ||
     !!detailId ||
@@ -852,6 +859,13 @@ function Dashboard({
             expired={expired}
           />
         )}
+        <ProjectAssessment
+          key={`assessment-${detail.id}-${user.role}`}
+          projectId={detail.id}
+          user={user}
+          expired={expired}
+          onConfigurationSaved={refreshMaterialRules}
+        />
         <ProjectFeedback
           key={detail.id}
           projectId={detail.id}

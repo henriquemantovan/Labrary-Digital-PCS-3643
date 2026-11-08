@@ -1,4 +1,7 @@
 import { createGroupRouter } from "./routes/groupRoutes.js";
+import { createRubricRouter } from "./routes/rubricRoutes.js";
+import { createMemoryRubricRepository, RubricRepository } from "./repositories/rubricRepository.js";
+import { createRubricMaterialPolicy } from "./services/rubricMaterialPolicy.js";
 import {
   createMemoryGroupRepository,
   GroupRepository,
@@ -29,6 +32,7 @@ import {
 } from "./repositories/adminRepository.js";
 
 export interface AppOptions {
+  rubrics?: RubricRepository;
   groups?: GroupRepository;
   admin?: AdminRepository;
   google?: GoogleAuthOptions;
@@ -51,6 +55,7 @@ export function createApp(options: AppOptions = {}) {
 
   const auth = options.auth ?? createAuthRepository();
   const now = options.now ?? Date.now;
+  const rubrics = options.rubrics ?? createMemoryRubricRepository();
   app.disable("x-powered-by");
   app.use("/api", (_request, response, next) => {
     response.set({
@@ -88,6 +93,7 @@ export function createApp(options: AppOptions = {}) {
   );
   app.use("/api/classes", requireAuth(auth, now));
   app.use("/api/projects", requireAuth(auth, now));
+  app.use("/api", createRubricRouter(repository, auth, rubrics, now));
   app.use(
     "/api",
     createGroupRouter(
@@ -101,7 +107,7 @@ export function createApp(options: AppOptions = {}) {
     "/api",
     createProjectRouter(repository, auth, {
       now,
-      materialPolicy: options.materialPolicy,
+      materialPolicy: options.materialPolicy ?? createRubricMaterialPolicy(rubrics),
       storage: options.storage ?? createDiskStorage(".uploads"),
     }),
   );

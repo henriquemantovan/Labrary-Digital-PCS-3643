@@ -2089,3 +2089,15 @@ input[type="file"]::file-selector-button {
 .class-grid { display: grid; gap: 24px; }
 .managed-groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 20px; }
 .managed-groups > section { min-width: 0; }
+
+.project-assessment { margin: 24px 0; }
+.assessment-panel { overflow-wrap: anywhere; }
+.assessment-panel label { display: grid; gap: 8px; margin: 12px 0; }
+.assessment-panel .people-options label { display: flex; }
+.assessment-panel input, .assessment-panel textarea, .assessment-panel select { min-width: 0; max-width: 100%; width: 100%; }
+.assessment-panel input[type="checkbox"] { width: auto; }
+.assessment-panel ul, .assessment-panel ol { padding-left: 24px; }
+.assessment-panel li { margin: 8px 0; }
+.assessment-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 20px; }
+.rubric-form { margin-top: 24px; }
+.rubric-form fieldset { min-width: 0; }

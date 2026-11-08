@@ -209,6 +209,8 @@ function MaterialCard({
       <div className="material-info">
         <strong>{title}</strong>
         <span>{formatsText(rule)}</span>
+        {rule.dueAt && <span>Prazo de {title}: {formatDate(rule.dueAt)}</span>}
+        {rule.lock === "DEADLINE_PASSED" && <span>Prazo deste material encerrado.</span>}
         {current ? (
           <span className="material-state">
             Enviado · versão {current.versionNumber} · {author(current)} ·{" "}
@@ -405,13 +407,13 @@ export function MaterialsPanel({
             projectId={projectId}
             rule={rule}
             material={material}
-            canUpload={rules.canUpload}
+            canUpload={rule.canUpload ?? rules.canUpload}
             onSaved={onSaved}
             expired={expired}
           />
         ))}
       </ul>
-      {rules.canUpload && supplement && (
+      {supplement && (supplement.canUpload ?? rules.canUpload) && (
         <SupplementForm
           projectId={projectId}
           rule={supplement}

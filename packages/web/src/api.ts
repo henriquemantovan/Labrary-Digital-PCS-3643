@@ -57,6 +57,9 @@ export interface ProjectMessage {
   materialVersion: { id: number; title: string; versionNumber: number } | null;
 }
 export interface MaterialRule {
+  dueAt?: string | null;
+  lock?: "PROJECT_LOCKED" | "DEADLINE_PASSED" | null;
+  canUpload?: boolean;
   kind: string;
   defaultTitle: string;
   required: boolean;
