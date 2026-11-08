@@ -4,6 +4,7 @@ Modelo lógico inicial do MVP do Labrary Digital. Os arquivos binários permanec
 
 ```mermaid
 erDiagram
+    APP_USER ||--o{ ACADEMIC_LINK_AUDIT : altera_vinculos
     APP_USER ||--o{ COURSE_CLASS : ministra
     COURSE_CLASS ||--o{ STUDENT_GROUP : possui
     APP_USER ||--o{ GROUP_MEMBERSHIP : integra
@@ -41,6 +42,15 @@ erDiagram
       string email UK
       string password_hash
       user_role role
+    }
+    ACADEMIC_LINK_AUDIT {
+      bigint id PK
+      string target
+      bigint target_id
+      bigint_array before_ids
+      bigint_array after_ids
+      bigint changed_by FK
+      timestamptz changed_at
     }
     COURSE_CLASS {
       bigint id PK
@@ -165,7 +175,7 @@ erDiagram
 ## Regras importantes
 
 - Um projeto pertence a um único grupo e turma. A chave estrangeira composta impede que o grupo de outra turma seja associado ao projeto.
-- O histórico de integrantes preserva entradas e saídas; um aluno só pode ter um vínculo ativo com grupo por vez.
+- O histórico de integrantes preserva entradas e saídas. Desde a migration da HU02/S5, há unicidade do par grupo/usuário ativo, permitindo vários grupos explicitamente vinculados; o snapshot SQL inicial conserva a regra antiga.
 - Cada envio cria uma rodada (`submission`) e fixa as versões exatas em `submission_material`, sem sobrescrever materiais anteriores.
 - A rubrica e seus critérios são versionados; cada avaliação registra qual versão usou.
 - Mensagens, notas, versões de materiais e resultados são privados. A publicação é explícita e associa somente versões autorizadas.
@@ -175,4 +185,7 @@ erDiagram
 A migration Google acrescenta `google_subject` único (identificador `sub`), `email_verified` e `google_synced_at` em `app_user`, além de unicidade do e-mail sem distinguir maiúsculas. `auth_session` referencia `app_user` e guarda somente hash do token e expiração. `oauth_login_attempt` guarda hash de state, nonce, verificador PKCE e expiração, com consumo atômico. Os campos USP permanecem preservados como histórico; não há integração USP ativa.
 
 
-A migration administrativa adiciona ADMIN ao enum `user_role`, `auth_session.view_role` opcional restrito a papéis acadêmicos, e `user_role_audit` com FKs `actor_id`/`target_id` para `app_user`. A prévia fica vinculada à sessão, e a conta mantém seu papel real. São 23 tabelas de domínio, além de `_prisma_migrations`.
+A migration administrativa adiciona ADMIN ao enum `user_role`, `auth_session.view_role` opcional restrito a papéis acadêmicos, e `user_role_audit` com FKs `actor_id`/`target_id` para `app_user`. A prévia fica vinculada à sessão, e a conta mantém seu papel real. Essa etapa chegou a 23 tabelas de domínio; a HU02/S5 acrescenta a auditoria de vínculos, totalizando 24, além de `_prisma_migrations`.
+
+
+Na S5, `academic_link_audit` registra alvo (`GROUP`/`PROJECT`), ID, conjuntos anterior/posterior de contas, autor e data. `project_evaluator.project_id` aponta logicamente para o projeto do snapshot privado, sem FK para a tabela legada `project`; a aplicação valida existência e turma antes de gravar. A FK do avaliador permanece. Veja [HU02](hu02.md) e [arquitetura efetiva](arquitetura-semana-5.md). As demais relações do DER representam o modelo alvo, não adapters já integrados.

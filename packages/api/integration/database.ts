@@ -1,3 +1,4 @@
+import { verifyGroups } from "./groups.js";
 // Disposable cluster only: this test creates and removes its own databases.
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
@@ -70,7 +71,7 @@ try {
             "SELECT count(*)::int AS count FROM _prisma_migrations WHERE finished_at IS NOT NULL",
           )
         ).rows[0].count,
-        4,
+        5,
       );
       assert.equal(
         (
@@ -78,7 +79,7 @@ try {
             "SELECT count(*)::int AS count FROM pg_tables WHERE schemaname='public' AND tablename<>'_prisma_migrations'",
           )
         ).rows[0].count,
-        23,
+        24,
       );
       if (index === 1)
         assert.deepEqual(
@@ -360,8 +361,9 @@ try {
           .rows[0].count,
         2,
       );
+      await verifyGroups(pool, url.toString());
       console.log(
-        `PASS: ${index === 0 ? "banco vazio" : "banco existente com identidade USP preservada"}; 23 tabelas, administrador com auditoria, proteção concorrente do último admin, visualização por sessão, migrations idempotentes, identidade Google, perfis, sessão entre processos, expiração, logout, desativação e tentativa OAuth de uso único.`,
+        `PASS: ${index === 0 ? "banco vazio" : "banco existente com identidade USP preservada"}; 24 tabelas, administrador com auditoria, proteção concorrente do último admin, visualização por sessão, migrations idempotentes, identidade Google, perfis, sessão entre processos, expiração, logout, desativação e tentativa OAuth de uso único.`,
       );
     } finally {
       await pool.end();

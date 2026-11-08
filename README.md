@@ -4,7 +4,7 @@ Autenticação e administração: [SSO Google, perfis, PostgreSQL e migrations](
 
 > Documento de definição do projeto e planejamento Scrum — PCS3643, Laboratório de Engenharia de Software I.
 > Plataforma voltada aos projetos de Laboratório de Projeto de Sistemas Digitais.
-> Versão inicial: 04/10/2026. Situação atual: base MVC/REST, HU01 e HU04 implementadas localmente; revisão da equipe pendente.
+> Versão inicial: 04/10/2026. Situação atual: base MVC/REST, HU01, HU02 (incremento S5) e HU04 implementadas localmente; revisão da equipe pendente.
 
 **Programando com IA:** veja o [guia de desenvolvimento com IA](docs/desenvolvimento-com-ia.md), o [AGENTS.md](AGENTS.md) e as [skills compartilhadas](.agents/skills/). O fluxo inclui gerar código com testes, a própria IA executá-los, corrigir falhas e relatar os resultados.
 
@@ -49,7 +49,7 @@ O tema é uma **adaptação proposta de plataforma de conteúdo digital**. O enu
 | Receita, custos de conteúdo e infraestrutura | Não incorporados como funcionalidade; validar dispensa ou criar histórias adicionais |
 | MVC, REST, testes, cobertura, CI e instalação | Mantidos no planejamento técnico |
 
-**Pendência acadêmica:** validar tema, substituições e dispensas com o professor antes de considerar o escopo aprovado. Não interpretar esta tabela como atendimento integral aos requisitos originais.
+**Pendência acadêmica:** validar tema, substituições e dispensas com o professor antes de considerar o escopo aprovado. A [solicitação preparada para #20](docs/escopo-academico.md) registra o que precisa de decisão; envio e resposta permanecem pendentes. Não interpretar esta tabela como atendimento integral aos requisitos originais.
 
 ## 2. Nome do sistema e do grupo
 
@@ -106,15 +106,17 @@ As funcionalidades foram registradas como issues no formato **Como [papel], eu g
 
 **Como professor, eu gostaria de cadastrar grupos, integrantes e projetos da turma, de forma que possa organizar as entregas.**
 
-- Prioridade P0; sprint sugerida 3; 5 pontos; responsável @yuhangf2333.
+- Prioridade P0; sprint sugerida 3; continuidade na S5 (#32); 5 pontos; responsável @henriquemantovan.
 - Dependências: HU01.
 
 **Critérios de aceitação:**
 
-- [ ] Projeto tem título, descrição, turma, ano e categoria.
-- [ ] Professor vincula integrantes e avaliadores à turma/projeto.
-- [ ] Aluno vê somente projetos do próprio grupo na área de entrega.
-- [ ] Alterações de vínculos preservam o histórico.
+- [x] Projeto tem título, descrição, turma, ano e categoria.
+- [x] Professor vincula integrantes e avaliadores à turma/projeto.
+- [x] Aluno vê somente projetos do próprio grupo na área de entrega.
+- [x] Alterações de vínculos preservam o histórico.
+
+**Estado local:** incremento da S5 pronto para revisão, com grupos/vínculos persistentes no PostgreSQL (Google) e em arquivo privado (local), histórico, autorização e formulários. A extração do PR #26 conserva a autoria do trabalho de Yuhang; HU03 segue separada. Veja [HU02 e composição](docs/hu02.md), [arquitetura revisada](docs/arquitetura-semana-5.md), [contrato C4](docs/contratos/c4-publicacao.md) e [pendência acadêmica #20](docs/escopo-academico.md). Revisão da equipe, demonstração e aceite não são presumidos.
 
 ### [HU03 — Configurar requisitos e critérios de avaliação](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/3)
 
@@ -501,7 +503,7 @@ Preparação e Ajustes permitem edição conforme prazo/reabertura. Em avaliaç�
 
 **Baseline da TEC02 (15/10/2026):** Node.js 24.19.0, pnpm 11.25.0, React 19.3.1, Vite 8.3.4, Express 5.3.0, TypeScript 5.9.3 e Prisma 7.10.0. Os manifests fixam versões diretas; o lockfile fixa a árvore completa. O frontend e a API TypeScript têm build configurado. A API oferece `GET /api/health`, listagem/criação/detalhe de projetos e listagem/registro de metadados de materiais. O [contrato inicial](docs/api-inicial.md) descreve rotas, validações, envelopes e erros. A HU01 acrescenta login, sessão com cookie HttpOnly, autorização por vínculo e uma área por perfil em tema escuro roxo/rosa. O [registro da HU01](docs/hu01.md) detalha regras e limitações.
 
-**Instalação e desenvolvimento local:** requer Node.js 24.19.0 e pnpm 11.25.0. Na raiz do repositório, copie `.env.example` para `.env`, instale com `pnpm install --frozen-lockfile` e inicie as duas aplicações com `pnpm dev`. O frontend fica em `http://localhost:5173` e encaminha `/api` para a API em `http://localhost:3000`. `pnpm build` compila os workspaces e `pnpm test` executa os testes da API e da interface com cobertura mínima de 85% nas quatro métricas. `pnpm test:e2e` verifica os três perfis em desktop e celular (instale Chromium com `pnpm exec playwright install --with-deps chromium`). As contas de demonstração e o uso de `AUTH_USERS_FILE` estão em [docs/hu01.md](docs/hu01.md). A API persiste projetos, metadados e mensagens em arquivo privado desde a HU07 (um processo escritor; configuração em [docs/hu07.md](docs/hu07.md)); no modo local, sessões ficam em memória; no modo Google, identidades, sessões e tentativas OAuth são persistidas no PostgreSQL. O conteúdo dos arquivos de materiais ainda não é armazenado. `pnpm db:generate` continua disponível para gerar o cliente Prisma, sem ser necessário para executar a HU01.
+**Instalação e desenvolvimento local:** requer Node.js 24.19.0 e pnpm 11.25.0. Na raiz do repositório, copie `.env.example` para `.env`, instale com `pnpm install --frozen-lockfile` e inicie as duas aplicações com `pnpm dev`. O frontend fica em `http://localhost:5173` e encaminha `/api` para a API em `http://localhost:3000`. `pnpm build` compila os workspaces e `pnpm test` executa os testes da API e da interface com cobertura mínima de 85% nas quatro métricas. `pnpm test:e2e` verifica os três perfis em desktop e celular (instale Chromium com `pnpm exec playwright install --with-deps chromium`). As contas de demonstração e o uso de `AUTH_USERS_FILE` estão em [docs/hu01.md](docs/hu01.md). A API persiste projetos, metadados e mensagens em arquivo privado desde a HU07 (um processo escritor; configuração em [docs/hu07.md](docs/hu07.md)); no modo local, sessões ficam em memória; no modo Google, identidades, sessões e tentativas OAuth são persistidas no PostgreSQL. Os bytes dos materiais ficam em armazenamento privado (`UPLOAD_DIR`) desde a HU04. Grupos/vínculos e seu histórico usam PostgreSQL no modo Google e `GROUP_DATA_FILE` no modo local; veja [HU02](docs/hu02.md). `pnpm db:generate` continua disponível para gerar o cliente Prisma, sem ser necessário para executar a HU01.
 
 O DER está em [docs/diagrama-er.md](docs/diagrama-er.md), o diagrama de classes inicial em [docs/diagrama-classes.md](docs/diagrama-classes.md) e o model Prisma em `packages/api/prisma/schema.prisma`. O SQL de TEC01 permanece em `db/schema.sql` como snapshot histórico. A evolução usa migrations versionadas do Prisma; identidades Google e sessões usam o adapter PostgreSQL. Consulte o [guia de migrations](docs/login-google.md).
 
@@ -522,7 +524,7 @@ pnpm db:status
 
 As migrations criam os objetos dentro de transações. Em banco onde `schema.sql` já foi aplicado, registre primeiro a baseline conforme o [guia de implantação](docs/login-google.md). Não inclui seed nem armazena arquivos binários; os arquivos ficam em armazenamento privado e `storage_key` guarda sua referência. A HU01 impõe autorização por perfil e vínculo. A aplicação ainda deverá impor outras regras que dependem de múltiplas linhas, como soma dos pesos da rubrica igual a 100% e compatibilidade de papel.
 
-O model Prisma descreve as entidades do MVP. O modo Google consulta PostgreSQL para identidades, vínculos de autorização, sessões e tentativas OAuth; projetos, metadados e mensagens usam o adapter de arquivo privado da HU07. `pnpm db:test` verifica instalação limpa e adoção do schema existente em PostgreSQL real e descartável. A validação no Google real exige Client ID, Client Secret e URI de redirecionamento cadastrados no Google Cloud.
+A [revisão da arquitetura na S5](docs/arquitetura-semana-5.md) distingue os adapters efetivos do modelo planejado. O model Prisma descreve as entidades do MVP. O modo Google consulta PostgreSQL para identidades, vínculos de autorização, sessões e tentativas OAuth; projetos, metadados e mensagens usam o adapter de arquivo privado da HU07. `pnpm db:test` verifica instalação limpa e adoção do schema existente em PostgreSQL real e descartável. A validação no Google real exige Client ID, Client Secret e URI de redirecionamento cadastrados no Google Cloud.
 
 ### Visão dos componentes e separação MVC
 
@@ -560,7 +562,7 @@ A View apresenta dados e captura ações. Controllers validam requisições, aut
 
 ### Contratos REST do MVP
 
-A API inicial implementa health check, consulta/criação de projetos e registro/listagem de metadados de materiais; o [contrato detalhado e os exemplos de erro](docs/api-inicial.md) identificam o escopo atual. As demais rotas abaixo são previstas para histórias futuras.
+A API inicial implementa health check, consulta/criação de projetos e registro/listagem de metadados de materiais; o [contrato detalhado e os exemplos de erro](docs/api-inicial.md) identificam o escopo atual. As demais rotas abaixo são previstas para histórias futuras; grupos/vínculos já usam as rotas implementadas por turma e por projeto documentadas na HU02 e no contrato detalhado.
 
 | Método e rota | Finalidade |
 | --- | --- |

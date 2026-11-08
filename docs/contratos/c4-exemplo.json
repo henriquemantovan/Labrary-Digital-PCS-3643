@@ -1,0 +1,14 @@
+{
+  "id": 17,
+  "title": "Controlador de semáforo inteligente",
+  "description": "Controle digital com travessia para pedestres.",
+  "academicYear": 2026,
+  "class": { "id": 3, "name": "Laboratório de Sistemas Digitais" },
+  "category": "Sistemas digitais",
+  "publicationStatus": "PUBLICADO",
+  "publishedAt": "2026-11-07T18:00:00Z",
+  "materials": [
+    { "id": 41, "versionId": 61, "kind": "VIDEO", "title": "Demonstração", "mimeType": "video/mp4", "sizeBytes": 102400, "contentUrl": "/api/catalog/17/materials/61/file" },
+    { "id": 42, "versionId": 62, "kind": "RELATORIO", "title": "Relatório", "mimeType": "application/pdf", "sizeBytes": 20480, "contentUrl": "/api/catalog/17/materials/62/file" }
+  ]
+}

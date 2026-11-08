@@ -1,3 +1,6 @@
+import { createMemoryGroupRepository } from "./repositories/groupRepository.js";
+import { createFileGroupStorage } from "./repositories/fileGroupStorage.js";
+import { createPostgresGroupRepository } from "./repositories/postgresGroupRepository.js";
 import { createMemoryProjectRepository } from "./repositories/projectRepository.js";
 import { createFileProjectStorage } from "./repositories/fileProjectStorage.js";
 import { loadDirectory, resolveUploadDir } from "./services/configuration.js";
@@ -35,10 +38,12 @@ const googleConfig = loadGoogleConfig(process.env, origin);
 let auth: AuthRepository;
 let google;
 let admin;
+let groups;
 if (googleConfig) {
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
   const identity = createPostgresIdentityRepository(pool);
   admin = createPostgresAdminRepository(pool);
+  groups = createPostgresGroupRepository(pool);
   auth = createPostgresAuthRepository(pool);
   await auth.refresh!();
   google = {
@@ -60,7 +65,14 @@ const repository = createMemoryProjectRepository(
   !google,
   createFileProjectStorage(dataFile),
 );
+groups ??= createMemoryGroupRepository(
+  auth.directory,
+  createFileGroupStorage(
+    process.env.GROUP_DATA_FILE ?? `${dataFile}.groups.json`,
+  ),
+);
 createApp({
+  groups,
   repository,
   admin,
   auth,

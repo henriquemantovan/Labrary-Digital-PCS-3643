@@ -155,6 +155,9 @@ export function createProjectController(
     return {
       id: project.id,
       classId: project.classId,
+      academicYear:
+        auth.directory.classes.find((item) => item.id === project.classId)
+          ?.academicYear ?? null,
       groupId: project.groupId,
       title: project.title,
       description: project.description,

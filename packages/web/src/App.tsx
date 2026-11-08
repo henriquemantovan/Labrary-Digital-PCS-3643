@@ -1,3 +1,4 @@
+import { GroupManager, EvaluatorManager } from "./Groups";
 import { AdminUsers } from "./AdminUsers";
 import { ProjectFeedback } from "./ProjectFeedback";
 import { useCallback, useEffect, useState } from "react";
@@ -707,7 +708,7 @@ function Dashboard({
         <p className="page-intro">
           Grupos e projetos sob sua responsabilidade.
         </p>
-        <div className="project-grid">
+        <div className="class-grid">
           {scope.classes.map((item) => (
             <article className="class-card" key={item.id}>
               <Icon name="book" size={28} />
@@ -741,6 +742,11 @@ function Dashboard({
                     </li>
                   ))}
               </ul>
+              <GroupManager
+                classId={item.id}
+                onChanged={() => setRevision((value) => value + 1)}
+                expired={expired}
+              />
               <button
                 className="text-button"
                 onClick={() => navigate("/projetos")}
@@ -816,6 +822,14 @@ function Dashboard({
           <Icon name="lock" size={17} />
           Acesso restrito ao grupo e à equipe acadêmica vinculada ao projeto.
         </div>
+        {["PROFESSOR", "ADMIN"].includes(user.role) && (
+          <EvaluatorManager
+            key={`evaluators-${detail.id}`}
+            projectId={detail.id}
+            classId={detail.classId}
+            expired={expired}
+          />
+        )}
         <ProjectFeedback
           key={detail.id}
           projectId={detail.id}
@@ -1123,8 +1137,8 @@ function CreateProject({
       {error && <Notice>{error}</Notice>}
       {!groups.length ? (
         <p className="muted">
-          Todos os grupos vinculados já têm projeto. O cadastro de novos grupos
-          faz parte da próxima etapa.
+          Todos os grupos vinculados já têm projeto. Cadastre outro grupo em
+          Minhas turmas.
         </p>
       ) : (
         <form onSubmit={submit}>

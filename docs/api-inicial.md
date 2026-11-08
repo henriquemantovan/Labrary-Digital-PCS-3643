@@ -113,3 +113,24 @@ O papel `ADMIN` é persistido em `app_user.role`, mantido pelos próximos logins
 Na visão administrativa, ADMIN vê todos os projetos, turmas e grupos e pode criar projetos para grupos existentes. Registro de materiais conserva as regras de aluno/grupo/estado: a administração não ignora essas regras. Mudar apenas a visualização não cria vínculos com turma, grupo ou projeto.
 
 Mudanças de papel usam transação com bloqueio para impedir que remoções concorrentes deixem zero administradores ativos. Remover o último ADMIN ativo retorna `409 LAST_ADMIN`. A transação limpa as prévias das sessões da conta alterada e registra autor, alvo, papel anterior, novo papel e data em `user_role_audit`. Um administrador destituído perde acesso administrativo na próxima requisição. O estado das contas e os vínculos acadêmicos são preservados.
+
+
+## Grupos e vínculos — HU02 / S5
+
+Rotas implementadas, com sessão e CSRF nas mutações:
+
+| Método e rota | Entrada ou resposta `data` |
+| --- | --- |
+| `GET /api/classes/:classId/administration` | `{groups: ManagedGroup[], people: Person[]}` |
+| `POST /api/classes/:classId/groups` | `{name}` → `201 {id,classId,name,memberIds:[]}` |
+| `PUT /api/classes/:classId/groups/:groupId/members` | `{memberIds:number[]}` → grupo com `history` |
+| `GET /api/projects/:projectId/evaluators` | `{evaluatorIds:number[],history:LinkChange[]}` |
+| `PUT /api/projects/:projectId/evaluators` | `{evaluatorIds:number[]}` → atribuições com `history` |
+
+`ManagedGroup` tem `id,classId,name,memberIds,history`. `Person` tem somente `id,fullName,role` (`ALUNO`, `AVALIADOR` ou `ADMIN`). A seleção é feita entre contas ativas provisionadas; nenhuma senha, e-mail ou identidade Google é exposta. `LinkChange` contém `target` (`GROUP`/`PROJECT`), `targetId`, `before`, `after`, `changedBy` e `changedAt` ISO UTC. O autor é a conta autenticada real, inclusive em prévia de ADMIN.
+
+IDs são inteiros positivos seguros; listas aceitam até 200 IDs únicos e podem ser vazias para remover todos os vínculos. Nome é normalizado com trim, tem 1–120 caracteres e é único na turma. Campos extras são recusados. Repetir um mesmo conjunto não duplica auditoria. Integrantes precisam de perfil ALUNO/ADMIN; avaliadores de AVALIADOR/ADMIN, sempre ativos.
+
+Professor gerencia somente a própria turma; ADMIN sem prévia gerencia todas. Prévia acadêmica usa o perfil e vínculos efetivos. Papel inadequado recebe `403 FORBIDDEN`; turma/projeto fora do escopo recebem `404 CLASS_NOT_FOUND` / `PROJECT_NOT_FOUND`; grupo inexistente ou de outra turma no caminho recebe `404 GROUP_NOT_FOUND`. Dados inválidos recebem `400 VALIDATION_ERROR`; conta inexistente, inativa ou de perfil incompatível recebe `400 INVALID_LINK`; nome duplicado recebe `409 GROUP_EXISTS`. Sem sessão: 401; CSRF/origem inválidos: 403. Remoção revoga leitura na próxima requisição da mesma sessão.
+
+A resposta privada de projeto também informa `academicYear`, derivado da turma (nulo se o diretório não tiver a turma). Persistência e decisão transitória da FK de avaliadores estão em [HU02](hu02.md). O [contrato público C4](contratos/c4-publicacao.md) define as futuras rotas do catálogo/publicação; elas continuam sem implementação nesta semana.
