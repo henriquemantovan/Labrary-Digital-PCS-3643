@@ -6,9 +6,9 @@ import { ProjectRepository } from "../repositories/projectRepository.js";
 import { GroupRepository } from "../repositories/groupRepository.js";
 import { createPermissions } from "../services/permissions.js";
 
-const id = z.coerce.number().int().positive();
+const id = z.coerce.number().int().positive().safe();
 const ids = z
-  .array(z.number().int().positive())
+  .array(z.number().int().positive().safe())
   .max(200)
   .refine((items) => new Set(items).size === items.length);
 export function createGroupController(
@@ -19,7 +19,7 @@ export function createGroupController(
 ) {
   const permissions = createPermissions(auth);
   const teacher = (response: Response) => {
-    if (response.locals.user.role !== "PROFESSOR")
+    if (!["PROFESSOR", "ADMIN"].includes(response.locals.user.role))
       throw new ApiError(
         403,
         "FORBIDDEN",
@@ -33,72 +33,52 @@ export function createGroupController(
       throw new ApiError(404, "CLASS_NOT_FOUND", "Turma não encontrada.");
     return classId;
   };
-  const project = (request: Request, response: Response, write = false) => {
-    if (write) teacher(response);
+  const project = (request: Request, response: Response) => {
+    teacher(response);
     const item = projects.get(id.parse(request.params.projectId));
     if (!item || !permissions.canRead(response.locals.user, item))
       throw new ApiError(404, "PROJECT_NOT_FOUND", "Projeto não encontrado.");
     return item;
   };
-  const validatePeople = (people: number[], role: "ALUNO" | "AVALIADOR") => {
-    if (
-      people.some(
-        (person) =>
-          !auth.directory.users.some(
-            (user) => user.id === person && user.role === role && user.active,
-          ),
-      )
-    )
-      throw new ApiError(
-        400,
-        "INVALID_LINK",
-        "Selecione contas ativas do perfil correto.",
-      );
-  };
   return {
-    administration(request: Request, response: Response) {
+    async administration(request: Request, response: Response) {
       const classId = ownClass(request, response);
       response.json({
         data: {
-          groups: auth.directory.groups
-            .filter((item) => item.classId === classId)
-            .map((item) => ({
-              ...item,
-              history: planning.history("GROUP", item.id),
-            })),
-          // Only teachers may choose from provisioned accounts. Never expose credentials.
+          groups: await Promise.all(
+            auth.directory.groups
+              .filter((item) => item.classId === classId)
+              .map(async (item) => ({
+                ...item,
+                history: await planning.history("GROUP", item.id),
+              })),
+          ),
+          // Contas ativas provisionadas; credenciais e identificadores Google não são expostos.
           people: auth.directory.users
-            .filter((item) => item.active && item.role !== "PROFESSOR")
+            .filter(
+              (item) =>
+                item.active &&
+                ["ALUNO", "AVALIADOR", "ADMIN"].includes(item.role),
+            )
             .map(({ id, fullName, role }) => ({ id, fullName, role })),
         },
       });
     },
-    createGroup(request: Request, response: Response) {
+    async createGroup(request: Request, response: Response) {
       const classId = ownClass(request, response);
       const input = z
         .object({ name: z.string().trim().min(1).max(120) })
         .strict()
         .parse(request.body);
-      if (
-        auth.directory.groups.some(
-          (item) => item.classId === classId && item.name === input.name,
-        )
-      )
-        throw new ApiError(
-          409,
-          "GROUP_EXISTS",
-          "Já existe um grupo com este nome na turma.",
-        );
-      const group = {
-        id: Math.max(0, ...auth.directory.groups.map((item) => item.id)) + 1,
+      const group = await planning.createGroup(
         classId,
-        name: input.name,
-        memberIds: [] as number[],
-      };
-      auth.directory.groups.push(group);
+        input.name,
+        response.locals.accountUser.id,
+      );
+      await auth.refresh?.();
       response.status(201).json({ data: group });
     },
-    members(request: Request, response: Response) {
+    async members(request: Request, response: Response) {
       const classId = ownClass(request, response);
       const groupId = id.parse(request.params.groupId);
       const group = auth.directory.groups.find(
@@ -110,60 +90,52 @@ export function createGroupController(
         .object({ memberIds: ids })
         .strict()
         .parse(request.body);
-      validatePeople(memberIds, "ALUNO");
-      planning.recordChange({
+      await planning.setLinks(classId, {
         target: "GROUP",
         targetId: groupId,
-        before: group.memberIds,
         after: memberIds,
-        changedBy: response.locals.user.id,
+        changedBy: response.locals.accountUser.id,
         changedAt: new Date(now()).toISOString(),
       });
-      group.memberIds = memberIds;
+      await auth.refresh?.();
       response.json({
-        data: { ...group, history: planning.history("GROUP", groupId) },
+        data: {
+          ...group,
+          memberIds,
+          history: await planning.history("GROUP", groupId),
+        },
       });
     },
-    evaluators(request: Request, response: Response) {
-      const item = project(request, response, true);
+    async evaluators(request: Request, response: Response) {
+      const item = project(request, response);
       response.json({
         data: {
           evaluatorIds: auth.directory.assignments
             .filter((link) => link.projectId === item.id)
             .map((link) => link.evaluatorId),
-          history: planning.history("PROJECT", item.id),
+          history: await planning.history("PROJECT", item.id),
         },
       });
     },
-    setEvaluators(request: Request, response: Response) {
-      const item = project(request, response, true);
+    async setEvaluators(request: Request, response: Response) {
+      const item = project(request, response);
       const { evaluatorIds } = z
         .object({ evaluatorIds: ids })
         .strict()
         .parse(request.body);
-      validatePeople(evaluatorIds, "AVALIADOR");
-      const before = auth.directory.assignments
-        .filter((link) => link.projectId === item.id)
-        .map((link) => link.evaluatorId);
-      planning.recordChange({
+      await planning.setLinks(item.classId, {
         target: "PROJECT",
         targetId: item.id,
-        before,
         after: evaluatorIds,
-        changedBy: response.locals.user.id,
+        changedBy: response.locals.accountUser.id,
         changedAt: new Date(now()).toISOString(),
       });
-      auth.directory.assignments = auth.directory.assignments.filter(
-        (link) => link.projectId !== item.id,
-      );
-      auth.directory.assignments.push(
-        ...evaluatorIds.map((evaluatorId) => ({
-          projectId: item.id,
-          evaluatorId,
-        })),
-      );
+      await auth.refresh?.();
       response.json({
-        data: { evaluatorIds, history: planning.history("PROJECT", item.id) },
+        data: {
+          evaluatorIds,
+          history: await planning.history("PROJECT", item.id),
+        },
       });
     },
   };

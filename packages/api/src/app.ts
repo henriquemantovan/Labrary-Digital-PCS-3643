@@ -1,3 +1,8 @@
+import { createGroupRouter } from "./routes/groupRoutes.js";
+import {
+  createMemoryGroupRepository,
+  GroupRepository,
+} from "./repositories/groupRepository.js";
 import express from "express";
 import { ZodError } from "zod";
 import {
@@ -24,6 +29,7 @@ import {
 } from "./repositories/adminRepository.js";
 
 export interface AppOptions {
+  groups?: GroupRepository;
   admin?: AdminRepository;
   google?: GoogleAuthOptions;
   localLogin?: boolean;
@@ -80,7 +86,17 @@ export function createApp(options: AppOptions = {}) {
       now,
     ),
   );
+  app.use("/api/classes", requireAuth(auth, now));
   app.use("/api/projects", requireAuth(auth, now));
+  app.use(
+    "/api",
+    createGroupRouter(
+      repository,
+      auth,
+      options.groups ?? createMemoryGroupRepository(auth.directory),
+      now,
+    ),
+  );
   app.use(
     "/api",
     createProjectRouter(repository, auth, {

@@ -74,6 +74,7 @@ model AppUser {
   authoredFiles        MaterialVersion[]    @relation("FileUploader")
   createdMaterials     ProjectMaterial[]    @relation("MaterialCreator")
   messages             ProjectMessage[]
+  academicLinkChanges  AcademicLinkAudit[]
   evaluatorAssignments ProjectEvaluator[]
   submissions          Submission[]         @relation("SubmissionAuthor")
   evaluations          Evaluation[]
@@ -145,7 +146,6 @@ model Project {
   materials      ProjectMaterial[]
   messages       ProjectMessage[]
   submissions    Submission[]
-  evaluators     ProjectEvaluator[]
   requirements   ProjectRequirement[]
   rubrics        ProjectRubric[]
   resultReleases ResultRelease[]
@@ -162,7 +162,6 @@ model ProjectEvaluator {
   evaluatorId BigInt   @map("evaluator_id")
   assignedAt  DateTime @default(now()) @map("assigned_at") @db.Timestamptz
 
-  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   evaluator AppUser @relation(fields: [evaluatorId], references: [id])
 
   @@id([projectId, evaluatorId])
@@ -444,4 +443,18 @@ model UserRoleAudit {
 
   @@index([targetId, createdAt], map: "user_role_audit_target_idx")
   @@map("user_role_audit")
+}
+
+model AcademicLinkAudit {
+  id        BigInt   @id @default(autoincrement())
+  target    String   @db.VarChar(10)
+  targetId  BigInt   @map("target_id")
+  beforeIds BigInt[] @map("before_ids")
+  afterIds  BigInt[] @map("after_ids")
+  changedBy BigInt   @map("changed_by")
+  changedAt DateTime @map("changed_at") @db.Timestamptz
+  actor     AppUser  @relation(fields: [changedBy], references: [id])
+
+  @@index([target, targetId, id], map: "academic_link_audit_target_idx")
+  @@map("academic_link_audit")
 }
