@@ -97,3 +97,10 @@ Na conta ADMIN, abra **Administrar usuários** para listar/buscar contas já cad
 Em **Visualizar como**, escolha Administrador, Aluno, Avaliador ou Professor. A escolha acadêmica muda os controles da interface e as permissões acadêmicas da sessão no servidor, sem alterar `app_user.role`. A prévia utiliza os vínculos da própria conta; sem grupo, turma ou atribuição correspondente, a lista poderá ficar vazia. Não é impersonação de outro usuário. A administração permanece acessível e **Administrador** restaura o acesso global aos projetos/turmas. A escolha sobrevive à recarga, é específica da sessão e não modifica outras sessões do usuário.
 
 O login Google preserva ADMIN assim como os demais perfis. Rebaixar uma conta por meio da administração limpa as visualizações de suas sessões; as permissões são relidas no banco a cada requisição. A seleção de perfil e a administração são negadas a contas comuns mesmo por acesso direto à API.
+
+
+## Grupos e vínculos — semana 5
+
+A migration `20261107000000_academic_links` acrescenta auditoria de vínculos, permite participações explícitas em vários grupos e adapta a atribuição de avaliadores aos IDs dos projetos ainda persistidos em arquivo. Não altera migrations anteriores nem apaga vínculos existentes. Execute `pnpm db:deploy` antes de iniciar a API atualizada. O Prisma acompanha a mudança; os snapshots `schema.sql` continuam históricos.
+
+Em **Minhas turmas**, professor/ADMIN cria grupos e seleciona integrantes entre contas Google/ADMIN provisionadas. No detalhe do projeto, seleciona avaliadores. Turmas precisam estar provisionadas no banco. A API grava grupos/participações/atribuições e histórico no PostgreSQL; o diretório de autorização é recarregado a cada requisição, preservando alterações e revogações em sessões abertas e após reinício. `GROUP_DATA_FILE` só é usado no modo local. Decisões de adapter, backup e migração futura da FK estão na [HU02](hu02.md).
