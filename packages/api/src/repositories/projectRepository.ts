@@ -97,10 +97,12 @@ export function createMemoryProjectRepository(
   if (saved) ({ projects, materials, messages } = saved);
   let nextProjectId = Math.max(2, ...projects.map((item) => item.id)) + 1;
   let nextMaterialId = Math.max(0, ...materials.map((item) => item.id)) + 1;
+  // Inclui versões citadas em mensagens, que podem vir de materiais legados descartados.
   let nextVersionId =
     Math.max(
       0,
       ...materials.flatMap((item) => item.versions.map(({ id }) => id)),
+      ...messages.map((item) => item.materialVersion?.id ?? 0),
     ) + 1;
   let nextMessageId = Math.max(0, ...messages.map((item) => item.id)) + 1;
   const commit = (snapshot: ProjectSnapshot) => {

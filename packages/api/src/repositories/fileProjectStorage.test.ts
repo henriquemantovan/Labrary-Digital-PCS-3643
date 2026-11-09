@@ -4,11 +4,17 @@ import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { afterEach, expect, it, vi } from "vitest";
 import { createFileProjectStorage } from "./fileProjectStorage.js";
+import request from "supertest";
 import { createMemoryProjectRepository } from "./projectRepository.js";
+import { createDiskStorage } from "../services/fileStorage.js";
 import {
   context,
+  materialInput,
+  pdfFile,
   projectInput,
+  sampleFiles,
   storedMaterial,
+  upload,
   versionInput,
 } from "../test/context.js";
 
@@ -135,4 +141,76 @@ it("falha de gravação não registra material nem versão e permite repetir", (
     id: 2,
     versionNumber: 2,
   });
+});
+it("bytes e metadados de materiais sobrevivem à recriação da aplicação", async () => {
+  const path = file();
+  const storage = createDiskStorage(join(path, "..", "uploads"));
+  const binary = (req: request.Test) =>
+    req.buffer(true).parse((res, callback) => {
+      const chunks: Buffer[] = [];
+      res.on("data", (chunk: Buffer) => chunks.push(chunk));
+      res.on("end", () => callback(null, Buffer.concat(chunks)));
+    });
+  const first = context({
+    repository: createMemoryProjectRepository(true, createFileProjectStorage(path)),
+    storage,
+  });
+  const created = await upload(first.client(1), "/api/projects/2/materials", materialInput, pdfFile());
+  expect(created.status).toBe(201);
+  const restored = context({
+    repository: createMemoryProjectRepository(true, createFileProjectStorage(path)),
+    storage: createDiskStorage(join(path, "..", "uploads")),
+  });
+  const listed = await restored.client(1).get("/api/projects/2/materials");
+  expect(listed.body.data).toEqual((await first.client(1).get("/api/projects/2/materials")).body.data);
+  const download = await binary(restored.client(1).get(created.body.data.currentVersion.downloadUrl));
+  expect(download.status).toBe(200);
+  expect(download.body).toEqual(sampleFiles.pdf);
+});
+
+const legacySnapshot = {
+  projects: [{
+    id: 2, classId: 1, groupId: 2, title: "Projeto antigo", description: "", category: "Lógica",
+    status: "PREPARACAO", dueAt: null, createdAt: "2026-10-15T12:00:00.000Z", updatedAt: "2026-10-15T12:00:00.000Z",
+  }],
+  materials: [
+    { id: 6, projectId: 2, title: "Relatório", kind: "RELATORIO", versionNumber: 1, originalFilename: "r.pdf",
+      mimeType: "application/pdf", sizeBytes: 10, storageKey: "mock/2/6", uploadedAt: "2026-10-16T12:00:00.000Z" },
+    { id: 7, projectId: 2, title: "Relatório", kind: "RELATORIO", versionNumber: 2, originalFilename: "r2.pdf",
+      mimeType: "application/pdf", sizeBytes: 10, storageKey: "mock/2/7", uploadedAt: "2026-10-17T12:00:00.000Z" },
+  ],
+  messages: [{
+    id: 1, projectId: 2, clientMessageId: randomUUID(), body: "Ver v2", createdAt: "2026-10-18T12:00:00.000Z",
+    author: { id: 1, fullName: "Aluno", role: "ALUNO" }, materialVersion: { id: 7, title: "Relatório", versionNumber: 2 },
+  }],
+};
+it("converte snapshot anterior à HU04 com backup, sem materiais sem bytes e sem reutilizar IDs citados", () => {
+  const path = file();
+  createFileProjectStorage(path).save({ projects: [], materials: [], messages: [] });
+  const original = JSON.stringify(legacySnapshot);
+  writeFileSync(path, original);
+  const repository = createMemoryProjectRepository(false, createFileProjectStorage(path));
+  expect(readFileSync(`${path}.legacy-backup`, "utf8")).toBe(original);
+  expect(repository.get(2)?.title).toBe("Projeto antigo");
+  expect(repository.listMaterials(2)).toEqual([]);
+  expect(repository.listMessages(2)).toEqual(legacySnapshot.messages);
+  // Antes de gravar, o arquivo original continua intacto e pode ser recarregado.
+  createMemoryProjectRepository(false, createFileProjectStorage(path));
+  expect(readFileSync(path, "utf8")).toBe(original);
+  expect(storedMaterial(repository, 2).versions[0].id).toBe(8);
+  const reloaded = createMemoryProjectRepository(false, createFileProjectStorage(path));
+  expect(reloaded.listMaterials(2)).toHaveLength(1);
+  expect(readFileSync(`${path}.legacy-backup`, "utf8")).toBe(original);
+});
+it("não sobrescreve backup legado divergente nem aceita snapshot misto", () => {
+  const path = file();
+  createFileProjectStorage(path).save({ projects: [], materials: [], messages: [] });
+  writeFileSync(`${path}.legacy-backup`, "outro conteúdo");
+  writeFileSync(path, JSON.stringify(legacySnapshot));
+  expect(() => createFileProjectStorage(path).load()).toThrow("Backup divergente");
+  expect(readFileSync(`${path}.legacy-backup`, "utf8")).toBe("outro conteúdo");
+  const mixed = { ...legacySnapshot, materials: [...legacySnapshot.materials, { versions: [] }] };
+  writeFileSync(path, JSON.stringify(mixed));
+  rmSync(`${path}.legacy-backup`);
+  expect(() => createFileProjectStorage(path).load()).toThrow();
 });
