@@ -1,8 +1,7 @@
 import { test, expect, Page } from "@playwright/test";
 
-// Os servidores E2E são compartilhados pelos arquivos, em ordem alfabética: este
-// arquivo roda depois de materials.spec.ts e funciona com ou sem materiais prévios.
-// Submeter bloqueia o projeto 2; specs futuras que enviem materiais nele devem rodar antes.
+// A configuração de submissão usa servidores novos por execução e por perfil.
+// O cenário prepara os próprios materiais e não depende da ordem de outras specs.
 
 async function login(page: Page, role: string) {
   await page.getByLabel("E-mail institucional").fill(`${role}@labrary.local`);

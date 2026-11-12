@@ -5,6 +5,7 @@ import { createFileGroupStorage } from "./repositories/fileGroupStorage.js";
 import { createPostgresGroupRepository } from "./repositories/postgresGroupRepository.js";
 import { createMemoryProjectRepository } from "./repositories/projectRepository.js";
 import { createFileProjectStorage } from "./repositories/fileProjectStorage.js";
+import { createResultReleaseRepository } from "./repositories/resultReleaseRepository.js";
 import { loadDirectory, resolveUploadDir } from "./services/configuration.js";
 import { createDiskStorage } from "./services/fileStorage.js";
 import { createPostgresAdminRepository } from "./repositories/postgresAdminRepository.js";
@@ -74,6 +75,7 @@ groups ??= createMemoryGroupRepository(
   ),
 );
 createApp({
+  resultReleases: createResultReleaseRepository(process.env.RESULT_RELEASE_DATA_FILE ?? `${dataFile}.results.json`),
   rubrics: createMemoryRubricRepository(createFileRubricStorage(
     process.env.RUBRIC_DATA_FILE ?? `${dataFile}.rubrics.json`,
   )),

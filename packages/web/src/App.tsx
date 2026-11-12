@@ -9,6 +9,7 @@ import { api, ApiError } from "./api";
 import type { Material, MaterialRules, Project, Scope, User } from "./api";
 import { Icon } from "./Icons";
 import { MaterialsPanel } from "./Materials";
+import { Gradebook } from "./Gradebook";
 import { ProjectAssessment } from "./ProjectAssessment";
 import { SubmissionPanel } from "./Submission";
 
@@ -480,6 +481,11 @@ function PrivateApp() {
               Administrar usuários
             </button>
           )}
+          {["PROFESSOR", "ADMIN"].includes(visibleUser.role) && (
+            <button className={`nav-item ${path === "/notas" ? "active" : ""}`} onClick={() => navigate("/notas")}>
+              <Icon name="book" /> Consolidação de notas
+            </button>
+          )}
           <button
             className={`nav-item ${path === "/perfil" ? "active" : ""}`}
             onClick={() => navigate("/perfil")}
@@ -526,7 +532,7 @@ function PrivateApp() {
           <span>
             Meu espaço <span className="breadcrumb">/</span>{" "}
             <strong>
-              {path === "/administracao"
+              {path === "/notas" ? "Notas" : path === "/administracao"
                 ? "Administração"
                 : path === "/perfil"
                   ? "Perfil"
@@ -564,7 +570,9 @@ function PrivateApp() {
             </section>
           )}
           {viewError && <Notice>{viewError}</Notice>}
-          {path === "/administracao" && user.role === "ADMIN" ? (
+          {path === "/notas" && ["PROFESSOR", "ADMIN"].includes(visibleUser.role) ? (
+            <Gradebook key={`${user.id}-${user.viewRole ?? ""}`} expired={expired} />
+          ) : path === "/administracao" && user.role === "ADMIN" ? (
             <AdminUsers
               expired={expired}
               onSessionChanged={(current) => {
