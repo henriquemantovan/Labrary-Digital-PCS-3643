@@ -125,6 +125,15 @@ beforeEach(() => {
       if (input.endsWith("/materials") || input.endsWith("/messages"))
         return response([]);
       if (input.endsWith("/material-rules")) return response(materialRules);
+      if (input.endsWith("/submission-checklist"))
+        return response({
+          projectStatus: "PREPARACAO",
+          rubricVersionId: null,
+          items: [],
+          blockedBy: "RUBRIC_NOT_CONFIGURED",
+          canSubmit: false,
+        });
+      if (input.endsWith("/submissions")) return response([]);
       return response(
         available.find((project) => input === `/api/projects/${project.id}`) ??
           projects[0],
@@ -730,4 +739,40 @@ it("abre gestão de avaliadores e feedback sem colisões na identidade dos compo
   expect(errors.mock.calls.flat().join(" ")).not.toMatch(
     /same key|unique.*key/i,
   );
+});
+
+it("HU05: submissão atualiza o estado do projeto e recarrega o bloqueio dos materiais", async () => {
+  window.history.replaceState(null, "", "/projetos/2");
+  let status = "PREPARACAO";
+  const ruleRequests: string[] = [];
+  override = (url, init) => {
+    if (url.endsWith("/material-rules")) {
+      ruleRequests.push(status);
+      return response(
+        status === "PREPARACAO"
+          ? materialRules
+          : { ...materialRules, lock: "PROJECT_LOCKED", canUpload: false },
+      );
+    }
+    if (url.endsWith("/submission-checklist"))
+      return response({
+        projectStatus: status,
+        rubricVersionId: 1,
+        items: [{ kind: "RELATORIO", label: "Relatório do projeto", materialId: 1, versionId: 2, ok: true }],
+        blockedBy: status === "PREPARACAO" ? null : "SUBMISSION_LOCKED",
+        canSubmit: status === "PREPARACAO",
+      });
+    if (url.endsWith("/submissions") && init?.method === "POST") {
+      status = "EM_AVALIACAO";
+      return response({ id: 1, round: 1, status: "SUBMETIDA" }, 201);
+    }
+    return undefined;
+  };
+  render(<App />);
+  await userEvent.click(await screen.findByRole("button", { name: "Submeter para avaliação" }));
+  await userEvent.click(screen.getByRole("button", { name: "Confirmar submissão" }));
+  expect(await screen.findByText(/A rodada 1 está em avaliação/)).toBeDefined();
+  expect(screen.getByText("Em avaliação", { selector: ".status-pill" })).toBeDefined();
+  expect(await screen.findByText(/Os materiais ficam bloqueados enquanto/)).toBeDefined();
+  expect(ruleRequests).toEqual(["PREPARACAO", "EM_AVALIACAO"]);
 });

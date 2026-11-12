@@ -2101,3 +2101,36 @@ input[type="file"]::file-selector-button {
 .assessment-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 20px; }
 .rubric-form { margin-top: 24px; }
 .rubric-form fieldset { min-width: 0; }
+
+/* HU05 — entrega para avaliação */
+.submission-panel { overflow-wrap: anywhere; }
+.submission-panel h3 { font-size: 15px; margin: 28px 0 8px; }
+.submission-checklist { list-style: none; padding: 0; margin: 12px 0 20px; }
+.submission-checklist li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 16px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 9px;
+  padding: 14px 18px;
+  margin: 8px 0;
+}
+.submission-checklist li strong { font-size: 13px; font-weight: 600; }
+.submission-checklist li.ok strong { color: #a4ccb8; }
+.submission-checklist li.missing strong { color: #e9b3d1; }
+.submission-confirm {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 9px;
+  padding: 16px 18px;
+  margin: 12px 0;
+}
+.submission-confirm p { margin: 0 0 12px; line-height: 1.6; }
+.submission-success { color: #a4ccb8; }
+.submission-rounds { padding-left: 22px; font-size: 14px; line-height: 1.6; }
+.submission-rounds > li { margin: 14px 0; }
+.submission-rounds p { margin: 2px 0; }
+.submission-rounds ul { padding-left: 18px; margin: 6px 0; }
+.submission-rounds a { color: var(--purple); }

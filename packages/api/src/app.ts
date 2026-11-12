@@ -1,5 +1,6 @@
 import { createGroupRouter } from "./routes/groupRoutes.js";
 import { createRubricRouter } from "./routes/rubricRoutes.js";
+import { createSubmissionRouter } from "./routes/submissionRoutes.js";
 import { createMemoryRubricRepository, RubricRepository } from "./repositories/rubricRepository.js";
 import { createRubricMaterialPolicy } from "./services/rubricMaterialPolicy.js";
 import {
@@ -94,6 +95,7 @@ export function createApp(options: AppOptions = {}) {
   app.use("/api/classes", requireAuth(auth, now));
   app.use("/api/projects", requireAuth(auth, now));
   app.use("/api", createRubricRouter(repository, auth, rubrics, now));
+  app.use("/api", createSubmissionRouter(repository, auth, rubrics, now));
   app.use(
     "/api",
     createGroupRouter(
