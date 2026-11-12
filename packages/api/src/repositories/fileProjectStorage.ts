@@ -1,4 +1,11 @@
-import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import {
+  constants,
+  copyFileSync,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  writeFileSync,
+} from "node:fs";
 import { dirname } from "node:path";
 import { z } from "zod";
 import { roles } from "../models/auth.js";
@@ -67,12 +74,43 @@ const snapshotSchema = z.object({
   ),
 });
 
+// Formato anterior à HU04: uma linha por versão, só metadados, sem bytes gravados.
+const legacySnapshotSchema = snapshotSchema.extend({
+  materials: z.array(
+    z.object({ id, projectId: id, versionNumber: id, storageKey: z.string() }),
+  ),
+});
+const isLegacy = (data: unknown) =>
+  (data as { materials?: unknown[] } | null)?.materials?.some(
+    (item) => !(item as { versions?: unknown }).versions,
+  ) ?? false;
+
+/**
+ * Copia o arquivo antigo para `<path>.legacy-backup` e descarta os materiais,
+ * que nunca tiveram arquivo. Projetos e mensagens são mantidos.
+ */
+function migrateLegacy(path: string, data: unknown) {
+  const { projects, messages } = legacySnapshotSchema.parse(data);
+  const backup = `${path}.legacy-backup`;
+  try {
+    copyFileSync(path, backup, constants.COPYFILE_EXCL);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+    if (!readFileSync(backup).equals(readFileSync(path)))
+      throw new Error(`Backup divergente já existe em ${backup}.`);
+  }
+  return { projects, materials: [], messages };
+}
+
 // Um único processo escritor. A troca por rename evita snapshots parcialmente escritos.
 export function createFileProjectStorage(path: string): ProjectStorage {
   return {
     load() {
       try {
-        return snapshotSchema.parse(JSON.parse(readFileSync(path, "utf8")));
+        const data: unknown = JSON.parse(readFileSync(path, "utf8"));
+        return isLegacy(data)
+          ? migrateLegacy(path, data)
+          : snapshotSchema.parse(data);
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code === "ENOENT")
           return undefined;
