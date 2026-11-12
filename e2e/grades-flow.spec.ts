@@ -1,4 +1,7 @@
 import { expect, Page, test } from "@playwright/test";
+// TODO(S6 #41 / Yuhang #39): acrescentar fluxo com C1/C2 persistidos reais,
+// incluindo reinício da API, reabertura, refinalização e nova rodada. Manter
+// este cenário de contrato; o fixture atual não comprova integração da HU08.
 async function login(page: Page, role: string) {
   await page.getByLabel("E-mail institucional").fill(`${role}@labrary.local`);
   await page.getByLabel("Senha", { exact: true }).fill("Labrary@2026");

@@ -3,6 +3,10 @@ import { z } from "zod";
 export type EvaluationRound = EvaluationContract;
 
 export interface EvaluationProvider {
+  // TODO(S6 #41 / Yuhang #39): implementar este contrato sobre avaliações
+  // persistidas. Retornar C2 coerente com o snapshot C1 e ordenação estável;
+  // incrementar revision inclusive ao refinalizar com as mesmas notas.
+  // Indisponibilidade deve propagar erro, sem virar undefined ou nota zero.
   /** Snapshot coerente da rodada atual; undefined significa que não houve submissão. */
   getCurrentRound(projectId: number): Promise<EvaluationRound | undefined>;
 }
