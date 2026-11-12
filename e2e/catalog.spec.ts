@@ -11,8 +11,12 @@ test("catálogo demonstrativo: filtros, detalhe, voltar e recarregar em desktop/
     "3 projeto(s) encontrado(s)",
   );
   await page.getByLabel("Buscar por título").fill("SEMÁFORO");
-  await page.getByRole("combobox", { name: "Ano", exact: true }).selectOption("2026");
-  await page.getByRole("combobox", { name: "Turma", exact: true }).selectOption("3");
+  await page
+    .getByRole("combobox", { name: "Ano", exact: true })
+    .selectOption("2026");
+  await page
+    .getByRole("combobox", { name: "Turma", exact: true })
+    .selectOption("3");
   await page
     .getByRole("combobox", { name: "Categoria", exact: true })
     .selectOption("Sistemas digitais");
@@ -52,7 +56,9 @@ test("catálogo demonstrativo: filtros, detalhe, voltar e recarregar em desktop/
   });
   await page.goBack();
   await expect(page.getByLabel("Buscar por título")).toHaveValue("SEMÁFORO");
-  await page.getByRole("combobox", { name: "Ano", exact: true }).selectOption("2025");
+  await page
+    .getByRole("combobox", { name: "Ano", exact: true })
+    .selectOption("2025");
   await expect(
     page.getByRole("heading", { name: "Nenhum resultado" }),
   ).toBeVisible();
@@ -80,20 +86,39 @@ test("catálogo demonstrativo: filtros, detalhe, voltar e recarregar em desktop/
   ).toBeVisible();
 });
 
-test("catálogo HTTP anônimo mostra indisponibilidade real, sem substituir por fixture", async ({
+test("catálogo HTTP anônimo consulta a API real e recupera falha sem fallback de fixture", async ({
   page,
   context,
 }) => {
-  expect((await context.request.get("/api/catalog")).status()).toBe(404);
+  const response = await context.request.get("/api/catalog");
+  expect(response.status()).toBe(200);
+  expect(await response.json()).toEqual({ data: [] });
   await page.goto("/acervo");
-  await expect(page.getByRole("alert")).toContainText(
-    "Não foi possível carregar o acervo",
-  );
+  await expect(
+    page.getByRole("heading", { name: "Nenhum projeto publicado" }),
+  ).toBeVisible();
   await expect(page.getByLabel("Demonstração")).toHaveCount(0);
-  await page.getByRole("button", { name: "Tentar novamente" }).click();
+  await page.route(
+    "**/api/catalog",
+    (route) =>
+      route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({
+          error: { code: "UNAVAILABLE", message: "Serviço indisponível" },
+        }),
+      }),
+  );
+  await page.reload();
   await expect(page.getByRole("alert")).toContainText(
     "Não foi possível carregar o acervo",
   );
+  await page.unroute("**/api/catalog");
+  await page.getByRole("button", { name: "Tentar novamente" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Nenhum projeto publicado" }),
+  ).toBeVisible();
+  await expect(page.getByLabel("Demonstração")).toHaveCount(0);
   await page.goto("/acervo/17");
   await expect(
     page.getByRole("heading", { name: "Publicação não encontrada" }),
