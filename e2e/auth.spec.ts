@@ -215,7 +215,7 @@ test("HU07 conserva feedback privado e versão após recarga e falha de resposta
     { times: 1 },
   );
   await page.getByRole("button", { name: "Enviar mensagem" }).click();
-  await expect(page.getByRole("alert")).toContainText("Seu texto foi mantido");
+  await expect(page.getByRole("region", { name: "Feedback do projeto" }).getByRole("alert")).toContainText("Seu texto foi mantido");
   await expect(page.getByLabel("Mensagem", { exact: true })).toHaveValue(text);
   await page.getByRole("button", { name: "Enviar mensagem" }).click();
   await expect(page.getByText("Mensagem enviada.")).toBeVisible();

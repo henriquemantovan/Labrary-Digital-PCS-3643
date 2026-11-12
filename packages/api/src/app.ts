@@ -1,3 +1,5 @@
+import { createReadRouter } from "./routes/readRoutes.js";
+import type { ReadProviders } from "./models/readModels.js";
 import express from "express";
 import { ZodError } from "zod";
 import {
@@ -16,6 +18,7 @@ import { createProjectRouter } from "./routes/projectRoutes.js";
 import { UspAuthOptions } from "./controllers/uspAuthController.js";
 
 export interface AppOptions {
+  readProviders?: ReadProviders;
   usp?: UspAuthOptions;
   localLogin?: boolean;
   repository?: ProjectRepository;
@@ -63,6 +66,7 @@ export function createApp(options: AppOptions = {}) {
   );
   app.use("/api/projects", requireAuth(auth, now));
   app.use("/api", createProjectRouter(repository, auth, now));
+  app.use("/api", createReadRouter(options.readProviders ?? {}, repository, auth));
 
   app.use((_request, response) => {
     response.status(404).json({

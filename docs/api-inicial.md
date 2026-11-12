@@ -73,3 +73,7 @@ Envio: `{ "clientMessageId": "UUID", "body": "Texto de 1 a 5000 caracteres", "ma
 Projeto + autor + `clientMessageId` identificam uma tentativa lógica: criação retorna 201; repetição com mesmo texto normalizado e contexto retorna 200 com a mensagem original; payload diferente com a mesma chave retorna `409 MESSAGE_ID_CONFLICT`. Campos adicionais, UUID inválido, texto vazio/excessivo ou ID malformado recebem 400; contexto inexistente/de outro projeto recebe `404 MATERIAL_NOT_FOUND`. Falha de armazenamento retorna 500 sem atualizar o estado em memória.
 
 Persistência do servidor em `.data/projects-<modo>.json`, substituição atômica de snapshot, um processo escritor; `PROJECT_DATA_FILE` configura outro caminho. Não há alterações no schema PostgreSQL nem armazenamento de bytes. Sessões continuam em memória. Limites e roteiro em [docs/hu07.md](hu07.md).
+
+## Leitura de resultados e acervo — incremento S6 de Dan
+
+`GET /api/projects/:projectId/result` exige aluno integrante do grupo e sessão; oculta nota/rubrica/critérios enquanto não liberados. `GET /api/public/projects` e `/api/public/projects/:projectId` são anônimos, usam projeção pública por allowlist e nunca leem projetos privados como fallback. Os três endpoints retornam 503 quando o provedor correspondente não está configurado. Contratos provisórios, filtros e dependências: [Dan — semana 6](dan-semana6.md). Nesta base o entrypoint ainda não possui os produtores reais C3/C4 nem a rota de bytes públicos.

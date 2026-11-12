@@ -1,0 +1,32 @@
+import { test, expect } from '@playwright/test';
+test('acervo anônimo informa ausência do provedor sem publicar projetos privados', async ({ page, request }) => {
+  await page.goto('/acervo');
+  await expect(page.getByRole('heading', { name: 'Acervo público' })).toBeVisible();
+  await expect(page.getByRole('alert')).toContainText('ainda não está disponível');
+  await page.getByLabel('Buscar por título').fill('Circuito');
+  await page.getByLabel('Ano', { exact: true }).fill('2026');
+  await page.getByLabel('Turma', { exact: true }).fill('T1');
+  await page.getByLabel('Categoria', { exact: true }).fill('Digital');
+  await page.getByRole('button', { name: 'Buscar', exact: true }).click();
+  await expect(page.getByRole('alert')).toBeVisible();
+  expect((await request.get('/api/public/projects')).status()).toBe(503);
+  expect((await request.get('/api/projects/2/result')).status()).toBe(401);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.goto('/acervo/1');
+  await expect(page.getByRole('alert')).toBeVisible();
+  await page.getByRole('button', { name: 'Voltar ao acervo' }).click();
+  await expect(page).toHaveURL(/\/acervo$/);
+});
+test('resultado próprio exige sessão e informa provedor pendente', async ({ page, request }) => {
+  await page.goto('/login');
+  await page.getByLabel('E-mail institucional').fill('aluno@labrary.local');
+  await page.getByLabel('Senha', { exact: true }).fill('Labrary@2026');
+  await page.getByRole('button', { name: 'Entrar no meu espaço' }).click();
+  await page.getByRole('link', { name: 'Monitor de consumo energético', exact: true }).click();
+  const result = page.getByRole('region', { name: 'Resultado do grupo' });
+  await expect(result.getByRole('alert')).toContainText('ainda não está disponível');
+  await result.getByRole('button', { name: 'Tentar novamente' }).click();
+  await expect(result.getByRole('alert')).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  expect((await page.request.get('/api/projects/1/result')).status()).toBe(404);
+});

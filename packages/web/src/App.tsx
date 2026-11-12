@@ -1,3 +1,5 @@
+import { Catalog } from "./Catalog";
+import { GroupResult } from "./GroupResult";
 import { ProjectFeedback } from "./ProjectFeedback";
 import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
@@ -159,6 +161,7 @@ function Login({
             <br />
             começa aqui.
           </h2>
+          <a href="/acervo">Explorar acervo público</a>
           <p className="muted login-description">
             Entre com sua conta para acessar seu espaço.
           </p>
@@ -330,6 +333,7 @@ export function App() {
       setBusy(false);
     }
   }
+  if (path === "/acervo" || /^\/acervo\/[1-9]\d*$/.test(path)) return <Catalog path={path} navigate={navigate} />;
   if (initializing)
     return (
       <main className="startup">
@@ -380,6 +384,7 @@ export function App() {
         </div>
         <p className="nav-label">MEU ESPAÇO</p>
         <nav aria-label="Navegação principal">
+          <a className="nav-item" href="/acervo">Acervo público</a>
           <button
             className={
               path.startsWith("/projetos") || path === "/"
@@ -736,6 +741,7 @@ function Dashboard({
           <Icon name="lock" size={17} />
           Acesso restrito ao grupo e à equipe acadêmica vinculada ao projeto.
         </div>
+        {user.role === "ALUNO" && <GroupResult key={`result-${detail.id}`} projectId={detail.id} expired={expired} />}
         <ProjectFeedback
           key={detail.id}
           projectId={detail.id}
