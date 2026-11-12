@@ -1,3 +1,4 @@
+import { publicationHistorySchema } from "../models/publicationDecision.js";
 import {
   constants,
   copyFileSync,
@@ -16,6 +17,7 @@ import { ProjectStorage } from "./projectRepository.js";
 const id = z.number().int().positive();
 const timestamp = z.iso.datetime();
 const snapshotSchema = z.object({
+  publicationDecisions: publicationHistorySchema.optional(),
   projects: z.array(
     z.object({
       id,
@@ -93,7 +95,8 @@ const isLegacy = (data: unknown) =>
  * que nunca tiveram arquivo. Projetos e mensagens são mantidos.
  */
 function migrateLegacy(path: string, data: unknown) {
-  const { projects, messages, submissions } = legacySnapshotSchema.parse(data);
+  const { projects, messages, submissions, publicationDecisions } =
+    legacySnapshotSchema.parse(data);
   const backup = `${path}.legacy-backup`;
   try {
     copyFileSync(path, backup, constants.COPYFILE_EXCL);
@@ -102,7 +105,13 @@ function migrateLegacy(path: string, data: unknown) {
     if (!readFileSync(backup).equals(readFileSync(path)))
       throw new Error(`Backup divergente já existe em ${backup}.`);
   }
-  return { projects, materials: [], messages, submissions };
+  return {
+    projects,
+    materials: [],
+    messages,
+    submissions,
+    ...(publicationDecisions ? { publicationDecisions } : {}),
+  };
 }
 
 // Um único processo escritor. A troca por rename evita snapshots parcialmente escritos.

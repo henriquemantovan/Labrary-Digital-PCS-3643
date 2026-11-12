@@ -253,6 +253,8 @@ As funcionalidades foram registradas como issues no formato **Como [papel], eu g
 - [ ] Somente metadados e materiais autorizados tornam-se públicos; notas e feedback continuam privados.
 - [ ] Professor pode retirar publicação preservando conteúdo e histórico privados.
 
+**Incremento S6 (#37):** serviço/API e controles docentes de finalização, registro da autorização do grupo, seleção de versões, publicação e retirada, com auditoria persistente e acesso público C4/Range. As ações de finalização/publicação permanecem desabilitadas no entrypoint até os adapters reais C1 (Enzo #38) e C3 (Kauê #41) estarem conectados. Os testes com doubles não representam aceite integrado. Veja [HU11, integração e evidências](docs/hu11.md).
+
 ### [HU12 — Explorar projetos publicados](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/12)
 
 **Incremento S5 (#35):** catálogo/detalhe responsivos, busca e filtros combinados sobre C4, demonstráveis em `/demo/acervo` somente no servidor de desenvolvimento. Cliente HTTP separado, sem fallback de fixtures em produção. Publicação real e aceite permanecem na S6/S7. [Demonstração, regressão HU06 e evidências](docs/catalogo-semana-5.md).

@@ -113,6 +113,16 @@ beforeEach(() => {
           })),
           people: [],
         });
+      if (input.endsWith("/publication"))
+        return response({
+          status: "EM_AVALIACAO",
+          submissionId: null,
+          canFinalize: false,
+          canPublish: false,
+          reason: "Aguardando integração das entregas e avaliações.",
+          materials: [],
+          history: [],
+        });
       if (input.endsWith("/evaluators"))
         return response({ evaluatorIds: [], history: [] });
       if (input === "/api/scope") return response(scope);

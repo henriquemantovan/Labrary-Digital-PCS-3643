@@ -2109,6 +2109,15 @@ input[type="file"]::file-selector-button {
 .rubric-form { margin-top: 24px; }
 .rubric-form fieldset { min-width: 0; }
 
+.publication-panel { margin-top: 24px; }
+.publication-panel h2 { margin-bottom: 12px; }
+.publication-panel form, .publication-panel details { margin-top: 18px; }
+.publication-panel label { display: block; margin: 12px 0; }
+.publication-panel .publication-check { display: flex; align-items: center; gap: 10px; }
+.publication-check input[type="checkbox"] { width: auto; flex: 0 0 auto; }
+.publication-panel textarea { width: 100%; }
+.publication-panel li { overflow-wrap: anywhere; margin-bottom: 10px; }
+
 /* HU05 — entrega para avaliação */
 .submission-panel { overflow-wrap: anywhere; }
 .submission-panel h3 { font-size: 15px; margin: 28px 0 8px; }

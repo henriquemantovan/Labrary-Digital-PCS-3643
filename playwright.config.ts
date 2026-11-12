@@ -27,6 +27,27 @@ export default defineConfig({
     },
   })),
   webServer: [
+    ...[
+      { apiPort: 3006, webPort: 5182 },
+      { apiPort: 3007, webPort: 5183 },
+    ].flatMap(({ apiPort, webPort }) => [
+      {
+        command:
+          "pnpm --filter @labrary/api exec tsx integration/publicationFixture.ts",
+        url: `http://localhost:${apiPort}/api/health`,
+        reuseExistingServer: false,
+        env: {
+          PUBLICATION_FIXTURE_PORT: String(apiPort),
+          APP_ORIGIN: `http://localhost:${webPort}`,
+        },
+      },
+      {
+        command: `pnpm --filter @labrary/web dev --port ${webPort} --strictPort`,
+        url: `http://localhost:${webPort}`,
+        reuseExistingServer: false,
+        env: { API_PORT: String(apiPort), WEB_PORT: String(webPort) },
+      },
+    ]),
     ...targets.flatMap(({ name, webPort, apiPort }) => [
       {
         command: "pnpm --filter @labrary/api dev",

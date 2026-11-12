@@ -31,3 +31,8 @@ A View não escolhe o papel, o autor da ação nem a turma autorizada. O middlew
 A atribuição de avaliador referencia o ID do projeto efetivo no arquivo. A decisão transitória sobre sua FK e a futura reconciliação estão na [HU02](hu02.md). `ProjectRepository` continua sendo a porta para resolver projeto/turma; não há réplica automática em duas fontes. Preservar banco, snapshots e bytes como conjunto consistente no backup.
 
 A composição com o PR #26 está descrita na [HU02](hu02.md). O [C4](contratos/c4-publicacao.md) define a projeção pública estrita e a futura porta do catálogo, separada dos DTOs privados. A S5 não cria endpoints de publicação nem declara os adapters C0–C3 concluídos. Revisão de outro integrante, aceite e publicação remota das evidências permanecem pendentes.
+
+
+## Evolução S6 — publicação
+
+A [HU11](hu11.md) acrescenta um serviço de publicação com portas para C1/C3, histórico de decisões no mesmo snapshot de projetos, projeção pública explícita e leitura autorizada de bytes/Range. O entrypoint conserva as ações desabilitadas enquanto as integrações reais faltarem; o catálogo usa as novas rotas HTTP sem fallback de fixtures. O diagnóstico da S5 acima permanece como registro daquela entrega.

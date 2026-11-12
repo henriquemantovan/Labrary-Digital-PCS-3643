@@ -59,7 +59,7 @@ export interface CatalogFilter {
   classId?: number;
   category?: string;
 }
-/** Porta a conectar na S6. Retirada deve afetar listagem, detalhe e bytes. */
+/** C4 implementado pelo serviço HU11; retirada afeta listagem, detalhe e bytes. */
 export interface PublicPublicationProvider {
   list(filter: CatalogFilter): Promise<PublicProject[]>;
   get(projectId: number): Promise<PublicProject | undefined>;
