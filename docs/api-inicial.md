@@ -1,4 +1,4 @@
-# API REST (TEC02 + HU01–HU07)
+# API REST (TEC02 + HU01–HU07 + HU09)
 
 Incremento S5 de Yuhang (#34, 05–11/11): [C0 — requisitos/rubricas](contratos/c0-requisitos-rubrica.md) tem rotas privadas implementadas. [C2 — avaliação](contratos/c2-avaliacao.md) contém a proposta de contrato, exemplos e validação isolada de notas/completude, sem rotas ou persistência de avaliação nesta semana. O [relatório S5](entrega-yuhang.md) registra escopo e verificações.
 
@@ -136,6 +136,12 @@ IDs são inteiros positivos seguros; listas aceitam até 200 IDs únicos e podem
 Professor gerencia somente a própria turma; ADMIN sem prévia gerencia todas. Prévia acadêmica usa o perfil e vínculos efetivos. Papel inadequado recebe `403 FORBIDDEN`; turma/projeto fora do escopo recebem `404 CLASS_NOT_FOUND` / `PROJECT_NOT_FOUND`; grupo inexistente ou de outra turma no caminho recebe `404 GROUP_NOT_FOUND`. Dados inválidos recebem `400 VALIDATION_ERROR`; conta inexistente, inativa ou de perfil incompatível recebe `400 INVALID_LINK`; nome duplicado recebe `409 GROUP_EXISTS`. Sem sessão: 401; CSRF/origem inválidos: 403. Remoção revoga leitura na próxima requisição da mesma sessão.
 
 A resposta privada de projeto também informa `academicYear`, derivado da turma (nulo se o diretório não tiver a turma). Persistência e decisão transitória da FK de avaliadores estão em [HU02](hu02.md). O [contrato público C4](contratos/c4-publicacao.md) define as futuras rotas do catálogo/publicação; elas continuam sem implementação nesta semana.
+
+## Consolidação e resultados (HU09, #36/#41)
+
+`GET /api/classes/:classId/grades` retorna a tabela privada docente; `?format=csv` exporta a mesma projeção. `GET /api/projects/:projectId/results/consolidation` fornece resultado e token de confirmação docente; `POST /api/projects/:projectId/results/release` libera explicitamente a revisão confirmada. `GET /api/projects/:projectId/result` restringe o resultado liberado aos integrantes do grupo e omite notas enquanto bloqueado. Sessão, escopo da turma, CSRF e `no-store` são obrigatórios. Contratos, erros, tipos e exemplos em [C3](contratos/c3-consolidacao.md).
+
+O entrypoint ainda não conecta o provedor de avaliações persistidas da HU08: responde 503 `EVALUATIONS_UNAVAILABLE`; a factory aceita `EvaluationProvider` injetado para integração. Testes com C2 injetado não demonstram a entrega real. Liberações usam arquivo privado `RESULT_RELEASE_DATA_FILE`, separado dos snapshots existentes.
 
 ## Submissão — HU05 / S6
 

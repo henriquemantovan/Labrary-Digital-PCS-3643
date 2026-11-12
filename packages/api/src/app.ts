@@ -23,6 +23,9 @@ import {
 import { createProjectRouter } from "./routes/projectRoutes.js";
 import { MaterialPolicy } from "./services/materialPolicy.js";
 import { createDiskStorage, FileStorage } from "./services/fileStorage.js";
+import { EvaluationProvider } from "./models/consolidation.js";
+import { createResultReleaseRepository, ResultReleaseRepository } from "./repositories/resultReleaseRepository.js";
+import { createGradeRouter } from "./routes/gradeRoutes.js";
 
 import { GoogleAuthOptions } from "./controllers/googleAuthController.js";
 
@@ -33,6 +36,8 @@ import {
 } from "./repositories/adminRepository.js";
 
 export interface AppOptions {
+  evaluations?: EvaluationProvider;
+  resultReleases?: ResultReleaseRepository;
   rubrics?: RubricRepository;
   groups?: GroupRepository;
   admin?: AdminRepository;
@@ -94,6 +99,8 @@ export function createApp(options: AppOptions = {}) {
   );
   app.use("/api/classes", requireAuth(auth, now));
   app.use("/api/projects", requireAuth(auth, now));
+  app.use("/api", createGradeRouter(repository, auth,
+    options.resultReleases ?? createResultReleaseRepository(), options.evaluations, now));
   app.use("/api", createRubricRouter(repository, auth, rubrics, now));
   app.use("/api", createSubmissionRouter(repository, auth, rubrics, now));
   app.use(

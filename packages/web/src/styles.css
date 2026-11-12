@@ -2089,6 +2089,13 @@ input[type="file"]::file-selector-button {
 .class-grid { display: grid; gap: 24px; }
 .managed-groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 20px; }
 .managed-groups > section { min-width: 0; }
+/* A tabela mantém colunas legíveis em telas pequenas com rolagem por teclado. */
+.grades-scroll { max-width: 100%; overflow-x: auto; margin-top: 1rem; }
+.grades-table { width: 100%; border-collapse: collapse; }
+.grades-table th, .grades-table td { text-align: left; padding: .75rem; border-bottom: 1px solid var(--border, #484052); }
+.grades-table caption { text-align: left; padding: .75rem 0; }
+.grades-table td:nth-last-child(3) { font-variant-numeric: tabular-nums; }
+.grade-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin: 1rem 0; }
 
 .project-assessment { margin: 24px 0; }
 .assessment-panel { overflow-wrap: anywhere; }

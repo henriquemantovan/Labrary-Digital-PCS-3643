@@ -599,3 +599,7 @@ A API inicial implementa health check, consulta/criação de projetos e registro
 | Tecnologias | Seção 8; versões a fixar na implementação |
 | Arquitetura e banco | Seção 9; MVC/REST, [DER](docs/diagrama-er.md), [classes](docs/diagrama-classes.md), Prisma e [schema PostgreSQL](db/schema.sql) |
 | Compartilhamento com professor | Compartilhar link com higoramario conforme aula |
+
+## Incremento de Kauê — 12/11/2026
+
+Cálculo/CSV e contrato C3 da #36 implementados; API/tabela docente, liberação persistida e preparação de instalação da #41 disponíveis contra porta C2 injetável. A integração com avaliações reais, revisão e demonstração continuam pendentes. Consulte [C3 e limites da integração](docs/contratos/c3-consolidacao.md) e [instalação/seed e aceitação](docs/instalacao-e-aceitacao.md). `pnpm demo` inicia um ambiente local isolado com as contas de demonstração existentes. [Evidências e dependências da entrega](docs/entrega-kaue-2026-11-12.md). Esses incrementos não marcam HU09 ou a aceitação final como concluídas.
