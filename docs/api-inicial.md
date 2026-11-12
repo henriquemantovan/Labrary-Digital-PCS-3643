@@ -1,4 +1,4 @@
-# API REST (TEC02 + HU01–HU04 + HU06 + HU07)
+# API REST (TEC02 + HU01–HU07)
 
 Incremento S5 de Yuhang (#34, 05–11/11): [C0 — requisitos/rubricas](contratos/c0-requisitos-rubrica.md) tem rotas privadas implementadas. [C2 — avaliação](contratos/c2-avaliacao.md) contém a proposta de contrato, exemplos e validação isolada de notas/completude, sem rotas ou persistência de avaliação nesta semana. O [relatório S5](entrega-yuhang.md) registra escopo e verificações.
 
@@ -136,3 +136,19 @@ IDs são inteiros positivos seguros; listas aceitam até 200 IDs únicos e podem
 Professor gerencia somente a própria turma; ADMIN sem prévia gerencia todas. Prévia acadêmica usa o perfil e vínculos efetivos. Papel inadequado recebe `403 FORBIDDEN`; turma/projeto fora do escopo recebem `404 CLASS_NOT_FOUND` / `PROJECT_NOT_FOUND`; grupo inexistente ou de outra turma no caminho recebe `404 GROUP_NOT_FOUND`. Dados inválidos recebem `400 VALIDATION_ERROR`; conta inexistente, inativa ou de perfil incompatível recebe `400 INVALID_LINK`; nome duplicado recebe `409 GROUP_EXISTS`. Sem sessão: 401; CSRF/origem inválidos: 403. Remoção revoga leitura na próxima requisição da mesma sessão.
 
 A resposta privada de projeto também informa `academicYear`, derivado da turma (nulo se o diretório não tiver a turma). Persistência e decisão transitória da FK de avaliadores estão em [HU02](hu02.md). O [contrato público C4](contratos/c4-publicacao.md) define as futuras rotas do catálogo/publicação; elas continuam sem implementação nesta semana.
+
+## Submissão — HU05 / S6
+
+Contrato completo, regras e exemplos em [C1 — submissão e rodada](contratos/c1-submissao.md). Sessão obrigatória; os POST exigem `X-CSRF-Protection: 1`. Projeto fora do escopo de leitura responde `404 PROJECT_NOT_FOUND`.
+
+| Método e rota | Quem | Sucesso |
+| --- | --- | --- |
+| `GET /api/projects/:projectId/submission-checklist` | Quem lê o projeto | `200 { data: SubmissionChecklist }` |
+| `GET /api/projects/:projectId/submissions` | Quem lê o projeto | `200 { data: Submission[] }`, por rodada crescente |
+| `GET /api/projects/:projectId/submissions/:submissionId` | Quem lê o projeto | `200 { data: Submission }` |
+| `POST /api/projects/:projectId/submissions` | Aluno do grupo | `{ clientSubmissionId: uuid }` → `201` (rodada nova) ou `200` (repetição) |
+| `POST /api/projects/:projectId/submissions/:submissionId/return` | Professor da turma ou ADMIN | `200 { data: Submission }` devolvida |
+
+`SubmissionChecklist` contém `projectStatus`, `rubricVersionId` (`null` sem C0), `items` (`kind`, `label`, `materialId`, `versionId`, `ok`), `blockedBy` (código do erro que o POST devolveria, ou `null`) e `canSubmit`. Erros: `403 FORBIDDEN` (papel), `400 VALIDATION_ERROR`, `404 SUBMISSION_NOT_FOUND` e `409` com `RUBRIC_NOT_CONFIGURED`, `SUBMISSION_LOCKED`, `DEADLINE_PASSED`, `INCOMPLETE_SUBMISSION` ou `SUBMISSION_NOT_RETURNABLE`.
+
+Submeter muda o projeto para `EM_AVALIACAO`, o que bloqueia uploads (`409 PROJECT_LOCKED`). Devolver muda a rodada para `DEVOLVIDA` e o projeto para `AJUSTES`; o próximo envio cria a rodada seguinte. As rodadas ficam no mesmo arquivo privado dos projetos (`PROJECT_DATA_FILE`), gravadas junto com o estado do projeto.

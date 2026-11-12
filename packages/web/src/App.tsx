@@ -10,6 +10,7 @@ import type { Material, MaterialRules, Project, Scope, User } from "./api";
 import { Icon } from "./Icons";
 import { MaterialsPanel } from "./Materials";
 import { ProjectAssessment } from "./ProjectAssessment";
+import { SubmissionPanel } from "./Submission";
 
 const roleLabels = {
   ADMIN: "Administrador",
@@ -847,6 +848,22 @@ function Dashboard({
             expired={expired}
           />
         )}
+        <SubmissionPanel
+          key={`submission-${detail.id}`}
+          project={detail}
+          user={user}
+          materials={materials}
+          refreshKey={materialRules}
+          expired={expired}
+          onStatusChanged={(status) => {
+            setDetail((current) => current && { ...current, status });
+            // O novo estado muda o bloqueio de upload; recarrega as regras dos materiais.
+            refreshMaterialRules().catch((failure) => {
+              if (failure instanceof ApiError && failure.status === 401) expired();
+              else setRevision((value) => value + 1);
+            });
+          }}
+        />
         <div className="access-note">
           <Icon name="lock" size={17} />
           Acesso restrito ao grupo e à equipe acadêmica vinculada ao projeto.

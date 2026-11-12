@@ -10,6 +10,7 @@ import { dirname } from "node:path";
 import { z } from "zod";
 import { roles } from "../models/auth.js";
 import { materialKinds, projectStatuses } from "../models/project.js";
+import { submissionSchema } from "../models/submission.js";
 import { ProjectStorage } from "./projectRepository.js";
 
 const id = z.number().int().positive();
@@ -72,6 +73,8 @@ const snapshotSchema = z.object({
         .nullable(),
     }),
   ),
+  // Arquivos gravados antes da HU05 não têm rodadas; carregam com lista vazia.
+  submissions: z.array(submissionSchema).default([]),
 });
 
 // Formato anterior à HU04: uma linha por versão, só metadados, sem bytes gravados.
@@ -90,7 +93,7 @@ const isLegacy = (data: unknown) =>
  * que nunca tiveram arquivo. Projetos e mensagens são mantidos.
  */
 function migrateLegacy(path: string, data: unknown) {
-  const { projects, messages } = legacySnapshotSchema.parse(data);
+  const { projects, messages, submissions } = legacySnapshotSchema.parse(data);
   const backup = `${path}.legacy-backup`;
   try {
     copyFileSync(path, backup, constants.COPYFILE_EXCL);
@@ -99,7 +102,7 @@ function migrateLegacy(path: string, data: unknown) {
     if (!readFileSync(backup).equals(readFileSync(path)))
       throw new Error(`Backup divergente já existe em ${backup}.`);
   }
-  return { projects, materials: [], messages };
+  return { projects, materials: [], messages, submissions };
 }
 
 // Um único processo escritor. A troca por rename evita snapshots parcialmente escritos.
