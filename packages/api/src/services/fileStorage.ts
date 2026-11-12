@@ -23,7 +23,10 @@ export interface StoredFileStream {
 
 export interface FileStorage {
   save(source: Readable, options: { maxBytes: number }): Promise<StoredFile>;
-  open(storageKey: string): Promise<StoredFileStream | undefined>;
+  open(
+    storageKey: string,
+    range?: { start: number; end: number },
+  ): Promise<StoredFileStream | undefined>;
   remove(storageKey: string): Promise<void>;
 }
 
@@ -91,12 +94,12 @@ export function createDiskStorage(root: string): FileStorage {
       };
     },
 
-    async open(storageKey) {
+    async open(storageKey, range) {
       const path = pathOf(storageKey);
       if (!path) return undefined;
       try {
         const { size } = await stat(path);
-        return { stream: createReadStream(path), sizeBytes: size };
+        return { stream: createReadStream(path, range), sizeBytes: size };
       } catch (error) {
         if (isMissing(error)) return undefined;
         throw error;

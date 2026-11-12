@@ -1,3 +1,8 @@
+import {
+  NewPublicationDecision,
+  PublicationDecision,
+  publicationDecisionSchema,
+} from "../models/publicationDecision.js";
 import { NewMessage, ProjectMessage } from "../models/message.js";
 import { ApiError } from "../errors.js";
 import {
@@ -16,6 +21,8 @@ export interface ProjectFilter {
 }
 
 export interface ProjectRepository {
+  publicationHistory(projectId: number): PublicationDecision[];
+  recordPublicationDecision(input: NewPublicationDecision): PublicationDecision;
   list(filter: ProjectFilter): Project[];
   get(id: number): Project | undefined;
   create(input: NewProject): Project;
@@ -42,6 +49,7 @@ export interface ProjectRepository {
 }
 
 export interface ProjectSnapshot {
+  publicationDecisions?: PublicationDecision[];
   projects: Project[];
   materials: ProjectMaterial[];
   messages: ProjectMessage[];
@@ -105,9 +113,17 @@ export function createMemoryProjectRepository(
       ...messages.map((item) => item.materialVersion?.id ?? 0),
     ) + 1;
   let nextMessageId = Math.max(0, ...messages.map((item) => item.id)) + 1;
+  let decisions = saved?.publicationDecisions ?? [];
   const commit = (snapshot: ProjectSnapshot) => {
-    storage?.save(snapshot);
-    ({ projects, materials, messages } = snapshot);
+    const next = {
+      ...snapshot,
+      ...(snapshot.publicationDecisions || decisions.length
+        ? { publicationDecisions: snapshot.publicationDecisions ?? decisions }
+        : {}),
+    };
+    storage?.save(next);
+    ({ projects, materials, messages } = next);
+    decisions = next.publicationDecisions ?? [];
   };
   const buildVersion = (
     materialId: number,
@@ -122,6 +138,30 @@ export function createMemoryProjectRepository(
   });
 
   return {
+    publicationHistory(projectId) {
+      return structuredClone(
+        decisions.filter((event) => event.projectId === projectId),
+      );
+    },
+    recordPublicationDecision(input) {
+      const event = publicationDecisionSchema.parse({
+        ...input,
+        id: Math.max(0, ...decisions.map((event) => event.id)) + 1,
+      });
+      if (!projects.some((project) => project.id === event.projectId))
+        throw new ApiError(404, "PROJECT_NOT_FOUND", "Projeto não encontrado.");
+      commit({
+        projects: projects.map((project) =>
+          project.id === event.projectId && event.action === "FINALIZADO"
+            ? { ...project, status: "FINALIZADO", updatedAt: event.createdAt }
+            : project,
+        ),
+        materials,
+        messages,
+        publicationDecisions: [...decisions, event],
+      });
+      return structuredClone(event);
+    },
     listMessages(projectId) {
       return messages
         .filter((item) => item.projectId === projectId)
