@@ -136,3 +136,12 @@ IDs são inteiros positivos seguros; listas aceitam até 200 IDs únicos e podem
 Professor gerencia somente a própria turma; ADMIN sem prévia gerencia todas. Prévia acadêmica usa o perfil e vínculos efetivos. Papel inadequado recebe `403 FORBIDDEN`; turma/projeto fora do escopo recebem `404 CLASS_NOT_FOUND` / `PROJECT_NOT_FOUND`; grupo inexistente ou de outra turma no caminho recebe `404 GROUP_NOT_FOUND`. Dados inválidos recebem `400 VALIDATION_ERROR`; conta inexistente, inativa ou de perfil incompatível recebe `400 INVALID_LINK`; nome duplicado recebe `409 GROUP_EXISTS`. Sem sessão: 401; CSRF/origem inválidos: 403. Remoção revoga leitura na próxima requisição da mesma sessão.
 
 A resposta privada de projeto também informa `academicYear`, derivado da turma (nulo se o diretório não tiver a turma). Persistência e decisão transitória da FK de avaliadores estão em [HU02](hu02.md). O [contrato público C4](contratos/c4-publicacao.md) define as futuras rotas do catálogo/publicação; elas continuam sem implementação nesta semana.
+
+
+## Finalização e publicação — HU11 / S6
+
+Rotas implementadas: `GET /api/projects/:projectId/publication`, `POST /api/projects/:projectId/finalization`, `POST/DELETE /api/projects/:projectId/publication`; consulta anônima em `GET /api/catalog`, `GET /api/catalog/:projectId` e `GET/HEAD /api/catalog/:projectId/materials/:versionId/file`. Contratos, seleção, autorização do grupo e erros estão no [C4 atualizado](contratos/c4-publicacao.md).
+
+As rotas privadas exigem sessão, perfil docente/ADMIN, turma e CSRF nas mutações. Finalização e publicação verificam a última submissão e a completude das avaliações pela porta injetável; o entrypoint não injeta fixtures nem assume conclusão. Sem os adapters reais, novas decisões recebem 503 e os controles ficam indisponíveis. Retirada e leitura de publicações previamente registradas não dependem desses provedores.
+
+Decisões, snapshot finalizado e projeção pública são preservados no arquivo privado dos projetos. Finalizado continua privado até publicar. Retirada conserva os dados privados e bloqueia listagem/detalhe/bytes de novas requisições. Vídeo suporta um Range e reprodução inline; documentos usam attachment; HEAD não envia corpo. Veja [persistência, interfaces C1/C3, limites e testes](hu11.md).
