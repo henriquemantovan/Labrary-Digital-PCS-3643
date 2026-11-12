@@ -5,6 +5,7 @@ import { createFileGroupStorage } from "./repositories/fileGroupStorage.js";
 import { createPostgresGroupRepository } from "./repositories/postgresGroupRepository.js";
 import { createMemoryProjectRepository } from "./repositories/projectRepository.js";
 import { createFileProjectStorage } from "./repositories/fileProjectStorage.js";
+import { createResultReleaseRepository } from "./repositories/resultReleaseRepository.js";
 import { loadDirectory, resolveUploadDir } from "./services/configuration.js";
 import { createDiskStorage } from "./services/fileStorage.js";
 import { createPostgresAdminRepository } from "./repositories/postgresAdminRepository.js";
@@ -73,7 +74,12 @@ groups ??= createMemoryGroupRepository(
     process.env.GROUP_DATA_FILE ?? `${dataFile}.groups.json`,
   ),
 );
+// TODO(S6 #41 / Yuhang #39): instanciar o EvaluationProvider persistente da HU08
+// e injetar `evaluations` abaixo. Ler a rodada C1 já persistida pela HU05 e os
+// avaliadores previstos nos vínculos reais; não usar fixtures como fallback.
+// Aceite: C1 -> C2 -> C3 com reinício, CSV, liberação e reabertura em E2E.
 createApp({
+  resultReleases: createResultReleaseRepository(process.env.RESULT_RELEASE_DATA_FILE ?? `${dataFile}.results.json`),
   rubrics: createMemoryRubricRepository(createFileRubricStorage(
     process.env.RUBRIC_DATA_FILE ?? `${dataFile}.rubrics.json`,
   )),

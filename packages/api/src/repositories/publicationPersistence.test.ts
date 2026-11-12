@@ -1,3 +1,4 @@
+import { prepareSubmission } from "../services/submissionRules.js";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -36,13 +37,10 @@ it("restaura decisões, projeção e bytes sem adapters e conserva auditoria em 
   const original = (await request(c.app).get("/api/catalog/1")).body.data;
   // Outras operações do repositório não podem perder decisões da HU11.
   storedMaterial(c.repository, 2);
-  await c
-    .client(3)
-    .post("/api/projects/1/messages")
-    .send({
-      clientMessageId: crypto.randomUUID(),
-      body: "Mensagem privada depois da publicação",
-    });
+  await c.client(3).post("/api/projects/1/messages").send({
+    clientMessageId: crypto.randomUUID(),
+    body: "Mensagem privada depois da publicação",
+  });
   const reload = () =>
     createMemoryProjectRepository(false, createFileProjectStorage(path));
   const repository = reload();
@@ -165,4 +163,100 @@ it("rejeita histórico corrompido sem substituir o arquivo e valida referências
       createdAt: final.createdAt,
     }),
   ).toThrow("Projeto não encontrado");
+});
+
+it("conserva a rodada C1 ao finalizar, publicar e retirar no mesmo snapshot", async () => {
+  const path = file();
+  const c = await publicationContext({
+    repository: createMemoryProjectRepository(
+      true,
+      createFileProjectStorage(path),
+    ),
+  });
+  // Representa a entrega real que chegou da HU05, em vez de uma rodada apenas no provedor.
+  c.repository.get(1)!.status = "PREPARACAO";
+  const { id: _fixtureId, ...input } = c.submission;
+  const submission = c.repository.createSubmission(input);
+  c.data.submission = submission;
+  c.data.evaluations!.submissionId = submission.id;
+  expect(
+    (
+      await c
+        .client(3)
+        .post("/api/projects/1/finalization")
+        .send({ submissionId: submission.id })
+    ).status,
+  ).toBe(200);
+  expect(
+    (
+      await c
+        .client(3)
+        .post("/api/projects/1/publication")
+        .send({ ...publicationInput, submissionId: submission.id })
+    ).status,
+  ).toBe(200);
+  for (const material of c.repository.listMaterials(1)) {
+    const version = material.versions[0];
+    c.repository.createMaterial(
+      2,
+      { kind: material.kind, title: material.title, createdBy: 1 },
+      {
+        originalFilename: version.originalFilename,
+        mimeType: version.mimeType,
+        sizeBytes: version.sizeBytes,
+        storageKey: version.storageKey,
+        checksumSha256: version.checksumSha256,
+        uploadedBy: 1,
+      },
+    );
+  }
+  const prepared = prepareSubmission({
+    project: c.repository.get(2)!,
+    rubric: { ...submission.rubric, projectId: 2 },
+    materials: c.repository.listMaterials(2),
+    previous: [],
+    clientSubmissionId: crypto.randomUUID(),
+    submittedBy: 1,
+    now: Date.parse("2026-11-20T12:00:00Z"),
+  });
+  const second = c.repository.createSubmission(prepared.submission);
+  c.repository.returnSubmission(2, second.id, "2026-11-21T12:00:00.000Z");
+  await c
+    .client(3)
+    .post("/api/projects/1/messages")
+    .send({
+      clientMessageId: crypto.randomUUID(),
+      body: "Conservar rodada e autorização",
+    });
+
+  const restored = createMemoryProjectRepository(
+    false,
+    createFileProjectStorage(path),
+  );
+  expect(restored.getSubmission(1, submission.id)).toEqual(submission);
+  expect(restored.publicationHistory(1).map((event) => event.action)).toEqual([
+    "FINALIZADO",
+    "PUBLICADO",
+  ]);
+  expect(restored.get(1)?.status).toBe("FINALIZADO");
+  expect(() =>
+    restored.returnSubmission(1, submission.id, "2026-11-22T12:00:00.000Z"),
+  ).toThrow("Somente a rodada atual, ainda em avaliação");
+  const restarted = context({
+    repository: restored,
+    auth: c.auth,
+    storage: c.storage,
+  });
+  expect((await request(restarted.app).get("/api/catalog/1")).status).toBe(200);
+  expect(
+    (await restarted.client(3).delete("/api/projects/1/publication")).status,
+  ).toBe(204);
+  const final = createMemoryProjectRepository(
+    false,
+    createFileProjectStorage(path),
+  );
+  expect(final.listSubmissions(1)).toEqual([submission]);
+  expect(final.getSubmission(2, second.id)?.status).toBe("DEVOLVIDA");
+  expect(final.publicationHistory(1).at(-1)?.action).toBe("RETIRADO");
+  expect(final.listMessages(1)).toHaveLength(1);
 });

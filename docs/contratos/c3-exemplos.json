@@ -1,0 +1,170 @@
+{
+  "noSubmission": {
+    "projectId": 1,
+    "submissionId": null,
+    "round": null,
+    "rubricVersionId": null,
+    "expectedEvaluatorIds": [],
+    "receivedEvaluatorIds": [],
+    "pendingEvaluatorIds": [],
+    "evaluatorGrades": [],
+    "grade": null,
+    "finalGrade": null,
+    "status": "NO_SUBMISSION",
+    "allEvaluationsCompleted": false,
+    "resultReleased": false,
+    "groupId": 1,
+    "groupName": "Grupo 01",
+    "title": "Controlador de semáforo inteligente"
+  },
+  "pending": {
+    "projectId": 1,
+    "submissionId": 11,
+    "round": 1,
+    "rubricVersionId": 1,
+    "expectedEvaluatorIds": [
+      2
+    ],
+    "receivedEvaluatorIds": [],
+    "pendingEvaluatorIds": [
+      2
+    ],
+    "evaluatorGrades": [],
+    "grade": null,
+    "finalGrade": null,
+    "status": "PENDING",
+    "allEvaluationsCompleted": false,
+    "resultReleased": false,
+    "groupId": 1,
+    "groupName": "Grupo 01",
+    "title": "Controlador de semáforo inteligente"
+  },
+  "draft": {
+    "projectId": 1,
+    "submissionId": 11,
+    "round": 1,
+    "rubricVersionId": 1,
+    "expectedEvaluatorIds": [
+      2
+    ],
+    "receivedEvaluatorIds": [],
+    "pendingEvaluatorIds": [
+      2
+    ],
+    "evaluatorGrades": [],
+    "grade": null,
+    "finalGrade": null,
+    "status": "PENDING",
+    "allEvaluationsCompleted": false,
+    "resultReleased": false,
+    "groupId": 1,
+    "groupName": "Grupo 01",
+    "title": "Controlador de semáforo inteligente"
+  },
+  "partial": {
+    "projectId": 1,
+    "submissionId": 11,
+    "round": 1,
+    "rubricVersionId": 1,
+    "expectedEvaluatorIds": [
+      2,
+      5
+    ],
+    "receivedEvaluatorIds": [
+      2
+    ],
+    "pendingEvaluatorIds": [
+      5
+    ],
+    "evaluatorGrades": [
+      {
+        "evaluatorId": 2,
+        "grade": 8.4
+      }
+    ],
+    "grade": 8.4,
+    "finalGrade": null,
+    "status": "PARTIAL",
+    "allEvaluationsCompleted": false,
+    "resultReleased": false,
+    "groupId": 1,
+    "groupName": "Grupo 01",
+    "title": "Controlador de semáforo inteligente"
+  },
+  "finalBlocked": {
+    "projectId": 1,
+    "submissionId": 11,
+    "round": 1,
+    "rubricVersionId": 1,
+    "expectedEvaluatorIds": [
+      2
+    ],
+    "receivedEvaluatorIds": [
+      2
+    ],
+    "pendingEvaluatorIds": [],
+    "evaluatorGrades": [
+      {
+        "evaluatorId": 2,
+        "grade": 8.4
+      }
+    ],
+    "grade": 8.4,
+    "finalGrade": 8.4,
+    "status": "FINAL",
+    "allEvaluationsCompleted": true,
+    "resultReleased": false,
+    "groupId": 1,
+    "groupName": "Grupo 01",
+    "title": "Controlador de semáforo inteligente"
+  },
+  "finalReleased": {
+    "projectId": 1,
+    "submissionId": 11,
+    "round": 1,
+    "rubricVersionId": 1,
+    "expectedEvaluatorIds": [
+      2
+    ],
+    "receivedEvaluatorIds": [
+      2
+    ],
+    "pendingEvaluatorIds": [],
+    "evaluatorGrades": [
+      {
+        "evaluatorId": 2,
+        "grade": 8.4
+      }
+    ],
+    "grade": 8.4,
+    "finalGrade": 8.4,
+    "status": "FINAL",
+    "allEvaluationsCompleted": true,
+    "resultReleased": true,
+    "groupId": 1,
+    "groupName": "Grupo 01",
+    "title": "Controlador de semáforo inteligente"
+  },
+  "reopened": {
+    "projectId": 1,
+    "submissionId": 11,
+    "round": 1,
+    "rubricVersionId": 1,
+    "expectedEvaluatorIds": [
+      2
+    ],
+    "receivedEvaluatorIds": [],
+    "pendingEvaluatorIds": [
+      2
+    ],
+    "evaluatorGrades": [],
+    "grade": null,
+    "finalGrade": null,
+    "status": "PENDING",
+    "allEvaluationsCompleted": false,
+    "resultReleased": false,
+    "groupId": 1,
+    "groupName": "Grupo 01",
+    "title": "Controlador de semáforo inteligente"
+  }
+}

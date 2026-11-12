@@ -1,4 +1,4 @@
-# API REST (TEC02 + HU01–HU04 + HU06 + HU07)
+# API REST (TEC02 + HU01–HU07 + HU09)
 
 Incremento S5 de Yuhang (#34, 05–11/11): [C0 — requisitos/rubricas](contratos/c0-requisitos-rubrica.md) tem rotas privadas implementadas. [C2 — avaliação](contratos/c2-avaliacao.md) contém a proposta de contrato, exemplos e validação isolada de notas/completude, sem rotas ou persistência de avaliação nesta semana. O [relatório S5](entrega-yuhang.md) registra escopo e verificações.
 
@@ -145,3 +145,25 @@ Rotas implementadas: `GET /api/projects/:projectId/publication`, `POST /api/proj
 As rotas privadas exigem sessão, perfil docente/ADMIN, turma e CSRF nas mutações. Finalização e publicação verificam a última submissão e a completude das avaliações pela porta injetável; o entrypoint não injeta fixtures nem assume conclusão. Sem os adapters reais, novas decisões recebem 503 e os controles ficam indisponíveis. Retirada e leitura de publicações previamente registradas não dependem desses provedores.
 
 Decisões, snapshot finalizado e projeção pública são preservados no arquivo privado dos projetos. Finalizado continua privado até publicar. Retirada conserva os dados privados e bloqueia listagem/detalhe/bytes de novas requisições. Vídeo suporta um Range e reprodução inline; documentos usam attachment; HEAD não envia corpo. Veja [persistência, interfaces C1/C3, limites e testes](hu11.md).
+
+## Consolidação e resultados (HU09, #36/#41)
+
+`GET /api/classes/:classId/grades` retorna a tabela privada docente; `?format=csv` exporta a mesma projeção. `GET /api/projects/:projectId/results/consolidation` fornece resultado e token de confirmação docente; `POST /api/projects/:projectId/results/release` libera explicitamente a revisão confirmada. `GET /api/projects/:projectId/result` restringe o resultado liberado aos integrantes do grupo e omite notas enquanto bloqueado. Sessão, escopo da turma, CSRF e `no-store` são obrigatórios. Contratos, erros, tipos e exemplos em [C3](contratos/c3-consolidacao.md).
+
+O entrypoint ainda não conecta o provedor de avaliações persistidas da HU08: responde 503 `EVALUATIONS_UNAVAILABLE`; a factory aceita `EvaluationProvider` injetado para integração. Testes com C2 injetado não demonstram a entrega real. Liberações usam arquivo privado `RESULT_RELEASE_DATA_FILE`, separado dos snapshots existentes.
+
+## Submissão — HU05 / S6
+
+Contrato completo, regras e exemplos em [C1 — submissão e rodada](contratos/c1-submissao.md). Sessão obrigatória; os POST exigem `X-CSRF-Protection: 1`. Projeto fora do escopo de leitura responde `404 PROJECT_NOT_FOUND`.
+
+| Método e rota | Quem | Sucesso |
+| --- | --- | --- |
+| `GET /api/projects/:projectId/submission-checklist` | Quem lê o projeto | `200 { data: SubmissionChecklist }` |
+| `GET /api/projects/:projectId/submissions` | Quem lê o projeto | `200 { data: Submission[] }`, por rodada crescente |
+| `GET /api/projects/:projectId/submissions/:submissionId` | Quem lê o projeto | `200 { data: Submission }` |
+| `POST /api/projects/:projectId/submissions` | Aluno do grupo | `{ clientSubmissionId: uuid }` → `201` (rodada nova) ou `200` (repetição) |
+| `POST /api/projects/:projectId/submissions/:submissionId/return` | Professor da turma ou ADMIN | `200 { data: Submission }` devolvida |
+
+`SubmissionChecklist` contém `projectStatus`, `rubricVersionId` (`null` sem C0), `items` (`kind`, `label`, `materialId`, `versionId`, `ok`), `blockedBy` (código do erro que o POST devolveria, ou `null`) e `canSubmit`. Erros: `403 FORBIDDEN` (papel), `400 VALIDATION_ERROR`, `404 SUBMISSION_NOT_FOUND` e `409` com `RUBRIC_NOT_CONFIGURED`, `SUBMISSION_LOCKED`, `DEADLINE_PASSED`, `INCOMPLETE_SUBMISSION` ou `SUBMISSION_NOT_RETURNABLE`.
+
+Submeter muda o projeto para `EM_AVALIACAO`, o que bloqueia uploads (`409 PROJECT_LOCKED`). Devolver muda a rodada para `DEVOLVIDA` e o projeto para `AJUSTES`; o próximo envio cria a rodada seguinte. As rodadas ficam no mesmo arquivo privado dos projetos (`PROJECT_DATA_FILE`), gravadas junto com o estado do projeto.

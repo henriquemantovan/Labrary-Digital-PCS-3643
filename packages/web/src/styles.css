@@ -2089,6 +2089,13 @@ input[type="file"]::file-selector-button {
 .class-grid { display: grid; gap: 24px; }
 .managed-groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 20px; }
 .managed-groups > section { min-width: 0; }
+/* A tabela mantém colunas legíveis em telas pequenas com rolagem por teclado. */
+.grades-scroll { max-width: 100%; overflow-x: auto; margin-top: 1rem; }
+.grades-table { width: 100%; border-collapse: collapse; }
+.grades-table th, .grades-table td { text-align: left; padding: .75rem; border-bottom: 1px solid var(--border, #484052); }
+.grades-table caption { text-align: left; padding: .75rem 0; }
+.grades-table td:nth-last-child(3) { font-variant-numeric: tabular-nums; }
+.grade-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin: 1rem 0; }
 
 .project-assessment { margin: 24px 0; }
 .assessment-panel { overflow-wrap: anywhere; }
@@ -2110,3 +2117,36 @@ input[type="file"]::file-selector-button {
 .publication-check input[type="checkbox"] { width: auto; flex: 0 0 auto; }
 .publication-panel textarea { width: 100%; }
 .publication-panel li { overflow-wrap: anywhere; margin-bottom: 10px; }
+
+/* HU05 — entrega para avaliação */
+.submission-panel { overflow-wrap: anywhere; }
+.submission-panel h3 { font-size: 15px; margin: 28px 0 8px; }
+.submission-checklist { list-style: none; padding: 0; margin: 12px 0 20px; }
+.submission-checklist li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 16px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 9px;
+  padding: 14px 18px;
+  margin: 8px 0;
+}
+.submission-checklist li strong { font-size: 13px; font-weight: 600; }
+.submission-checklist li.ok strong { color: #a4ccb8; }
+.submission-checklist li.missing strong { color: #e9b3d1; }
+.submission-confirm {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 9px;
+  padding: 16px 18px;
+  margin: 12px 0;
+}
+.submission-confirm p { margin: 0 0 12px; line-height: 1.6; }
+.submission-success { color: #a4ccb8; }
+.submission-rounds { padding-left: 22px; font-size: 14px; line-height: 1.6; }
+.submission-rounds > li { margin: 14px 0; }
+.submission-rounds p { margin: 2px 0; }
+.submission-rounds ul { padding-left: 18px; margin: 6px 0; }
+.submission-rounds a { color: var(--purple); }
