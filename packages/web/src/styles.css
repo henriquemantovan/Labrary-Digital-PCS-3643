@@ -2101,3 +2101,12 @@ input[type="file"]::file-selector-button {
 .assessment-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 20px; }
 .rubric-form { margin-top: 24px; }
 .rubric-form fieldset { min-width: 0; }
+
+.publication-panel { margin-top: 24px; }
+.publication-panel h2 { margin-bottom: 12px; }
+.publication-panel form, .publication-panel details { margin-top: 18px; }
+.publication-panel label { display: block; margin: 12px 0; }
+.publication-panel .publication-check { display: flex; align-items: center; gap: 10px; }
+.publication-check input[type="checkbox"] { width: auto; flex: 0 0 auto; }
+.publication-panel textarea { width: 100%; }
+.publication-panel li { overflow-wrap: anywhere; margin-bottom: 10px; }
