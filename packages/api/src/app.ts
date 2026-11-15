@@ -1,7 +1,13 @@
+import { createPublicationService } from "./services/publicationService.js";
+import { PublicationProviders } from "./services/publicationProviders.js";
+import { createPublicationRouter } from "./routes/publicationRoutes.js";
 import { createGroupRouter } from "./routes/groupRoutes.js";
 import { createRubricRouter } from "./routes/rubricRoutes.js";
 import { createSubmissionRouter } from "./routes/submissionRoutes.js";
-import { createMemoryRubricRepository, RubricRepository } from "./repositories/rubricRepository.js";
+import {
+  createMemoryRubricRepository,
+  RubricRepository,
+} from "./repositories/rubricRepository.js";
 import { createRubricMaterialPolicy } from "./services/rubricMaterialPolicy.js";
 import {
   createMemoryGroupRepository,
@@ -24,7 +30,10 @@ import { createProjectRouter } from "./routes/projectRoutes.js";
 import { MaterialPolicy } from "./services/materialPolicy.js";
 import { createDiskStorage, FileStorage } from "./services/fileStorage.js";
 import { EvaluationProvider } from "./models/consolidation.js";
-import { createResultReleaseRepository, ResultReleaseRepository } from "./repositories/resultReleaseRepository.js";
+import {
+  createResultReleaseRepository,
+  ResultReleaseRepository,
+} from "./repositories/resultReleaseRepository.js";
 import { createGradeRouter } from "./routes/gradeRoutes.js";
 
 import { GoogleAuthOptions } from "./controllers/googleAuthController.js";
@@ -36,6 +45,8 @@ import {
 } from "./repositories/adminRepository.js";
 
 export interface AppOptions {
+  publicationProviders?: PublicationProviders;
+
   evaluations?: EvaluationProvider;
   resultReleases?: ResultReleaseRepository;
   rubrics?: RubricRepository;
@@ -61,6 +72,7 @@ export function createApp(options: AppOptions = {}) {
 
   const auth = options.auth ?? createAuthRepository();
   const now = options.now ?? Date.now;
+  const storage = options.storage ?? createDiskStorage(".uploads");
   const rubrics = options.rubrics ?? createMemoryRubricRepository();
   app.disable("x-powered-by");
   app.use("/api", (_request, response, next) => {
@@ -99,8 +111,30 @@ export function createApp(options: AppOptions = {}) {
   );
   app.use("/api/classes", requireAuth(auth, now));
   app.use("/api/projects", requireAuth(auth, now));
-  app.use("/api", createGradeRouter(repository, auth,
-    options.resultReleases ?? createResultReleaseRepository(), options.evaluations, now));
+  app.use(
+    "/api",
+    createPublicationRouter(
+      createPublicationService(
+        repository,
+        auth,
+        storage,
+        now,
+        options.publicationProviders,
+      ),
+      storage,
+    ),
+  );
+
+  app.use(
+    "/api",
+    createGradeRouter(
+      repository,
+      auth,
+      options.resultReleases ?? createResultReleaseRepository(),
+      options.evaluations,
+      now,
+    ),
+  );
   app.use("/api", createRubricRouter(repository, auth, rubrics, now));
   app.use("/api", createSubmissionRouter(repository, auth, rubrics, now));
   app.use(
@@ -116,8 +150,9 @@ export function createApp(options: AppOptions = {}) {
     "/api",
     createProjectRouter(repository, auth, {
       now,
-      materialPolicy: options.materialPolicy ?? createRubricMaterialPolicy(rubrics),
-      storage: options.storage ?? createDiskStorage(".uploads"),
+      materialPolicy:
+        options.materialPolicy ?? createRubricMaterialPolicy(rubrics),
+      storage,
     }),
   );
 

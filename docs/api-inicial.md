@@ -137,6 +137,15 @@ Professor gerencia somente a própria turma; ADMIN sem prévia gerencia todas. P
 
 A resposta privada de projeto também informa `academicYear`, derivado da turma (nulo se o diretório não tiver a turma). Persistência e decisão transitória da FK de avaliadores estão em [HU02](hu02.md). O [contrato público C4](contratos/c4-publicacao.md) define as futuras rotas do catálogo/publicação; elas continuam sem implementação nesta semana.
 
+
+## Finalização e publicação — HU11 / S6
+
+Rotas implementadas: `GET /api/projects/:projectId/publication`, `POST /api/projects/:projectId/finalization`, `POST/DELETE /api/projects/:projectId/publication`; consulta anônima em `GET /api/catalog`, `GET /api/catalog/:projectId` e `GET/HEAD /api/catalog/:projectId/materials/:versionId/file`. Contratos, seleção, autorização do grupo e erros estão no [C4 atualizado](contratos/c4-publicacao.md).
+
+As rotas privadas exigem sessão, perfil docente/ADMIN, turma e CSRF nas mutações. Finalização e publicação verificam a última submissão e a completude das avaliações pela porta injetável; o entrypoint não injeta fixtures nem assume conclusão. Sem os adapters reais, novas decisões recebem 503 e os controles ficam indisponíveis. Retirada e leitura de publicações previamente registradas não dependem desses provedores.
+
+Decisões, snapshot finalizado e projeção pública são preservados no arquivo privado dos projetos. Finalizado continua privado até publicar. Retirada conserva os dados privados e bloqueia listagem/detalhe/bytes de novas requisições. Vídeo suporta um Range e reprodução inline; documentos usam attachment; HEAD não envia corpo. Veja [persistência, interfaces C1/C3, limites e testes](hu11.md).
+
 ## Consolidação e resultados (HU09, #36/#41)
 
 `GET /api/classes/:classId/grades` retorna a tabela privada docente; `?format=csv` exporta a mesma projeção. `GET /api/projects/:projectId/results/consolidation` fornece resultado e token de confirmação docente; `POST /api/projects/:projectId/results/release` libera explicitamente a revisão confirmada. `GET /api/projects/:projectId/result` restringe o resultado liberado aos integrantes do grupo e omite notas enquanto bloqueado. Sessão, escopo da turma, CSRF e `no-store` são obrigatórios. Contratos, erros, tipos e exemplos em [C3](contratos/c3-consolidacao.md).

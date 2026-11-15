@@ -1,7 +1,15 @@
+import { PublicationPanel } from "./PublicationPanel";
 import { GroupManager, EvaluatorManager } from "./Groups";
 import { AdminUsers } from "./AdminUsers";
 import { ProjectFeedback } from "./ProjectFeedback";
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { Catalog } from "./Catalog";
 import { httpCatalog } from "./catalogClient";
 import type { FormEvent } from "react";
@@ -629,7 +637,9 @@ function Dashboard({
   const activeDetailId = useRef(detailId);
   activeDetailId.current = detailId;
   async function refreshMaterialRules() {
-    const rules = await api<MaterialRules>(`/projects/${detailId}/material-rules`);
+    const rules = await api<MaterialRules>(
+      `/projects/${detailId}/material-rules`,
+    );
     if (activeDetailId.current === detailId) setMaterialRules(rules);
   }
   const knownPath =
@@ -882,6 +892,18 @@ function Dashboard({
             projectId={detail.id}
             classId={detail.classId}
             expired={expired}
+          />
+        )}
+        {["PROFESSOR", "ADMIN"].includes(user.role) && (
+          <PublicationPanel
+            key={`publication-${detail.id}`}
+            projectId={detail.id}
+            expired={expired}
+            onChanged={() =>
+              setDetail(
+                (current) => current && { ...current, status: "FINALIZADO" },
+              )
+            }
           />
         )}
         <ProjectAssessment

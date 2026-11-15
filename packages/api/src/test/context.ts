@@ -37,6 +37,11 @@ export function context(options: AppOptions = {}) {
     return {
       get: (path: string) =>
         request(app).get(path).set("Cookie", `labrary_session=${token}`),
+      delete: (path: string) =>
+        request(app)
+          .delete(path)
+          .set("Cookie", `labrary_session=${token}`)
+          .set("X-CSRF-Protection", "1"),
       put: (path: string) =>
         request(app)
           .put(path)
