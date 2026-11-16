@@ -1,3 +1,4 @@
+import { GroupResult } from "./GroupResult";
 import { PublicationPanel } from "./PublicationPanel";
 import { GroupManager, EvaluatorManager } from "./Groups";
 import { AdminUsers } from "./AdminUsers";
@@ -184,6 +185,7 @@ function Login({
             Seu próximo projeto <br />
             começa aqui.
           </h2>
+          <a href="/acervo">Explorar acervo público</a>
           <p className="muted login-description">
             Entre com sua conta para acessar seu espaço.
           </p>
@@ -459,6 +461,7 @@ function PrivateApp() {
         </div>
         <p className="nav-label">MEU ESPAÇO</p>
         <nav aria-label="Navegação principal">
+          <a className="nav-item" href="/acervo">Acervo público</a>
           <button
             className={
               path.startsWith("/projetos") || path === "/"
@@ -886,6 +889,7 @@ function Dashboard({
           <Icon name="lock" size={17} />
           Acesso restrito ao grupo e à equipe acadêmica vinculada ao projeto.
         </div>
+        {user.role === "ALUNO" && <GroupResult key={`result-${detail.id}`} projectId={detail.id} expired={expired} />}
         {["PROFESSOR", "ADMIN"].includes(user.role) && (
           <EvaluatorManager
             key={`evaluators-${detail.id}`}

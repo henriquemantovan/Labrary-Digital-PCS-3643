@@ -39,16 +39,16 @@ test("aluno envia, substitui e baixa materiais; professor só consulta", async (
     mimeType: "application/pdf",
     buffer: Buffer.from("isto não é um PDF"),
   });
-  await expect(page.getByRole("alert")).toContainText(
+  await expect(reportCard.getByRole("alert")).toContainText(
     "Formato não aceito. Envie PDF.",
   );
   await expect(
-    page.getByRole("button", { name: "Tentar novamente" }),
+    reportCard.getByRole("button", { name: "Tentar novamente" }),
   ).toBeVisible();
 
   await report.setInputFiles(pdf("relatório técnico.pdf", "primeira versão"));
   await expect(page.getByText(/Enviado · versão 1 · Marina/)).toBeVisible();
-  await expect(page.getByRole("alert")).toHaveCount(0);
+  await expect(reportCard.getByRole("alert")).toHaveCount(0);
   await expect(page.getByText(/1 de 3 obrigatórios enviados/)).toBeVisible();
 
   await page

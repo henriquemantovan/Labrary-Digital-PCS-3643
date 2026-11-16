@@ -11,6 +11,8 @@ async function login(page: Page, role: string) {
 test("tabela, CSV e confirmação de liberação com C2 injetado somente no servidor de testes", async ({ page, context }, info) => {
   const origin = "http://localhost:5182";
   await page.goto(`${origin}/`); await login(page, "aluno");
+  await page.goto(`${origin}/projetos/1`);
+  await expect(page.getByRole("region", { name: "Resultado do grupo" })).toContainText("Resultado bloqueado");
   const before = await context.request.get(`${origin}/api/projects/1/result`);
   expect(before.status()).toBe(200);
   expect(await before.json()).toEqual({ data: { projectId: 1, resultReleased: false } });
@@ -35,6 +37,12 @@ test("tabela, CSV e confirmação de liberação com C2 injetado somente no serv
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: `test-results/notas-${info.project.name}.png`, fullPage: true });
   await page.getByRole("button", { name: "Sair da conta" }).click(); await login(page, "aluno");
+  await page.goto(`${origin}/projetos/1`);
+  const resultPanel = page.getByRole("region", { name: "Resultado do grupo" });
+  await expect(resultPanel).toContainText("Resultado liberado");
+  await expect(resultPanel).toContainText("Nota: 8.40");
+  await expect(resultPanel).toContainText("Rubrica:");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   const result = await context.request.get(`${origin}/api/projects/1/result`);
   expect((await result.json()).data).toMatchObject({ resultReleased: true, finalGrade: 8.4, allEvaluationsCompleted: true });
 });

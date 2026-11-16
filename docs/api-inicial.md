@@ -167,3 +167,7 @@ Contrato completo, regras e exemplos em [C1 — submissão e rodada](contratos/c
 `SubmissionChecklist` contém `projectStatus`, `rubricVersionId` (`null` sem C0), `items` (`kind`, `label`, `materialId`, `versionId`, `ok`), `blockedBy` (código do erro que o POST devolveria, ou `null`) e `canSubmit`. Erros: `403 FORBIDDEN` (papel), `400 VALIDATION_ERROR`, `404 SUBMISSION_NOT_FOUND` e `409` com `RUBRIC_NOT_CONFIGURED`, `SUBMISSION_LOCKED`, `DEADLINE_PASSED`, `INCOMPLETE_SUBMISSION` ou `SUBMISSION_NOT_RETURNABLE`.
 
 Submeter muda o projeto para `EM_AVALIACAO`, o que bloqueia uploads (`409 PROJECT_LOCKED`). Devolver muda a rodada para `DEVOLVIDA` e o projeto para `AJUSTES`; o próximo envio cria a rodada seguinte. As rodadas ficam no mesmo arquivo privado dos projetos (`PROJECT_DATA_FILE`), gravadas junto com o estado do projeto.
+
+## Leitura do grupo — integração do PR #54
+
+A tela do aluno consome `/api/projects/:projectId/result` do contrato de consolidação da HU09, respeitando `resultReleased`. O acervo usa `/api/catalog` e os arquivos públicos autorizados da HU11. Os provedores opcionais `readProviders` e `/api/public/projects` permanecem como contrato experimental injetável; não substituem o acervo em produção.

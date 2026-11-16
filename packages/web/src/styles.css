@@ -1792,6 +1792,7 @@ input[type="file"]::file-selector-button {
   }
   .sidebar nav {
     flex-direction: row;
+    flex-wrap: wrap;
     margin-top: 22px;
     gap: 7px;
   }
@@ -1999,6 +2000,7 @@ input[type="file"]::file-selector-button {
   overflow-wrap: anywhere;
 }
 
+.result-criteria { padding-left: 20px; overflow-wrap: anywhere; }
 .admin-view {
   display: flex;
   flex-wrap: wrap;

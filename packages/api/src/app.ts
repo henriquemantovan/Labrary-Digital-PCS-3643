@@ -1,3 +1,5 @@
+import { createReadRouter } from "./routes/readRoutes.js";
+import type { ReadProviders } from "./models/readModels.js";
 import { createPublicationService } from "./services/publicationService.js";
 import { PublicationProviders } from "./services/publicationProviders.js";
 import { createPublicationRouter } from "./routes/publicationRoutes.js";
@@ -45,6 +47,7 @@ import {
 } from "./repositories/adminRepository.js";
 
 export interface AppOptions {
+  readProviders?: ReadProviders;
   publicationProviders?: PublicationProviders;
 
   evaluations?: EvaluationProvider;
@@ -111,6 +114,7 @@ export function createApp(options: AppOptions = {}) {
   );
   app.use("/api/classes", requireAuth(auth, now));
   app.use("/api/projects", requireAuth(auth, now));
+  app.use("/api", createReadRouter(options.readProviders ?? {}, repository, auth));
   app.use(
     "/api",
     createPublicationRouter(
