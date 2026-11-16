@@ -1,5 +1,20 @@
 import { createReadRouter } from "./routes/readRoutes.js";
 import type { ReadProviders } from "./models/readModels.js";
+import { createPublicationService } from "./services/publicationService.js";
+import { PublicationProviders } from "./services/publicationProviders.js";
+import { createPublicationRouter } from "./routes/publicationRoutes.js";
+import { createGroupRouter } from "./routes/groupRoutes.js";
+import { createRubricRouter } from "./routes/rubricRoutes.js";
+import { createSubmissionRouter } from "./routes/submissionRoutes.js";
+import {
+  createMemoryRubricRepository,
+  RubricRepository,
+} from "./repositories/rubricRepository.js";
+import { createRubricMaterialPolicy } from "./services/rubricMaterialPolicy.js";
+import {
+  createMemoryGroupRepository,
+  GroupRepository,
+} from "./repositories/groupRepository.js";
 import express from "express";
 import { ZodError } from "zod";
 import {
@@ -14,12 +29,33 @@ import {
   ProjectRepository,
 } from "./repositories/projectRepository.js";
 import { createProjectRouter } from "./routes/projectRoutes.js";
+import { MaterialPolicy } from "./services/materialPolicy.js";
+import { createDiskStorage, FileStorage } from "./services/fileStorage.js";
+import { EvaluationProvider } from "./models/consolidation.js";
+import {
+  createResultReleaseRepository,
+  ResultReleaseRepository,
+} from "./repositories/resultReleaseRepository.js";
+import { createGradeRouter } from "./routes/gradeRoutes.js";
 
-import { UspAuthOptions } from "./controllers/uspAuthController.js";
+import { GoogleAuthOptions } from "./controllers/googleAuthController.js";
+
+import { createAdminRouter } from "./routes/adminRoutes.js";
+import {
+  AdminRepository,
+  createMemoryAdminRepository,
+} from "./repositories/adminRepository.js";
 
 export interface AppOptions {
   readProviders?: ReadProviders;
-  usp?: UspAuthOptions;
+  publicationProviders?: PublicationProviders;
+
+  evaluations?: EvaluationProvider;
+  resultReleases?: ResultReleaseRepository;
+  rubrics?: RubricRepository;
+  groups?: GroupRepository;
+  admin?: AdminRepository;
+  google?: GoogleAuthOptions;
   localLogin?: boolean;
   repository?: ProjectRepository;
   auth?: AuthRepository;
@@ -28,15 +64,19 @@ export interface AppOptions {
   origin?: string;
   sessionTtlMs?: number;
   loginLimit?: number;
+  materialPolicy?: MaterialPolicy;
+  storage?: FileStorage;
 }
 
 export function createApp(options: AppOptions = {}) {
   const app = express();
   const repository =
-    options.repository ?? createMemoryProjectRepository(!options.usp);
+    options.repository ?? createMemoryProjectRepository(!options.google);
 
   const auth = options.auth ?? createAuthRepository();
   const now = options.now ?? Date.now;
+  const storage = options.storage ?? createDiskStorage(".uploads");
+  const rubrics = options.rubrics ?? createMemoryRubricRepository();
   app.disable("x-powered-by");
   app.use("/api", (_request, response, next) => {
     response.set({
@@ -56,17 +96,69 @@ export function createApp(options: AppOptions = {}) {
   app.use(
     "/api",
     createAuthRouter(auth, {
-      usp: options.usp,
-      localLogin: options.localLogin ?? !options.usp,
+      google: options.google,
+      localLogin: options.localLogin ?? !options.google,
       now,
       secureCookies: options.secureCookies ?? false,
       sessionTtlMs: options.sessionTtlMs ?? 8 * 60 * 60_000,
       loginLimit: options.loginLimit ?? 20,
     }),
   );
+  app.use(
+    "/api/admin",
+    createAdminRouter(
+      auth,
+      options.admin ?? createMemoryAdminRepository(auth),
+      now,
+    ),
+  );
+  app.use("/api/classes", requireAuth(auth, now));
   app.use("/api/projects", requireAuth(auth, now));
-  app.use("/api", createProjectRouter(repository, auth, now));
   app.use("/api", createReadRouter(options.readProviders ?? {}, repository, auth));
+  app.use(
+    "/api",
+    createPublicationRouter(
+      createPublicationService(
+        repository,
+        auth,
+        storage,
+        now,
+        options.publicationProviders,
+      ),
+      storage,
+    ),
+  );
+
+  app.use(
+    "/api",
+    createGradeRouter(
+      repository,
+      auth,
+      options.resultReleases ?? createResultReleaseRepository(),
+      options.evaluations,
+      now,
+    ),
+  );
+  app.use("/api", createRubricRouter(repository, auth, rubrics, now));
+  app.use("/api", createSubmissionRouter(repository, auth, rubrics, now));
+  app.use(
+    "/api",
+    createGroupRouter(
+      repository,
+      auth,
+      options.groups ?? createMemoryGroupRepository(auth.directory),
+      now,
+    ),
+  );
+  app.use(
+    "/api",
+    createProjectRouter(repository, auth, {
+      now,
+      materialPolicy:
+        options.materialPolicy ?? createRubricMaterialPolicy(rubrics),
+      storage,
+    }),
+  );
 
   app.use((_request, response) => {
     response.status(404).json({

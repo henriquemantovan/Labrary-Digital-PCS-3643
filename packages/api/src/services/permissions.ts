@@ -2,12 +2,15 @@ import { ApiError } from "../errors.js";
 import { User } from "../models/auth.js";
 import { Project } from "../models/project.js";
 import { AuthRepository } from "../repositories/authRepository.js";
+import { uploadLock } from "./materialPolicy.js";
 
 export function createPermissions(auth: AuthRepository) {
   const ownsClass = (user: User, classId: number) =>
-    user.role === "PROFESSOR" &&
+    (user.role === "ADMIN" || user.role === "PROFESSOR") &&
     auth.directory.classes.some(
-      (item) => item.id === classId && item.professorId === user.id,
+      (item) =>
+        item.id === classId &&
+        (user.role === "ADMIN" || item.professorId === user.id),
     );
   const belongsToGroup = (user: User, project: Project) =>
     auth.directory.groups.some(
@@ -19,6 +22,7 @@ export function createPermissions(auth: AuthRepository) {
   return {
     ownsClass,
     canRead(user: User, project: Project) {
+      if (user.role === "ADMIN") return true;
       if (user.role === "PROFESSOR") return ownsClass(user, project.classId);
       if (user.role === "ALUNO") return belongsToGroup(user, project);
       return auth.directory.assignments.some(
@@ -39,7 +43,10 @@ export function createPermissions(auth: AuthRepository) {
         );
       }
     },
-    assertUpload(user: User, project: Project) {
+    canUpload(user: User, project: Project) {
+      return user.role === "ALUNO" && belongsToGroup(user, project);
+    },
+    assertUpload(user: User, project: Project, now: number) {
       if (user.role !== "ALUNO" || !belongsToGroup(user, project)) {
         throw new ApiError(
           403,
@@ -47,11 +54,19 @@ export function createPermissions(auth: AuthRepository) {
           "Você não tem permissão para esta ação.",
         );
       }
-      if (project.status !== "PREPARACAO" && project.status !== "AJUSTES") {
+      const lock = uploadLock(project, now);
+      if (lock === "PROJECT_LOCKED") {
         throw new ApiError(
           409,
           "PROJECT_LOCKED",
           "Este projeto não está aberto para entregas.",
+        );
+      }
+      if (lock === "DEADLINE_PASSED") {
+        throw new ApiError(
+          409,
+          "DEADLINE_PASSED",
+          "O prazo de entrega deste projeto terminou.",
         );
       }
     },

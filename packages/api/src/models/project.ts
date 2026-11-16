@@ -22,17 +22,28 @@ export interface Project {
   updatedAt: string;
 }
 
-export interface ProjectMaterial {
+export interface MaterialVersion {
   id: number;
-  projectId: number;
-  kind: MaterialKind;
-  title: string;
+  materialId: number;
   versionNumber: number;
   originalFilename: string;
   mimeType: string;
   sizeBytes: number;
   storageKey: string;
+  checksumSha256: string | null;
+  uploadedBy: number;
   uploadedAt: string;
+}
+
+export interface ProjectMaterial {
+  id: number;
+  projectId: number;
+  kind: MaterialKind;
+  title: string;
+  createdBy: number;
+  createdAt: string;
+  /** Histórico completo, da versão mais recente para a mais antiga. */
+  versions: MaterialVersion[];
 }
 
 export interface NewProject {
@@ -47,7 +58,14 @@ export interface NewProject {
 export interface NewMaterial {
   kind: MaterialKind;
   title: string;
+  createdBy: number;
+}
+
+export interface NewMaterialVersion {
   originalFilename: string;
   mimeType: string;
   sizeBytes: number;
+  storageKey: string;
+  checksumSha256: string | null;
+  uploadedBy: number;
 }

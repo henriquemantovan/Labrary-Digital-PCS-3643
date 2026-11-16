@@ -41,6 +41,13 @@ export function createMessageController(
           ? null
           : repository
               .listMaterials(project.id)
+              .flatMap(({ title, versions }) =>
+                versions.map(({ id, versionNumber }) => ({
+                  id,
+                  title,
+                  versionNumber,
+                })),
+              )
               .find((item) => item.id === input.materialVersionId);
       if (version === undefined)
         throw new ApiError(
@@ -48,20 +55,14 @@ export function createMessageController(
           "MATERIAL_NOT_FOUND",
           "Versão de material não encontrada.",
         );
-      const user = response.locals.user;
+      const user = response.locals.accountUser;
       const result = repository.createMessage({
         projectId: project.id,
         clientMessageId: input.clientMessageId,
         body: input.body,
         author: { id: user.id, fullName: user.fullName, role: user.role },
         createdAt: new Date(now()).toISOString(),
-        materialVersion: version
-          ? {
-              id: version.id,
-              title: version.title,
-              versionNumber: version.versionNumber,
-            }
-          : null,
+        materialVersion: version,
       });
       response
         .status(result.created ? 201 : 200)

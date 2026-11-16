@@ -8,6 +8,7 @@ datasource db {
 }
 
 enum UserRole {
+  ADMIN
   ALUNO
   AVALIADOR
   PROFESSOR
@@ -57,15 +58,23 @@ model AppUser {
   active       Boolean  @default(true)
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
 
-  uspNumber String? @unique @map("usp_number") @db.VarChar(32)
-  uspAffiliations Json @default("[]") @map("usp_affiliations")
-  uspSyncedAt DateTime? @map("usp_synced_at") @db.Timestamptz
+  uspNumber       String?   @unique @map("usp_number") @db.VarChar(32)
+  uspAffiliations Json      @default("[]") @map("usp_affiliations")
+  uspSyncedAt     DateTime? @map("usp_synced_at") @db.Timestamptz
+
+  googleSubject       String?         @unique @map("google_subject") @db.VarChar(255)
+  emailVerified       Boolean         @default(false) @map("email_verified")
+  googleSyncedAt      DateTime?       @map("google_synced_at") @db.Timestamptz
+  sessions            AuthSession[]
+  roleChangesMade     UserRoleAudit[] @relation("RoleChangeActor")
+  roleChangesReceived UserRoleAudit[] @relation("RoleChangeTarget")
 
   classes              CourseClass[]        @relation("ClassProfessor")
   memberships          GroupMembership[]
   authoredFiles        MaterialVersion[]    @relation("FileUploader")
   createdMaterials     ProjectMaterial[]    @relation("MaterialCreator")
   messages             ProjectMessage[]
+  academicLinkChanges  AcademicLinkAudit[]
   evaluatorAssignments ProjectEvaluator[]
   submissions          Submission[]         @relation("SubmissionAuthor")
   evaluations          Evaluation[]
@@ -137,7 +146,6 @@ model Project {
   materials      ProjectMaterial[]
   messages       ProjectMessage[]
   submissions    Submission[]
-  evaluators     ProjectEvaluator[]
   requirements   ProjectRequirement[]
   rubrics        ProjectRubric[]
   resultReleases ResultRelease[]
@@ -154,7 +162,6 @@ model ProjectEvaluator {
   evaluatorId BigInt   @map("evaluator_id")
   assignedAt  DateTime @default(now()) @map("assigned_at") @db.Timestamptz
 
-  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   evaluator AppUser @relation(fields: [evaluatorId], references: [id])
 
   @@id([projectId, evaluatorId])
@@ -398,4 +405,56 @@ model PublicationMaterial {
 
   @@id([publicationId, materialVersionId])
   @@map("publication_material")
+}
+
+model AuthSession {
+  viewRole  UserRole? @map("view_role")
+  tokenHash String    @id @map("token_hash") @db.Char(64)
+  userId    BigInt    @map("user_id")
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  user      AppUser   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "auth_session_user_idx")
+  @@index([expiresAt], map: "auth_session_expiry_idx")
+  @@map("auth_session")
+}
+
+model OAuthLoginAttempt {
+  stateHash    String   @id @map("state_hash") @db.Char(64)
+  nonce        String   @db.VarChar(128)
+  codeVerifier String   @map("code_verifier") @db.VarChar(128)
+  expiresAt    DateTime @map("expires_at") @db.Timestamptz
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([expiresAt], map: "oauth_login_attempt_expiry_idx")
+  @@map("oauth_login_attempt")
+}
+
+model UserRoleAudit {
+  id           BigInt   @id @default(autoincrement())
+  actorId      BigInt   @map("actor_id")
+  targetId     BigInt   @map("target_id")
+  previousRole UserRole @map("previous_role")
+  newRole      UserRole @map("new_role")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+  actor        AppUser  @relation("RoleChangeActor", fields: [actorId], references: [id])
+  target       AppUser  @relation("RoleChangeTarget", fields: [targetId], references: [id])
+
+  @@index([targetId, createdAt], map: "user_role_audit_target_idx")
+  @@map("user_role_audit")
+}
+
+model AcademicLinkAudit {
+  id        BigInt   @id @default(autoincrement())
+  target    String   @db.VarChar(10)
+  targetId  BigInt   @map("target_id")
+  beforeIds BigInt[] @map("before_ids")
+  afterIds  BigInt[] @map("after_ids")
+  changedBy BigInt   @map("changed_by")
+  changedAt DateTime @map("changed_at") @db.Timestamptz
+  actor     AppUser  @relation(fields: [changedBy], references: [id])
+
+  @@index([target, targetId, id], map: "academic_link_audit_target_idx")
+  @@map("academic_link_audit")
 }

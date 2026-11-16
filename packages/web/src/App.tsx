@@ -1,13 +1,29 @@
-import { Catalog } from "./Catalog";
 import { GroupResult } from "./GroupResult";
+import { PublicationPanel } from "./PublicationPanel";
+import { GroupManager, EvaluatorManager } from "./Groups";
+import { AdminUsers } from "./AdminUsers";
 import { ProjectFeedback } from "./ProjectFeedback";
-import { useCallback, useEffect, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { Catalog } from "./Catalog";
+import { httpCatalog } from "./catalogClient";
 import type { FormEvent } from "react";
 import { api, ApiError } from "./api";
-import type { Material, Project, Scope, User } from "./api";
+import type { Material, MaterialRules, Project, Scope, User } from "./api";
 import { Icon } from "./Icons";
+import { MaterialsPanel } from "./Materials";
+import { Gradebook } from "./Gradebook";
+import { ProjectAssessment } from "./ProjectAssessment";
+import { SubmissionPanel } from "./Submission";
 
 const roleLabels = {
+  ADMIN: "Administrador",
   ALUNO: "Aluno",
   AVALIADOR: "Avaliador",
   PROFESSOR: "Professor",
@@ -24,6 +40,7 @@ const materialLabels: Record<string, string> = {
   MANUAL: "Manual",
 };
 const roleDescriptions = {
+  ADMIN: "Administre contas e acompanhe os projetos de todas as turmas.",
   ALUNO: "Seu grupo, suas ideias e os próximos passos do seu projeto.",
   AVALIADOR: "Um olhar atento para os projetos que você acompanha.",
   PROFESSOR: "Uma visão dos projetos e grupos da sua turma.",
@@ -64,7 +81,7 @@ function Login({
   message: string;
 }) {
   const [providers, setProviders] = useState<{
-    usp: boolean;
+    google: boolean;
     local: boolean;
   } | null>(null);
   const [providerError, setProviderError] = useState("");
@@ -72,7 +89,7 @@ function Login({
     setProviderError("");
     try {
       setProviders(
-        await api<{ usp: boolean; local: boolean }>("/auth/providers"),
+        await api<{ google: boolean; local: boolean }>("/auth/providers"),
       );
     } catch (error) {
       setProviderError((error as Error).message);
@@ -81,9 +98,17 @@ function Login({
   useEffect(() => {
     void loadProviders();
   }, []);
-  const uspError = new URLSearchParams(window.location.search).has("authError")
-    ? "Não foi possível entrar com a USP. Verifique seu vínculo e tente novamente; se persistir, contate o responsável pela turma."
-    : "";
+  const authError = new URLSearchParams(window.location.search).get(
+    "authError",
+  );
+  const googleError =
+    authError === "account_conflict"
+      ? "Já existe uma conta com esse e-mail. Solicite ao responsável a vinculação da conta Google."
+      : authError === "inactive"
+        ? "Sua conta está desativada. Contate o responsável."
+        : authError
+          ? "Não foi possível entrar com o Google. Tente novamente; se persistir, contate o responsável."
+          : "";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [visible, setVisible] = useState(false);
@@ -157,16 +182,15 @@ function Login({
           </span>
           <p className="eyebrow">BEM-VINDO DE VOLTA</p>
           <h2 id="login-title">
-            Seu próximo projeto
-            <br />
+            Seu próximo projeto <br />
             começa aqui.
           </h2>
           <a href="/acervo">Explorar acervo público</a>
           <p className="muted login-description">
             Entre com sua conta para acessar seu espaço.
           </p>
-          {(error || message || uspError) && (
-            <Notice>{error || message || uspError}</Notice>
+          {(error || message || googleError) && (
+            <Notice>{error || message || googleError}</Notice>
           )}
           {providerError && (
             <Notice>
@@ -179,17 +203,26 @@ function Login({
           {!providers && !providerError && (
             <p role="status">Carregando opções de acesso…</p>
           )}
-          {providers?.usp && (
+          {providers?.google && (
             <p>
-              <a className="primary login-submit" href="/api/auth/usp">
-                Entrar com Senha Única USP
+              <a
+                className="primary login-submit google-login"
+                href="/api/auth/google"
+              >
+                <img
+                  src="/google-logo.webp"
+                  alt=""
+                  aria-hidden="true"
+                  width={28}
+                  height={28}
+                />
+                <span>Entrar com Google</span>
               </a>
             </p>
           )}
-          {providers?.usp && (
+          {providers?.google && (
             <p className="muted">
-              Você será direcionado à USP para autenticar e confirmar seus
-              vínculos.
+              Use sua conta Google para acessar seu espaço.
             </p>
           )}
           {providers?.local && (
@@ -242,11 +275,11 @@ function Login({
           <p className="account-help">
             Precisa de acesso ou esqueceu sua senha?
             <br />
-            {providers?.usp ? (
+            {providers?.google ? (
               <span>
                 Para recuperar a senha, acesse o{" "}
-                <a href="https://id.usp.br">portal USP</a>. Para vínculos de
-                turma, fale com o professor.
+                <a href="https://accounts.google.com/signin/recovery">Google</a>
+                . Para vínculos de turma, fale com o professor.
               </span>
             ) : (
               <span>Entre em contato com o professor da sua turma.</span>
@@ -265,7 +298,27 @@ function Login({
   );
 }
 
+const CatalogDemo = import.meta.env.DEV
+  ? lazy(() => import("./CatalogDemo"))
+  : null;
+
 export function App() {
+  const path = window.location.pathname;
+  if (
+    CatalogDemo &&
+    (path === "/demo/acervo" || path.startsWith("/demo/acervo/"))
+  )
+    return (
+      <Suspense fallback={<p role="status">Carregando demonstração…</p>}>
+        <CatalogDemo />
+      </Suspense>
+    );
+  if (path === "/acervo" || path.startsWith("/acervo/"))
+    return <Catalog provider={httpCatalog} />;
+  return <PrivateApp />;
+}
+
+function PrivateApp() {
   const [user, setUser] = useState<User | null>(null);
   const [initializing, setInitializing] = useState(true);
   const [startupError, setStartupError] = useState("");
@@ -273,6 +326,8 @@ export function App() {
   const [path, setPath] = useState(window.location.pathname);
   const [busy, setBusy] = useState(false);
   const [logoutError, setLogoutError] = useState("");
+  const [viewBusy, setViewBusy] = useState(false);
+  const [viewError, setViewError] = useState("");
   const navigate = useCallback((next: string) => {
     window.history.pushState(null, "", next);
     setPath(next);
@@ -333,7 +388,23 @@ export function App() {
       setBusy(false);
     }
   }
-  if (path === "/acervo" || /^\/acervo\/[1-9]\d*$/.test(path)) return <Catalog path={path} navigate={navigate} />;
+  async function changeView(role: string) {
+    setViewBusy(true);
+    setViewError("");
+    try {
+      const current = await api<User>("/auth/view-role", {
+        method: "POST",
+        body: JSON.stringify({ role: role === "ADMIN" ? null : role }),
+      });
+      setUser(current);
+      navigate("/projetos");
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) expired();
+      else setViewError((error as Error).message);
+    } finally {
+      setViewBusy(false);
+    }
+  }
   if (initializing)
     return (
       <main className="startup">
@@ -363,8 +434,14 @@ export function App() {
         }}
       />
     );
+  const visibleUser: User =
+    user.role === "ADMIN" && user.viewRole
+      ? { ...user, role: user.viewRole }
+      : user;
   return (
-    <div className="workspace">
+    <div
+      className={`workspace${user.role === "ADMIN" ? " workspace-admin" : ""}`}
+    >
       <a className="skip-link" href="#main">
         Pular para o conteúdo
       </a>
@@ -394,16 +471,30 @@ export function App() {
             onClick={() => navigate("/projetos")}
           >
             <Icon name="grid" />
-            {user.role === "ALUNO" ? "Meu projeto" : "Projetos"}
+            {visibleUser.role === "ALUNO" ? "Meu projeto" : "Projetos"}
             <span className="nav-active-dot" />
           </button>
-          {user.role === "PROFESSOR" && (
+          {["PROFESSOR", "ADMIN"].includes(visibleUser.role) && (
             <button
               className={`nav-item ${path === "/turmas" ? "active" : ""}`}
               onClick={() => navigate("/turmas")}
             >
               <Icon name="book" />
               Minhas turmas
+            </button>
+          )}
+          {user.role === "ADMIN" && (
+            <button
+              className={`nav-item ${path === "/administracao" ? "active" : ""}`}
+              onClick={() => navigate("/administracao")}
+            >
+              <Icon name="user" />
+              Administrar usuários
+            </button>
+          )}
+          {["PROFESSOR", "ADMIN"].includes(visibleUser.role) && (
+            <button className={`nav-item ${path === "/notas" ? "active" : ""}`} onClick={() => navigate("/notas")}>
+              <Icon name="book" /> Consolidação de notas
             </button>
           )}
           <button
@@ -452,11 +543,13 @@ export function App() {
           <span>
             Meu espaço <span className="breadcrumb">/</span>{" "}
             <strong>
-              {path === "/perfil"
-                ? "Perfil"
-                : path === "/turmas"
-                  ? "Turmas"
-                  : "Projetos"}
+              {path === "/notas" ? "Notas" : path === "/administracao"
+                ? "Administração"
+                : path === "/perfil"
+                  ? "Perfil"
+                  : path === "/turmas"
+                    ? "Turmas"
+                    : "Projetos"}
             </strong>
           </span>
           <span className="profile-badge">
@@ -466,12 +559,47 @@ export function App() {
         </header>
         <main id="main" className="workspace-main">
           {logoutError && <Notice>{logoutError}</Notice>}
-          <Dashboard
-            user={user}
-            path={path}
-            navigate={navigate}
-            expired={expired}
-          />
+          {user.role === "ADMIN" && (
+            <section className="admin-view" aria-label="Visualização de perfis">
+              <label htmlFor="view-role">Visualizar como</label>
+              <select
+                id="view-role"
+                value={user.viewRole ?? "ADMIN"}
+                disabled={viewBusy}
+                onChange={(event) => void changeView(event.target.value)}
+              >
+                <option value="ADMIN">Administrador</option>
+                <option value="ALUNO">Aluno</option>
+                <option value="AVALIADOR">Avaliador</option>
+                <option value="PROFESSOR">Professor</option>
+              </select>
+              <p>
+                {user.viewRole
+                  ? `Visualização de ${roleLabels[user.viewRole]}. Sua conta continua sendo Administrador; o acesso segue seus vínculos nesse perfil.`
+                  : "Visão administrativa de todas as turmas e projetos."}
+              </p>
+            </section>
+          )}
+          {viewError && <Notice>{viewError}</Notice>}
+          {path === "/notas" && ["PROFESSOR", "ADMIN"].includes(visibleUser.role) ? (
+            <Gradebook key={`${user.id}-${user.viewRole ?? ""}`} expired={expired} />
+          ) : path === "/administracao" && user.role === "ADMIN" ? (
+            <AdminUsers
+              expired={expired}
+              onSessionChanged={(current) => {
+                setUser(current);
+                if (current.role !== "ADMIN") navigate("/projetos");
+              }}
+            />
+          ) : (
+            <Dashboard
+              key={`${user.id}-${user.role}-${user.viewRole ?? ""}`}
+              user={path === "/perfil" ? user : visibleUser}
+              path={path}
+              navigate={navigate}
+              expired={expired}
+            />
+          )}
         </main>
         <footer className="workspace-footer">
           <span>LABRARY DIGITAL</span>
@@ -497,6 +625,9 @@ function Dashboard({
   const [scope, setScope] = useState<Scope>({ classes: [], groups: [] });
   const [detail, setDetail] = useState<Project | null>(null);
   const [materials, setMaterials] = useState<Material[]>([]);
+  const [materialRules, setMaterialRules] = useState<MaterialRules | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [revision, setRevision] = useState(0);
@@ -506,16 +637,25 @@ function Dashboard({
   const [pending, setPending] = useState("");
   const [creating, setCreating] = useState(false);
   const detailId = /^\/projetos\/(\d+)$/.exec(path)?.[1];
+  const activeDetailId = useRef(detailId);
+  activeDetailId.current = detailId;
+  async function refreshMaterialRules() {
+    const rules = await api<MaterialRules>(
+      `/projects/${detailId}/material-rules`,
+    );
+    if (activeDetailId.current === detailId) setMaterialRules(rules);
+  }
   const knownPath =
     ["/", "/projetos", "/perfil"].includes(path) ||
     !!detailId ||
-    (path === "/turmas" && user.role === "PROFESSOR");
+    (path === "/turmas" && ["PROFESSOR", "ADMIN"].includes(user.role));
   useEffect(() => {
     let active = true;
     setLoading(true);
     setError("");
     setDetail(null);
     setMaterials([]);
+    setMaterialRules(null);
     setCreating(false);
     const load = async () => {
       try {
@@ -527,13 +667,15 @@ function Dashboard({
         setProjects(items);
         setScope(access);
         if (detailId) {
-          const [project, files] = await Promise.all([
+          const [project, files, rules] = await Promise.all([
             api<Project>(`/projects/${detailId}`),
             api<Material[]>(`/projects/${detailId}/materials`),
+            api<MaterialRules>(`/projects/${detailId}/material-rules`),
           ]);
           if (active) {
             setDetail(project);
             setMaterials(files);
+            setMaterialRules(rules);
           }
         }
       } catch (failure) {
@@ -593,20 +735,10 @@ function Dashboard({
           <dl>
             <dt>E-mail</dt>
             <dd>{user.email}</dd>
-            {user.uspNumber && (
+            {user.googleLinked && (
               <>
-                <dt>Número USP</dt>
-                <dd>{user.uspNumber}</dd>
-              </>
-            )}
-            {user.uspAffiliations && (
-              <>
-                <dt>Vínculos USP</dt>
-                <dd>
-                  {user.uspAffiliations
-                    .map((v) => v.nomeVinculo ?? v.tipoVinculo)
-                    .join(", ")}
-                </dd>
+                <dt>Autenticação</dt>
+                <dd>Conta Google vinculada</dd>
               </>
             )}
             <dt>Permissões</dt>
@@ -627,7 +759,7 @@ function Dashboard({
         <p className="page-intro">
           Grupos e projetos sob sua responsabilidade.
         </p>
-        <div className="project-grid">
+        <div className="class-grid">
           {scope.classes.map((item) => (
             <article className="class-card" key={item.id}>
               <Icon name="book" size={28} />
@@ -661,6 +793,11 @@ function Dashboard({
                     </li>
                   ))}
               </ul>
+              <GroupManager
+                classId={item.id}
+                onChanged={() => setRevision((value) => value + 1)}
+                expired={expired}
+              />
               <button
                 className="text-button"
                 onClick={() => navigate("/projetos")}
@@ -708,40 +845,78 @@ function Dashboard({
               : "Materiais obrigatórios presentes"}
           </p>
         )}
-        <section className="detail-section">
-          <div className="section-heading">
-            <h2>Materiais do projeto</h2>
-            <span>{materials.length} materiais</span>
-          </div>
-          <p className="muted">
-            Histórico de versões registradas. O conteúdo dos arquivos ainda não
-            está disponível nesta etapa.
-          </p>
-          {materials.length ? (
-            <ul className="material-list">
-              {materials.map((item) => (
-                <li key={item.id}>
-                  <Icon name="book" />
-                  <div>
-                    <strong>{item.title}</strong>
-                    <span>{item.originalFilename}</span>
-                  </div>
-                  <span className="tiny-badge">v{item.versionNumber}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <Empty
-              title="Uma ideia em construção"
-              text="Ainda não há materiais registrados neste projeto."
-            />
-          )}
-        </section>
+        {materialRules && (
+          <MaterialsPanel
+            projectId={detail.id}
+            materials={materials}
+            rules={materialRules}
+            onSaved={(saved) => {
+              setMaterials((current) =>
+                current.some((item) => item.id === saved.id)
+                  ? current.map((item) => (item.id === saved.id ? saved : item))
+                  : [...current, saved],
+              );
+              setDetail(
+                (current) =>
+                  current && {
+                    ...current,
+                    missingMaterials: current.missingMaterials?.filter(
+                      (kind) => kind !== saved.kind,
+                    ),
+                  },
+              );
+            }}
+            expired={expired}
+          />
+        )}
+        <SubmissionPanel
+          key={`submission-${detail.id}`}
+          project={detail}
+          user={user}
+          materials={materials}
+          refreshKey={materialRules}
+          expired={expired}
+          onStatusChanged={(status) => {
+            setDetail((current) => current && { ...current, status });
+            // O novo estado muda o bloqueio de upload; recarrega as regras dos materiais.
+            refreshMaterialRules().catch((failure) => {
+              if (failure instanceof ApiError && failure.status === 401) expired();
+              else setRevision((value) => value + 1);
+            });
+          }}
+        />
         <div className="access-note">
           <Icon name="lock" size={17} />
           Acesso restrito ao grupo e à equipe acadêmica vinculada ao projeto.
         </div>
         {user.role === "ALUNO" && <GroupResult key={`result-${detail.id}`} projectId={detail.id} expired={expired} />}
+        {["PROFESSOR", "ADMIN"].includes(user.role) && (
+          <EvaluatorManager
+            key={`evaluators-${detail.id}`}
+            projectId={detail.id}
+            classId={detail.classId}
+            expired={expired}
+          />
+        )}
+        {["PROFESSOR", "ADMIN"].includes(user.role) && (
+          <PublicationPanel
+            key={`publication-${detail.id}`}
+            projectId={detail.id}
+            expired={expired}
+            onChanged={() =>
+              setDetail(
+                (current) => current && { ...current, status: "FINALIZADO" },
+              )
+            }
+          />
+        )}
+        <ProjectAssessment
+          key={`assessment-${detail.id}-${user.role}`}
+          projectId={detail.id}
+          user={user}
+          expired={expired}
+          onConfigurationSaved={refreshMaterialRules}
+        />
         <ProjectFeedback
           key={detail.id}
           projectId={detail.id}
@@ -771,7 +946,7 @@ function Dashboard({
           </h1>
           <p className="page-intro">{roleDescriptions[user.role]}</p>
         </div>
-        {user.role === "PROFESSOR" && (
+        {["PROFESSOR", "ADMIN"].includes(user.role) && (
           <button className="primary" onClick={() => setCreating(!creating)}>
             {creating ? "Fechar formulário" : "+ Novo projeto"}
           </button>
@@ -796,7 +971,9 @@ function Dashboard({
                 ? "Projetos do meu grupo"
                 : user.role === "AVALIADOR"
                   ? "Projetos atribuídos"
-                  : "Projetos da minha turma"}
+                  : user.role === "ADMIN"
+                    ? "Projetos de todas as turmas"
+                    : "Projetos da minha turma"}
             </span>
             <strong>
               {String(projects.length).padStart(2, "0")}
@@ -1047,8 +1224,8 @@ function CreateProject({
       {error && <Notice>{error}</Notice>}
       {!groups.length ? (
         <p className="muted">
-          Todos os grupos vinculados já têm projeto. O cadastro de novos grupos
-          faz parte da próxima etapa.
+          Todos os grupos vinculados já têm projeto. Cadastre outro grupo em
+          Minhas turmas.
         </p>
       ) : (
         <form onSubmit={submit}>

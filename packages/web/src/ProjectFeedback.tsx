@@ -140,11 +140,13 @@ export function ProjectFeedback({
                 onChange={(event) => setVersion(event.target.value)}
               >
                 <option value="">Projeto em geral</option>
-                {materials.map((material) => (
-                  <option key={material.id} value={material.id}>
-                    {material.title} · v{material.versionNumber}
-                  </option>
-                ))}
+                {materials.flatMap((material) =>
+                  material.versions.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {material.title} · v{item.versionNumber}
+                    </option>
+                  )),
+                )}
               </select>
             </div>
             <div className="feedback-field">

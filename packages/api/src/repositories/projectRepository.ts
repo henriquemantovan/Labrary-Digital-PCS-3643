@@ -1,7 +1,19 @@
+import {
+  NewPublicationDecision,
+  PublicationDecision,
+  publicationDecisionSchema,
+} from "../models/publicationDecision.js";
 import { NewMessage, ProjectMessage } from "../models/message.js";
 import { ApiError } from "../errors.js";
 import {
+  NewSubmission,
+  Submission,
+  submissionSchema,
+} from "../models/submission.js";
+import {
+  MaterialVersion,
   NewMaterial,
+  NewMaterialVersion,
   NewProject,
   Project,
   ProjectMaterial,
@@ -14,27 +26,63 @@ export interface ProjectFilter {
 }
 
 export interface ProjectRepository {
+  publicationHistory(projectId: number): PublicationDecision[];
+  recordPublicationDecision(input: NewPublicationDecision): PublicationDecision;
   list(filter: ProjectFilter): Project[];
   get(id: number): Project | undefined;
   create(input: NewProject): Project;
   listMaterials(projectId: number): ProjectMaterial[];
-  createMaterial(projectId: number, input: NewMaterial): ProjectMaterial;
+  getMaterial(
+    projectId: number,
+    materialId: number,
+  ): ProjectMaterial | undefined;
+  createMaterial(
+    projectId: number,
+    material: NewMaterial,
+    version: NewMaterialVersion,
+  ): ProjectMaterial;
+  addVersion(
+    projectId: number,
+    materialId: number,
+    version: NewMaterialVersion,
+  ): ProjectMaterial;
   listMessages(projectId: number): ProjectMessage[];
   createMessage(input: NewMessage): {
     message: ProjectMessage;
     created: boolean;
   };
+  /** Rodadas do projeto em ordem crescente (C1). */
+  listSubmissions(projectId: number): Submission[];
+  getSubmission(
+    projectId: number,
+    submissionId: number,
+  ): Submission | undefined;
+  /** Grava a rodada e muda o projeto para EM_AVALIACAO na mesma gravação. */
+  createSubmission(input: NewSubmission): Submission;
+  /** Devolve a última rodada SUBMETIDA e muda o projeto para AJUSTES na mesma gravação. */
+  returnSubmission(
+    projectId: number,
+    submissionId: number,
+    returnedAt: string,
+  ): Submission;
 }
 
 export interface ProjectSnapshot {
+  publicationDecisions?: PublicationDecision[];
   projects: Project[];
   materials: ProjectMaterial[];
   messages: ProjectMessage[];
+  /** Ausente em arquivos anteriores à HU05; tratado como lista vazia. */
+  submissions?: Submission[];
 }
 export interface ProjectStorage {
   load(): ProjectSnapshot | undefined;
   save(snapshot: ProjectSnapshot): void;
 }
+
+const sameTitle = (left: string, right: string) =>
+  left.trim().toLocaleLowerCase("pt-BR") ===
+  right.trim().toLocaleLowerCase("pt-BR");
 
 const demoTimestamp = "2026-10-15T12:00:00.000Z";
 
@@ -74,17 +122,82 @@ export function createMemoryProjectRepository(
     : [];
   let materials: ProjectMaterial[] = [];
   let messages: ProjectMessage[] = [];
+  let submissions: Submission[] = [];
   const saved = storage?.load();
   if (saved) ({ projects, materials, messages } = saved);
+  submissions = saved?.submissions ?? [];
   let nextProjectId = Math.max(2, ...projects.map((item) => item.id)) + 1;
   let nextMaterialId = Math.max(0, ...materials.map((item) => item.id)) + 1;
+  // Inclui versões citadas em mensagens, que podem vir de materiais legados descartados.
+  let nextVersionId =
+    Math.max(
+      0,
+      ...materials.flatMap((item) => item.versions.map(({ id }) => id)),
+      ...messages.map((item) => item.materialVersion?.id ?? 0),
+    ) + 1;
   let nextMessageId = Math.max(0, ...messages.map((item) => item.id)) + 1;
-  const commit = (snapshot: ProjectSnapshot) => {
-    storage?.save(snapshot);
-    ({ projects, materials, messages } = snapshot);
+  let decisions = saved?.publicationDecisions ?? [];
+  let nextSubmissionId = Math.max(0, ...submissions.map((item) => item.id)) + 1;
+  // Conserva rodadas e decisões em todas as mutações, confirmando antes de trocar a memória.
+  const commit = (changes: Partial<ProjectSnapshot>) => {
+    const next: ProjectSnapshot = {
+      projects,
+      materials,
+      messages,
+      submissions,
+      ...(decisions.length ? { publicationDecisions: decisions } : {}),
+      ...changes,
+    };
+    storage?.save(next);
+    ({ projects, materials, messages } = next);
+    submissions = next.submissions ?? [];
+    decisions = next.publicationDecisions ?? [];
   };
+  const withStatus = (
+    projectId: number,
+    status: Project["status"],
+    updatedAt: string,
+  ) =>
+    projects.map((item) =>
+      item.id === projectId ? { ...item, status, updatedAt } : item,
+    );
+  const buildVersion = (
+    materialId: number,
+    versionNumber: number,
+    input: NewMaterialVersion,
+  ): MaterialVersion => ({
+    id: nextVersionId,
+    materialId,
+    versionNumber,
+    ...input,
+    uploadedAt: new Date().toISOString(),
+  });
 
   return {
+    publicationHistory(projectId) {
+      return structuredClone(
+        decisions.filter((event) => event.projectId === projectId),
+      );
+    },
+    recordPublicationDecision(input) {
+      const event = publicationDecisionSchema.parse({
+        ...input,
+        id: Math.max(0, ...decisions.map((event) => event.id)) + 1,
+      });
+      if (!projects.some((project) => project.id === event.projectId))
+        throw new ApiError(404, "PROJECT_NOT_FOUND", "Projeto não encontrado.");
+      commit({
+        projects: projects.map((project) =>
+          project.id === event.projectId && event.action === "FINALIZADO"
+            ? { ...project, status: "FINALIZADO", updatedAt: event.createdAt }
+            : project,
+        ),
+        materials,
+        messages,
+        publicationDecisions: [...decisions, event],
+      });
+      return structuredClone(event);
+    },
     listMessages(projectId) {
       return messages
         .filter((item) => item.projectId === projectId)
@@ -151,28 +264,147 @@ export function createMemoryProjectRepository(
     listMaterials(projectId) {
       return materials.filter((material) => material.projectId === projectId);
     },
-    createMaterial(projectId, input) {
-      const relatedMaterials = materials.filter(
-        (material) => material.projectId === projectId,
+    getMaterial(projectId, materialId) {
+      return materials.find(
+        (item) => item.id === materialId && item.projectId === projectId,
       );
-      const versionNumber =
-        relatedMaterials
-          .filter((material) => material.title === input.title)
-          .reduce(
-            (highest, material) => Math.max(highest, material.versionNumber),
-            0,
-          ) + 1;
+    },
+    createMaterial(projectId, input, version) {
+      if (
+        materials.some(
+          (material) =>
+            material.projectId === projectId &&
+            material.kind === input.kind &&
+            sameTitle(material.title, input.title),
+        )
+      ) {
+        throw new ApiError(
+          409,
+          "MATERIAL_ALREADY_EXISTS",
+          "Já existe um material com este tipo e título. Envie uma nova versão para substituí-lo.",
+        );
+      }
       const material: ProjectMaterial = {
         id: nextMaterialId,
         projectId,
         ...input,
-        versionNumber,
-        storageKey: `mock/${projectId}/${nextMaterialId}`,
-        uploadedAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        versions: [buildVersion(nextMaterialId, 1, version)],
       };
       commit({ projects, materials: [...materials, material], messages });
       nextMaterialId += 1;
+      nextVersionId += 1;
       return material;
+    },
+    addVersion(projectId, materialId, version) {
+      const material = materials.find(
+        (item) => item.id === materialId && item.projectId === projectId,
+      );
+      if (!material) {
+        throw new ApiError(
+          404,
+          "MATERIAL_NOT_FOUND",
+          "Material não encontrado.",
+        );
+      }
+      const updated: ProjectMaterial = {
+        ...material,
+        versions: [
+          buildVersion(
+            material.id,
+            material.versions[0].versionNumber + 1,
+            version,
+          ),
+          ...material.versions,
+        ],
+      };
+      commit({
+        projects,
+        materials: materials.map((item) =>
+          item === material ? updated : item,
+        ),
+        messages,
+      });
+      nextVersionId += 1;
+      return updated;
+    },
+    listSubmissions(projectId) {
+      return structuredClone(
+        submissions
+          .filter((item) => item.projectId === projectId)
+          .sort((a, b) => a.round - b.round),
+      );
+    },
+    getSubmission(projectId, submissionId) {
+      return structuredClone(
+        submissions.find(
+          (item) => item.id === submissionId && item.projectId === projectId,
+        ),
+      );
+    },
+    createSubmission(input) {
+      const project = projects.find((item) => item.id === input.projectId);
+      if (!project)
+        throw new ApiError(404, "PROJECT_NOT_FOUND", "Projeto não encontrado.");
+      if (project.status !== "PREPARACAO" && project.status !== "AJUSTES")
+        throw new ApiError(
+          409,
+          "SUBMISSION_LOCKED",
+          "O projeto não está aberto para submissão.",
+        );
+      const submission = submissionSchema.parse({
+        ...input,
+        id: nextSubmissionId,
+      });
+      commit({
+        projects: withStatus(
+          project.id,
+          "EM_AVALIACAO",
+          submission.submittedAt,
+        ),
+        submissions: [...submissions, submission],
+      });
+      nextSubmissionId += 1;
+      return structuredClone(submission);
+    },
+    returnSubmission(projectId, submissionId, returnedAt) {
+      const submission = submissions.find(
+        (item) => item.id === submissionId && item.projectId === projectId,
+      );
+      if (!submission)
+        throw new ApiError(
+          404,
+          "SUBMISSION_NOT_FOUND",
+          "Submissão não encontrada.",
+        );
+      const latest = Math.max(
+        ...submissions
+          .filter((item) => item.projectId === projectId)
+          .map((item) => item.round),
+      );
+      const project = projects.find((item) => item.id === projectId);
+      if (
+        submission.status !== "SUBMETIDA" ||
+        submission.round !== latest ||
+        project?.status !== "EM_AVALIACAO"
+      )
+        throw new ApiError(
+          409,
+          "SUBMISSION_NOT_RETURNABLE",
+          "Somente a rodada atual, ainda em avaliação, pode ser devolvida para ajustes.",
+        );
+      const returned = submissionSchema.parse({
+        ...submission,
+        status: "DEVOLVIDA",
+        returnedAt,
+      });
+      commit({
+        projects: withStatus(projectId, "AJUSTES", returnedAt),
+        submissions: submissions.map((item) =>
+          item === submission ? returned : item,
+        ),
+      });
+      return structuredClone(returned);
     },
   };
 }

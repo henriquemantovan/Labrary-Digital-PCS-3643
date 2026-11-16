@@ -1,8 +1,15 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { App } from "./App";
-import type { Project, Scope, User } from "./api";
+import type { Material, MaterialRules, Project, Scope, User } from "./api";
+import { FakeXHR } from "./test/fakeXhr";
 
 const student: User = {
   id: 1,
@@ -46,6 +53,21 @@ const scope: Scope = {
     { id: 3, classId: 1, name: "Grupo 03" },
   ],
 };
+const pdf = { label: "PDF", mimeType: "application/pdf", extensions: [".pdf"] };
+const materialRules: MaterialRules = {
+  dueAt: null,
+  lock: null,
+  canUpload: true,
+  rules: [
+    {
+      kind: "RELATORIO",
+      defaultTitle: "Relatório do projeto",
+      required: true,
+      formats: [pdf],
+      maxSizeBytes: 20 * 1024 * 1024,
+    },
+  ],
+};
 type Override = (
   url: string,
   init?: RequestInit,
@@ -69,7 +91,7 @@ beforeEach(() => {
       const custom = await override(input, init);
       if (custom) return custom;
       if (input === "/api/auth/providers")
-        return response({ usp: false, local: true });
+        return response({ google: false, local: true });
       if (input === "/api/auth/me")
         return session
           ? response(session)
@@ -82,6 +104,27 @@ beforeEach(() => {
         session = null;
         return new Response(null, { status: 204 });
       }
+      if (input.endsWith("/administration"))
+        return response({
+          groups: scope.groups.map((group) => ({
+            ...group,
+            memberIds: [],
+            history: [],
+          })),
+          people: [],
+        });
+      if (input.endsWith("/publication"))
+        return response({
+          status: "EM_AVALIACAO",
+          submissionId: null,
+          canFinalize: false,
+          canPublish: false,
+          reason: "Aguardando integração das entregas e avaliações.",
+          materials: [],
+          history: [],
+        });
+      if (input.endsWith("/evaluators"))
+        return response({ evaluatorIds: [], history: [] });
       if (input === "/api/scope") return response(scope);
       if (input === "/api/projects" && init?.method === "POST")
         return response(
@@ -91,6 +134,16 @@ beforeEach(() => {
       if (input === "/api/projects") return response(available);
       if (input.endsWith("/materials") || input.endsWith("/messages"))
         return response([]);
+      if (input.endsWith("/material-rules")) return response(materialRules);
+      if (input.endsWith("/submission-checklist"))
+        return response({
+          projectStatus: "PREPARACAO",
+          rubricVersionId: null,
+          items: [],
+          blockedBy: "RUBRIC_NOT_CONFIGURED",
+          canSubmit: false,
+        });
+      if (input.endsWith("/submissions")) return response([]);
       return response(
         available.find((project) => input === `/api/projects/${project.id}`) ??
           projects[0],
@@ -185,7 +238,8 @@ describe("HU01: interface", () => {
       screen.getByRole("link", { name: "Abrir Monitor de energia" }),
     );
     await screen.findByRole("heading", { name: "Monitor de energia" });
-    await screen.findByText("Uma ideia em construção");
+    await screen.findByText(/0 de 1 obrigatórios enviados/);
+    expect(screen.getByText("Pendente")).toBeDefined();
     await user.click(screen.getByRole("button", { name: "Todos os projetos" }));
     await screen.findByRole("heading", { name: "Olá, Marina." });
     await user.click(screen.getByRole("link", { name: "Monitor de energia" }));
@@ -217,8 +271,28 @@ describe("HU01: interface", () => {
               id: 1,
               title: "Relatório",
               kind: "RELATORIO",
-              versionNumber: 2,
-              originalFilename: "relatorio.pdf",
+              currentVersion: {
+                id: 2,
+                versionNumber: 2,
+                originalFilename: "relatorio.pdf",
+                mimeType: "application/pdf",
+                sizeBytes: 2400,
+                uploadedBy: { id: 1, fullName: "Aluno" },
+                uploadedAt: "2026-10-22T12:00:00.000Z",
+                downloadUrl: "/api/projects/2/materials/1/versions/2/file",
+              },
+              versions: [
+                {
+                  id: 2,
+                  versionNumber: 2,
+                  originalFilename: "relatorio.pdf",
+                  mimeType: "application/pdf",
+                  sizeBytes: 2400,
+                  uploadedBy: { id: 1, fullName: "Aluno" },
+                  uploadedAt: "2026-10-22T12:00:00.000Z",
+                  downloadUrl: "/api/projects/2/materials/1/versions/2/file",
+                },
+              ],
             },
           ])
         : undefined;
@@ -228,8 +302,60 @@ describe("HU01: interface", () => {
       screen.getByRole("button", { name: "Entrar no meu espaço" }),
     );
     await screen.findByRole("heading", { name: "Monitor de energia" });
-    expect(screen.getByText("relatorio.pdf")).toBeDefined();
-    expect(screen.getByText("v2")).toBeDefined();
+    expect(screen.getByText(/relatorio\.pdf/)).toBeDefined();
+    expect(screen.getByText(/versão 2/)).toBeDefined();
+  });
+  it("atualiza a lista após enviar e substituir um material", async () => {
+    window.history.replaceState(null, "", "/projetos/2");
+    FakeXHR.instances = [];
+    vi.stubGlobal("XMLHttpRequest", FakeXHR);
+    const user = userEvent.setup();
+    const saved = (versionNumber: number): Material => {
+      const version = {
+        id: versionNumber,
+        versionNumber,
+        originalFilename: `relatorio-v${versionNumber}.pdf`,
+        mimeType: "application/pdf",
+        sizeBytes: 100,
+        uploadedBy: { id: 1, fullName: "Marina Oliveira" },
+        uploadedAt: "2026-10-22T15:00:00.000Z",
+        downloadUrl: `/api/projects/2/materials/1/versions/${versionNumber}/file`,
+      };
+      return {
+        id: 1,
+        title: "Relatório do projeto",
+        kind: "RELATORIO",
+        currentVersion: version,
+        versions: [version],
+      };
+    };
+    override = (url) =>
+      url === "/api/projects/2"
+        ? response({ ...projects[1], missingMaterials: ["RELATORIO"] })
+        : undefined;
+    render(<App />);
+    const input = await screen.findByLabelText(
+      "Arquivo para Relatório do projeto",
+    );
+    expect(screen.getByText("Pendentes: Relatório")).toBeDefined();
+    const file = new File(["%PDF-1.7"], "relatorio.pdf", {
+      type: "application/pdf",
+    });
+    await user.upload(input, file);
+    await FakeXHR.instances[0].respond(201, { data: saved(1) });
+    await screen.findByText(/Enviado · versão 1/);
+    expect(screen.getByText(/1 de 1 obrigatórios enviados/)).toBeDefined();
+    expect(screen.getByText("Materiais obrigatórios presentes")).toBeDefined();
+    await user.upload(
+      screen.getByLabelText("Arquivo para Relatório do projeto"),
+      file,
+    );
+    expect(FakeXHR.instances[1].url).toBe(
+      "/api/projects/2/materials/1/versions",
+    );
+    await FakeXHR.instances[1].respond(201, { data: saved(2) });
+    await screen.findByText(/Enviado · versão 2/);
+    expect(screen.getAllByText("Relatório do projeto")).toHaveLength(1);
   });
   it("informa projeto indisponível e permite voltar ou tentar novamente", async () => {
     window.history.replaceState(null, "", "/projetos/999");
@@ -381,21 +507,21 @@ describe("HU01: interface", () => {
   });
 });
 
-it("oferece Senha Única sem pedir senha local e mostra erro de retorno", async () => {
+it("oferece Google sem pedir senha local e mostra erro de retorno", async () => {
   session = null;
-  window.history.replaceState(null, "", "/login?authError=usp");
+  window.history.replaceState(null, "", "/login?authError=google");
   override = (url) =>
     url === "/api/auth/providers"
-      ? response({ usp: true, local: false })
+      ? response({ google: true, local: false })
       : undefined;
   render(<App />);
   expect(
     (
-      await screen.findByRole("link", { name: "Entrar com Senha Única USP" })
+      await screen.findByRole("link", { name: "Entrar com Google" })
     ).getAttribute("href"),
-  ).toBe("/api/auth/usp");
+  ).toBe("/api/auth/google");
   expect(screen.queryByLabelText("Senha", { exact: true })).toBeNull();
-  expect(screen.getByText(/Não foi possível entrar com a USP/)).toBeTruthy();
+  expect(screen.getByText(/Não foi possível entrar com o Google/)).toBeTruthy();
 });
 it("permite tentar novamente ao falhar consulta das opções de acesso", async () => {
   session = null;
@@ -412,19 +538,11 @@ it("permite tentar novamente ao falhar consulta das opções de acesso", async (
   expect(await screen.findByLabelText("E-mail institucional")).toBeTruthy();
 });
 
-it("exibe número e vínculos USP no perfil", async () => {
-  session = {
-    ...student,
-    uspNumber: "1234567",
-    uspAffiliations: [
-      { tipoVinculo: "ALUNOGR", nomeVinculo: "Aluno de graduação" },
-      { tipoVinculo: "ALUNOPOS" },
-    ],
-  };
+it("exibe autenticação Google no perfil", async () => {
+  session = { ...student, googleLinked: true };
   window.history.replaceState(null, "", "/perfil");
   render(<App />);
-  expect(await screen.findByText("1234567")).toBeTruthy();
-  expect(screen.getByText("Aluno de graduação, ALUNOPOS")).toBeTruthy();
+  expect(await screen.findByText("Conta Google vinculada")).toBeTruthy();
 });
 
 it("HU06 combina grupo, estado e pendências e consulta histórico de versões", async () => {
@@ -438,6 +556,19 @@ it("HU06 combina grupo, estado e pendências e consulta histórico de versões",
     },
     { ...projects[1], missingMaterials: [] },
   ];
+  const history = [
+    [2, "revisado.pdf"],
+    [1, "inicial.pdf"],
+  ].map(([id, originalFilename]) => ({
+    id,
+    versionNumber: id,
+    originalFilename,
+    mimeType: "application/pdf",
+    sizeBytes: 2400,
+    uploadedBy: { id: 1, fullName: "Aluno" },
+    uploadedAt: "2026-10-22T12:00:00.000Z",
+    downloadUrl: `/api/projects/1/materials/1/versions/${id}/file`,
+  }));
   override = (url) =>
     url.endsWith("/materials")
       ? response([
@@ -445,15 +576,8 @@ it("HU06 combina grupo, estado e pendências e consulta histórico de versões",
             id: 1,
             title: "Relatório",
             kind: "RELATORIO",
-            originalFilename: "inicial.pdf",
-            versionNumber: 1,
-          },
-          {
-            id: 2,
-            title: "Relatório",
-            kind: "RELATORIO",
-            originalFilename: "revisado.pdf",
-            versionNumber: 2,
+            currentVersion: history[0],
+            versions: history,
           },
         ])
       : undefined;
@@ -485,8 +609,180 @@ it("HU06 combina grupo, estado e pendências e consulta histórico de versões",
   await user.click(
     screen.getByRole("link", { name: "Abrir Semáforo inteligente" }),
   );
-  await screen.findByText("inicial.pdf");
-  expect(screen.getByText("revisado.pdf")).toBeTruthy();
-  expect(screen.getByText("v1")).toBeTruthy();
-  expect(screen.getByText("v2")).toBeTruthy();
+  await user.click(
+    await screen.findByRole("button", { name: "Histórico (2)" }),
+  );
+  const versions = within(screen.getByRole("list", { name: /^Versões de/ }));
+  expect(versions.getByText(/^inicial\.pdf/)).toBeTruthy();
+  expect(versions.getByText(/^revisado\.pdf/)).toBeTruthy();
+  expect(versions.getByText("v1")).toBeTruthy();
+  expect(versions.getByText("v2")).toBeTruthy();
+});
+
+it.each([
+  [
+    "account_conflict",
+    "Já existe uma conta com esse e-mail. Solicite ao responsável a vinculação da conta Google.",
+  ],
+  ["inactive", "Sua conta está desativada. Contate o responsável."],
+])("mostra orientação para erro Google %s", async (code, message) => {
+  session = null;
+  window.history.replaceState(null, "", `/login?authError=${code}`);
+  override = (url) =>
+    url === "/api/auth/providers"
+      ? response({ google: true, local: false })
+      : undefined;
+  render(<App />);
+  expect(await screen.findByText(message)).toBeTruthy();
+});
+
+it("administrador alterna visualização sem alterar sua identidade e conserva acesso à administração", async () => {
+  session = { ...student, id: 4, role: "ADMIN" };
+  available = [...projects];
+  override = (url, init) => {
+    if (url === "/api/auth/view-role") {
+      const role = JSON.parse(String(init?.body)).role;
+      session = { ...session!, viewRole: role ?? undefined };
+      return response(session);
+    }
+    if (url === "/api/projects")
+      return response(session?.viewRole ? [] : available);
+    if (url === "/api/admin/users")
+      return response([
+        { ...student, active: true },
+        { ...session, active: true },
+      ]);
+    return undefined;
+  };
+  render(<App />);
+  const picker = await screen.findByLabelText("Visualizar como");
+  expect(
+    screen.getByRole("button", { name: "Administrar usuários" }),
+  ).toBeTruthy();
+  await userEvent.selectOptions(picker, "ALUNO");
+  await screen.findByRole("button", { name: "Meu projeto" });
+  expect(session).toMatchObject({ id: 4, role: "ADMIN", viewRole: "ALUNO" });
+  await userEvent.click(
+    screen.getByRole("button", { name: "Administrar usuários" }),
+  );
+  await screen.findByRole("heading", { name: "Administrar usuários" });
+  await userEvent.selectOptions(
+    screen.getByLabelText("Visualizar como"),
+    "PROFESSOR",
+  );
+  await screen.findByRole("button", { name: "Minhas turmas" });
+  await userEvent.selectOptions(
+    screen.getByLabelText("Visualizar como"),
+    "ADMIN",
+  );
+  await screen.findByRole("button", { name: "+ Novo projeto" });
+  expect(session?.role).toBe("ADMIN");
+  expect(session?.viewRole).toBeUndefined();
+});
+it("mostra falha de mudança de visualização sem trocar o perfil e trata expiração", async () => {
+  session = { ...student, role: "ADMIN" };
+  let fail = 503;
+  override = (url) =>
+    url === "/api/auth/view-role"
+      ? response(
+          fail === 401 ? "Sessão expirada" : "Falha ao mudar visualização",
+          fail,
+        )
+      : undefined;
+  render(<App />);
+  await screen.findByLabelText("Visualizar como");
+  await userEvent.selectOptions(
+    screen.getByLabelText("Visualizar como"),
+    "ALUNO",
+  );
+  await screen.findByText("Falha ao mudar visualização");
+  expect(session?.viewRole).toBeUndefined();
+  fail = 401;
+  await userEvent.selectOptions(
+    screen.getByLabelText("Visualizar como"),
+    "ALUNO",
+  );
+  expect(
+    await screen.findByRole("heading", {
+      name: "Seu próximo projeto começa aqui.",
+    }),
+  ).toBeTruthy();
+});
+it("ao perder administrador na gestão de usuários, sai da área administrativa", async () => {
+  session = { ...student, id: 4, role: "ADMIN" };
+  window.history.replaceState(null, "", "/administracao");
+  override = (url, init) => {
+    if (url === "/api/admin/users")
+      return response([
+        { ...session, active: true },
+        { ...teacher, id: 5, role: "ADMIN", active: true },
+      ]);
+    if (url === "/api/admin/users/4/role" && init?.method === "PATCH") {
+      session = { ...session!, role: "ALUNO" };
+      return response({ ...session, active: true });
+    }
+    return undefined;
+  };
+  render(<App />);
+  await screen.findByRole("heading", { name: "Administrar usuários" });
+  await userEvent.selectOptions(
+    await screen.findByLabelText("Perfil de Marina Oliveira"),
+    "ALUNO",
+  );
+  await userEvent.click(
+    screen.getByRole("button", { name: "Salvar perfil de Marina Oliveira" }),
+  );
+  await screen.findByRole("button", { name: "Meu projeto" });
+  expect(
+    screen.queryByRole("button", { name: "Administrar usuários" }),
+  ).toBeNull();
+});
+
+it("abre gestão de avaliadores e feedback sem colisões na identidade dos componentes", async () => {
+  session = teacher;
+  available = projects;
+  window.history.replaceState(null, "", "/projetos/1");
+  const errors = vi.spyOn(console, "error").mockImplementation(() => undefined);
+  render(<App />);
+  await screen.findByRole("heading", { name: "Avaliadores do projeto" });
+  await screen.findByLabelText("Mensagem", { exact: true });
+  expect(errors.mock.calls.flat().join(" ")).not.toMatch(
+    /same key|unique.*key/i,
+  );
+});
+
+it("HU05: submissão atualiza o estado do projeto e recarrega o bloqueio dos materiais", async () => {
+  window.history.replaceState(null, "", "/projetos/2");
+  let status = "PREPARACAO";
+  const ruleRequests: string[] = [];
+  override = (url, init) => {
+    if (url.endsWith("/material-rules")) {
+      ruleRequests.push(status);
+      return response(
+        status === "PREPARACAO"
+          ? materialRules
+          : { ...materialRules, lock: "PROJECT_LOCKED", canUpload: false },
+      );
+    }
+    if (url.endsWith("/submission-checklist"))
+      return response({
+        projectStatus: status,
+        rubricVersionId: 1,
+        items: [{ kind: "RELATORIO", label: "Relatório do projeto", materialId: 1, versionId: 2, ok: true }],
+        blockedBy: status === "PREPARACAO" ? null : "SUBMISSION_LOCKED",
+        canSubmit: status === "PREPARACAO",
+      });
+    if (url.endsWith("/submissions") && init?.method === "POST") {
+      status = "EM_AVALIACAO";
+      return response({ id: 1, round: 1, status: "SUBMETIDA" }, 201);
+    }
+    return undefined;
+  };
+  render(<App />);
+  await userEvent.click(await screen.findByRole("button", { name: "Submeter para avaliação" }));
+  await userEvent.click(screen.getByRole("button", { name: "Confirmar submissão" }));
+  expect(await screen.findByText(/A rodada 1 está em avaliação/)).toBeDefined();
+  expect(screen.getByText("Em avaliação", { selector: ".status-pill" })).toBeDefined();
+  expect(await screen.findByText(/Os materiais ficam bloqueados enquanto/)).toBeDefined();
+  expect(ruleRequests).toEqual(["PREPARACAO", "EM_AVALIACAO"]);
 });

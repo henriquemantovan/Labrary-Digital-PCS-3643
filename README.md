@@ -1,10 +1,10 @@
 # Labrary Digital
 
-Autenticação institucional: [Senha Única USP e implantação por migrations](docs/senha-unica-usp.md). Os arquivos `schema.sql` são o snapshot histórico já implantado; novas instalações e alterações usam `pnpm db:deploy`.
+Autenticação e administração: [SSO Google, perfis, PostgreSQL e migrations](docs/login-google.md). Os arquivos `schema.sql` são o snapshot histórico já implantado; novas instalações e alterações usam `pnpm db:deploy`.
 
 > Documento de definição do projeto e planejamento Scrum — PCS3643, Laboratório de Engenharia de Software I.
 > Plataforma voltada aos projetos de Laboratório de Projeto de Sistemas Digitais.
-> Versão inicial: 04/10/2026. Situação atual: base MVC/REST e HU01 implementadas localmente; revisão da equipe pendente.
+> Versão inicial: 04/10/2026. Situação atual: base MVC/REST, HU01, HU02 (incremento S5) e HU04 implementadas localmente; revisão da equipe pendente.
 
 **Programando com IA:** veja o [guia de desenvolvimento com IA](docs/desenvolvimento-com-ia.md), o [AGENTS.md](AGENTS.md) e as [skills compartilhadas](.agents/skills/). O fluxo inclui gerar código com testes, a própria IA executá-los, corrigir falhas e relatar os resultados.
 
@@ -30,7 +30,7 @@ Arquivos, comentários e avaliações dispersos dificultam acompanhar pendência
 - Finalização e publicação explícita de materiais autorizados.
 - Galeria pública de projetos concluídos, com busca e filtros.
 
-Histórico, favoritos, estatísticas e sugestões são complementos propostos no backlog P2. Chat em tempo real e pagamentos não fazem parte do MVP. A autenticação USP foi adicionada como ampliação do escopo: [configuração da Senha Única e migrations](docs/senha-unica-usp.md).
+Histórico, favoritos, estatísticas e sugestões são complementos propostos no backlog P2. Chat em tempo real e pagamentos não fazem parte do MVP. O SSO Google foi adicionado ao escopo: [configuração de login e migrations](docs/login-google.md).
 
 ### Alinhamento com o enunciado geral
 
@@ -49,7 +49,7 @@ O tema é uma **adaptação proposta de plataforma de conteúdo digital**. O enu
 | Receita, custos de conteúdo e infraestrutura | Não incorporados como funcionalidade; validar dispensa ou criar histórias adicionais |
 | MVC, REST, testes, cobertura, CI e instalação | Mantidos no planejamento técnico |
 
-**Pendência acadêmica:** validar tema, substituições e dispensas com o professor antes de considerar o escopo aprovado. Não interpretar esta tabela como atendimento integral aos requisitos originais.
+**Pendência acadêmica:** validar tema, substituições e dispensas com o professor antes de considerar o escopo aprovado. A [solicitação preparada para #20](docs/escopo-academico.md) registra o que precisa de decisão; envio e resposta permanecem pendentes. Não interpretar esta tabela como atendimento integral aos requisitos originais.
 
 ## 2. Nome do sistema e do grupo
 
@@ -106,15 +106,17 @@ As funcionalidades foram registradas como issues no formato **Como [papel], eu g
 
 **Como professor, eu gostaria de cadastrar grupos, integrantes e projetos da turma, de forma que possa organizar as entregas.**
 
-- Prioridade P0; sprint sugerida 3; 5 pontos; responsável @yuhangf2333.
+- Prioridade P0; sprint sugerida 3; continuidade na S5 (#32); 5 pontos; responsável @henriquemantovan.
 - Dependências: HU01.
 
 **Critérios de aceitação:**
 
-- [ ] Projeto tem título, descrição, turma, ano e categoria.
-- [ ] Professor vincula integrantes e avaliadores à turma/projeto.
-- [ ] Aluno vê somente projetos do próprio grupo na área de entrega.
-- [ ] Alterações de vínculos preservam o histórico.
+- [x] Projeto tem título, descrição, turma, ano e categoria.
+- [x] Professor vincula integrantes e avaliadores à turma/projeto.
+- [x] Aluno vê somente projetos do próprio grupo na área de entrega.
+- [x] Alterações de vínculos preservam o histórico.
+
+**Estado local:** incremento da S5 pronto para revisão, com grupos/vínculos persistentes no PostgreSQL (Google) e em arquivo privado (local), histórico, autorização e formulários. A extração do PR #26 conserva a autoria do trabalho de Yuhang; HU03 segue separada. Veja [HU02 e composição](docs/hu02.md), [arquitetura revisada](docs/arquitetura-semana-5.md), [contrato C4](docs/contratos/c4-publicacao.md) e [pendência acadêmica #20](docs/escopo-academico.md). Revisão da equipe, demonstração e aceite não são presumidos.
 
 ### [HU03 — Configurar requisitos e critérios de avaliação](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/3)
 
@@ -139,10 +141,12 @@ As funcionalidades foram registradas como issues no formato **Como [papel], eu g
 
 **Critérios de aceitação:**
 
-- [ ] Arquivos válidos são persistidos e vinculados ao projeto; nenhum acesso público é criado na etapa de rascunho.
-- [ ] Formato e tamanho são validados no servidor; falhas exibem mensagem e permitem tentar novamente.
-- [ ] Tela mostra progresso, data, autor e versão; substituição mantém histórico.
-- [ ] Envio é permitido somente ao próprio grupo, enquanto a entrega está aberta.
+- [x] Arquivos válidos são persistidos e vinculados ao projeto; nenhum acesso público é criado na etapa de rascunho.
+- [x] Formato e tamanho são validados no servidor; falhas exibem mensagem e permitem tentar novamente.
+- [x] Tela mostra progresso, data, autor e versão; substituição mantém histórico.
+- [x] Envio é permitido somente ao próprio grupo, enquanto a entrega está aberta.
+
+**Estado local:** implementação e testes da HU04 prontos para revisão. Formatos e limites usam uma política padrão até a HU03 permitir a configuração pelo professor. Regras, segurança, limitações e roteiro de validação em [docs/hu04.md](docs/hu04.md). Aprovação por outro integrante, refinamento com o grupo e demonstração da sprint ainda pendentes.
 
 ### [HU05 — Concluir a entrega do projeto](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/5)
 
@@ -172,7 +176,7 @@ As funcionalidades foram registradas como issues no formato **Como [papel], eu g
 - [x] Projetos não atribuídos ficam inacessíveis ao avaliador.
 - [ ] Nenhuma nota ou comentário privado aparece na galeria pública.
 
-**Estado local:** acompanhamento de metadados implementado para revisão; filtros combináveis, pendências e histórico de versões disponíveis. Abrir conteúdo de arquivos depende da HU04; o critério da galeria pública será validado com HU11/HU12. Regras, limites e roteiro em [docs/hu06.md](docs/hu06.md). Revisão por outro integrante, refinamento e demonstração permanecem pendentes; a issue não está Done.
+**Estado local:** acompanhamento de metadados implementado para revisão; filtros combináveis, pendências e histórico de versões disponíveis. O conteúdo dos arquivos abre pelo download protegido da HU04; o critério da galeria pública será validado com HU11/HU12. Regras, limites e roteiro em [docs/hu06.md](docs/hu06.md). Revisão por outro integrante, refinamento e demonstração permanecem pendentes; a issue não está Done.
 
 ### [HU07 — Trocar feedback no projeto](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/7)
 
@@ -249,7 +253,11 @@ As funcionalidades foram registradas como issues no formato **Como [papel], eu g
 - [ ] Somente metadados e materiais autorizados tornam-se públicos; notas e feedback continuam privados.
 - [ ] Professor pode retirar publicação preservando conteúdo e histórico privados.
 
+**Incremento S6 (#37):** serviço/API e controles docentes de finalização, registro da autorização do grupo, seleção de versões, publicação e retirada, com auditoria persistente e acesso público C4/Range. As ações de finalização/publicação permanecem desabilitadas no entrypoint até os adapters reais C1 (Enzo #38) e C3 (Kauê #41) estarem conectados. Os testes com doubles não representam aceite integrado. Veja [HU11, integração e evidências](docs/hu11.md).
+
 ### [HU12 — Explorar projetos publicados](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/12)
+
+**Incremento S5 (#35):** catálogo/detalhe responsivos, busca e filtros combinados sobre C4, demonstráveis em `/demo/acervo` somente no servidor de desenvolvimento. Cliente HTTP separado, sem fallback de fixtures em produção. Publicação real e aceite permanecem na S6/S7. [Demonstração, regressão HU06 e evidências](docs/catalogo-semana-5.md).
 
 **Como visitante ou usuário, eu gostaria de buscar e visualizar projetos publicados, de forma que possa conhecer os trabalhos concluídos.**
 
@@ -499,9 +507,9 @@ Preparação e Ajustes permitem edição conforme prazo/reabertura. Em avaliaç�
 
 **Baseline da TEC02 (15/10/2026):** Node.js 24.19.0, pnpm 11.25.0, React 19.3.1, Vite 8.3.4, Express 5.3.0, TypeScript 5.9.3 e Prisma 7.10.0. Os manifests fixam versões diretas; o lockfile fixa a árvore completa. O frontend e a API TypeScript têm build configurado. A API oferece `GET /api/health`, listagem/criação/detalhe de projetos e listagem/registro de metadados de materiais. O [contrato inicial](docs/api-inicial.md) descreve rotas, validações, envelopes e erros. A HU01 acrescenta login, sessão com cookie HttpOnly, autorização por vínculo e uma área por perfil em tema escuro roxo/rosa. O [registro da HU01](docs/hu01.md) detalha regras e limitações.
 
-**Instalação e desenvolvimento local:** requer Node.js 24.19.0 e pnpm 11.25.0. Na raiz do repositório, copie `.env.example` para `.env`, instale com `pnpm install --frozen-lockfile` e inicie as duas aplicações com `pnpm dev`. O frontend fica em `http://localhost:5173` e encaminha `/api` para a API em `http://localhost:3000`. `pnpm build` compila os workspaces e `pnpm test` executa os testes da API e da interface com cobertura mínima de 85% nas quatro métricas. `pnpm test:e2e` verifica os três perfis em desktop e celular (instale Chromium com `pnpm exec playwright install --with-deps chromium`). As contas de demonstração e o uso de `AUTH_USERS_FILE` estão em [docs/hu01.md](docs/hu01.md). A API persiste projetos, metadados e mensagens em arquivo privado desde a HU07 (um processo escritor; configuração em [docs/hu07.md](docs/hu07.md)); sessões continuam em memória. No modo USP, identidades e vínculos de autorização são persistidos/lidos no PostgreSQL. O conteúdo dos arquivos de materiais ainda não é armazenado. `pnpm db:generate` continua disponível para gerar o cliente Prisma, sem ser necessário para executar a HU01.
+**Instalação e desenvolvimento local:** requer Node.js 24.19.0 e pnpm 11.25.0. Na raiz do repositório, copie `.env.example` para `.env`, instale com `pnpm install --frozen-lockfile` e inicie as duas aplicações com `pnpm dev`. O frontend fica em `http://localhost:5173` e encaminha `/api` para a API em `http://localhost:3000`. `pnpm build` compila os workspaces e `pnpm test` executa os testes da API e da interface com cobertura mínima de 85% nas quatro métricas. `pnpm test:e2e` verifica os três perfis em desktop e celular (instale Chromium com `pnpm exec playwright install --with-deps chromium`). As contas de demonstração e o uso de `AUTH_USERS_FILE` estão em [docs/hu01.md](docs/hu01.md). A API persiste projetos, metadados e mensagens em arquivo privado desde a HU07 (um processo escritor; configuração em [docs/hu07.md](docs/hu07.md)); no modo local, sessões ficam em memória; no modo Google, identidades, sessões e tentativas OAuth são persistidas no PostgreSQL. Os bytes dos materiais ficam em armazenamento privado (`UPLOAD_DIR`) desde a HU04. Grupos/vínculos e seu histórico usam PostgreSQL no modo Google e `GROUP_DATA_FILE` no modo local; veja [HU02](docs/hu02.md). `pnpm db:generate` continua disponível para gerar o cliente Prisma, sem ser necessário para executar a HU01.
 
-O DER está em [docs/diagrama-er.md](docs/diagrama-er.md), o diagrama de classes inicial em [docs/diagrama-classes.md](docs/diagrama-classes.md) e o model Prisma em `packages/api/prisma/schema.prisma`. O SQL de TEC01 permanece em `db/schema.sql` como snapshot histórico. A evolução usa migrations versionadas do Prisma; identidades USP usam o adapter PostgreSQL. Consulte o [guia de migrations](docs/senha-unica-usp.md).
+O DER está em [docs/diagrama-er.md](docs/diagrama-er.md), o diagrama de classes inicial em [docs/diagrama-classes.md](docs/diagrama-classes.md) e o model Prisma em `packages/api/prisma/schema.prisma`. O SQL de TEC01 permanece em `db/schema.sql` como snapshot histórico. A evolução usa migrations versionadas do Prisma; identidades Google e sessões usam o adapter PostgreSQL. Consulte o [guia de migrations](docs/login-google.md).
 
 **CI:** o workflow [Build e testes](.github/workflows/ci.yml) executa build, cobertura e testes de navegador. Sua primeira execução remota depende da publicação das alterações; não foram inseridos badges com resultados presumidos.
 
@@ -518,9 +526,9 @@ pnpm db:deploy
 pnpm db:status
 ```
 
-As migrations criam os objetos dentro de transações. Em banco onde `schema.sql` já foi aplicado, registre primeiro a baseline conforme o [guia de implantação](docs/senha-unica-usp.md). Não inclui seed nem armazena arquivos binários; os arquivos ficam em armazenamento privado e `storage_key` guarda sua referência. A HU01 impõe autorização por perfil e vínculo. A aplicação ainda deverá impor outras regras que dependem de múltiplas linhas, como soma dos pesos da rubrica igual a 100% e compatibilidade de papel.
+As migrations criam os objetos dentro de transações. Em banco onde `schema.sql` já foi aplicado, registre primeiro a baseline conforme o [guia de implantação](docs/login-google.md). Não inclui seed nem armazena arquivos binários; os arquivos ficam em armazenamento privado e `storage_key` guarda sua referência. A HU01 impõe autorização por perfil e vínculo. A aplicação ainda deverá impor outras regras que dependem de múltiplas linhas, como soma dos pesos da rubrica igual a 100% e compatibilidade de papel.
 
-O model Prisma descreve as entidades do MVP. O modo USP consulta PostgreSQL para identidades e vínculos de autorização; projetos, metadados e mensagens usam o adapter de arquivo privado da HU07, enquanto sessões usam memória. `pnpm db:test` verifica instalação limpa e adoção do schema existente em PostgreSQL real e descartável. A validação contra o serviço oficial da USP exige credenciais de consumidor e callback cadastrados.
+A [revisão da arquitetura na S5](docs/arquitetura-semana-5.md) distingue os adapters efetivos do modelo planejado. O model Prisma descreve as entidades do MVP. O modo Google consulta PostgreSQL para identidades, vínculos de autorização, sessões e tentativas OAuth; projetos, metadados e mensagens usam o adapter de arquivo privado da HU07. `pnpm db:test` verifica instalação limpa e adoção do schema existente em PostgreSQL real e descartável. A validação no Google real exige Client ID, Client Secret e URI de redirecionamento cadastrados no Google Cloud.
 
 ### Visão dos componentes e separação MVC
 
@@ -558,7 +566,7 @@ A View apresenta dados e captura ações. Controllers validam requisições, aut
 
 ### Contratos REST do MVP
 
-A API inicial implementa health check, consulta/criação de projetos e registro/listagem de metadados de materiais; o [contrato detalhado e os exemplos de erro](docs/api-inicial.md) identificam o escopo atual. As demais rotas abaixo são previstas para histórias futuras.
+A API inicial implementa health check, consulta/criação de projetos e registro/listagem de metadados de materiais; o [contrato detalhado e os exemplos de erro](docs/api-inicial.md) identificam o escopo atual. As demais rotas abaixo são previstas para histórias futuras; grupos/vínculos já usam as rotas implementadas por turma e por projeto documentadas na HU02 e no contrato detalhado.
 
 | Método e rota | Finalidade |
 | --- | --- |
@@ -593,3 +601,7 @@ A API inicial implementa health check, consulta/criação de projetos e registro
 | Tecnologias | Seção 8; versões a fixar na implementação |
 | Arquitetura e banco | Seção 9; MVC/REST, [DER](docs/diagrama-er.md), [classes](docs/diagrama-classes.md), Prisma e [schema PostgreSQL](db/schema.sql) |
 | Compartilhamento com professor | Compartilhar link com higoramario conforme aula |
+
+## Incremento de Kauê — 12/11/2026
+
+Cálculo/CSV e contrato C3 da #36 implementados; API/tabela docente, liberação persistida e preparação de instalação da #41 disponíveis contra porta C2 injetável. A integração com avaliações reais, revisão e demonstração continuam pendentes. Consulte [C3 e limites da integração](docs/contratos/c3-consolidacao.md) e [instalação/seed e aceitação](docs/instalacao-e-aceitacao.md). `pnpm demo` inicia um ambiente local isolado com as contas de demonstração existentes. [Evidências e dependências da entrega](docs/entrega-kaue-2026-11-12.md). Esses incrementos não marcam HU09 ou a aceitação final como concluídas.

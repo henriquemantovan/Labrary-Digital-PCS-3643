@@ -1,0 +1,24 @@
+import { afterEach, expect, it, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { ProjectAssessment } from "./ProjectAssessment";
+import type { User } from "./api";
+const user: User = { id: 3, fullName: "Professor", email: "p@example.test", role: "PROFESSOR" };
+afterEach(() => { vi.unstubAllGlobals(); });
+it("abre rubricas sob demanda e permite apenas leitura para aluno", async () => {
+  const fetch = vi.fn(async () => new Response(JSON.stringify({ data: [] })));
+  vi.stubGlobal("fetch", fetch);
+  const view = render(<ProjectAssessment projectId={1} user={user} expired={vi.fn()} />);
+  expect(fetch).not.toHaveBeenCalled();
+  const rubricButton = screen.getByRole("button", { name: "Requisitos e rubrica" });
+  await userEvent.click(rubricButton);
+  expect(await screen.findByText(/Nenhuma rubrica configurada/)).toBeDefined();
+  expect((rubricButton).getAttribute("aria-expanded")).toBe("true");
+  expect(screen.getByRole("button", { name: "Criar nova versão da rubrica" })).toBeDefined();
+  await userEvent.click(rubricButton);
+  expect(screen.queryByText(/Nenhuma rubrica configurada/)).toBeNull();
+  view.rerender(<ProjectAssessment projectId={1} user={{ ...user, role: "ALUNO" }} expired={vi.fn()} />);
+  await userEvent.click(rubricButton);
+  expect(await screen.findByText(/Nenhuma rubrica configurada/)).toBeDefined();
+  expect(screen.queryByRole("button", { name: "Criar nova versão da rubrica" })).toBeNull();
+});

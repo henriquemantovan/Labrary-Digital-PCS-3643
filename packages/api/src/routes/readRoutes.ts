@@ -17,12 +17,12 @@ function present(p: PublicProject) {
 }
 export function createReadRouter(providers: ReadProviders, repository: ProjectRepository, auth: AuthRepository) {
   const router = Router();
-  router.get("/projects/:projectId/result", async (req, res) => {
+  router.get("/projects/:projectId/result", async (req, res, next) => {
+    if (!providers.result) return next();
     const projectId = id.parse(req.params.projectId);
     const project = repository.get(projectId);
     const user = res.locals.user;
     if (!project || user.role !== "ALUNO" || !createPermissions(auth).canRead(user, project)) throw missing();
-    if (!providers.result) throw unavailable();
     const result = await providers.result.get(projectId);
     if (!result) throw unavailable();
     if (result.projectId !== projectId || result.groupId !== project.groupId) throw missing();

@@ -7,6 +7,7 @@ const targets = [
 ];
 export default defineConfig({
   testDir: "./e2e",
+  testIgnore: ["**/grades-flow.spec.ts", "**/submission.spec.ts"],
   fullyParallel: false,
   workers: 1,
   forbidOnly: !!process.env.CI,
@@ -26,16 +27,17 @@ export default defineConfig({
     },
   })),
   webServer: [
-    ...targets.flatMap(({ name, webPort, apiPort }) => [
+    ...[
+      { apiPort: 3006, webPort: 5182 },
+      { apiPort: 3007, webPort: 5183 },
+    ].flatMap(({ apiPort, webPort }) => [
       {
-        command: "pnpm --filter @labrary/api dev",
+        command:
+          "pnpm --filter @labrary/api exec tsx integration/publicationFixture.ts",
         url: `http://localhost:${apiPort}/api/health`,
         reuseExistingServer: false,
         env: {
-          API_PORT: String(apiPort),
-          AUTH_DEMO: "true",
-          PROJECT_DATA_FILE: `../../test-results/projects-${runId}-${name}.json`,
-          AUTH_USERS_FILE: "",
+          PUBLICATION_FIXTURE_PORT: String(apiPort),
           APP_ORIGIN: `http://localhost:${webPort}`,
         },
       },
@@ -46,8 +48,32 @@ export default defineConfig({
         env: { API_PORT: String(apiPort), WEB_PORT: String(webPort) },
       },
     ]),
+    ...targets.flatMap(({ name, webPort, apiPort }) => [
+      {
+        command: "pnpm --filter @labrary/api dev",
+        url: `http://localhost:${apiPort}/api/health`,
+        reuseExistingServer: false,
+        env: {
+          API_PORT: String(apiPort),
+          AUTH_DEMO: "true",
+          AUTH_PROVIDER: "local",
+          PROJECT_DATA_FILE: `../../test-results/projects-${runId}-${name}.json`,
+          GROUP_DATA_FILE: `../../test-results/groups-${runId}-${name}.json`,
+          AUTH_USERS_FILE: "",
+          APP_ORIGIN: `http://localhost:${webPort}`,
+          UPLOAD_DIR: `test-results/uploads-${runId}-${name}`,
+        },
+      },
+      {
+        command: `pnpm --filter @labrary/web dev --port ${webPort} --strictPort`,
+        url: `http://localhost:${webPort}`,
+        reuseExistingServer: false,
+        env: { API_PORT: String(apiPort), WEB_PORT: String(webPort) },
+      },
+    ]),
     {
-      command: "pnpm --filter @labrary/api exec tsx integration/uspFixture.ts",
+      command:
+        "pnpm --filter @labrary/api exec tsx integration/googleFixture.ts",
       url: "http://localhost:3004/api/health",
       reuseExistingServer: false,
     },

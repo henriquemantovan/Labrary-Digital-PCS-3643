@@ -19,7 +19,7 @@ export function GroupResult({ projectId, expired }: { projectId: number; expired
   return <section className="detail-section" aria-label="Resultado do grupo">
     <h2>Resultado do grupo</h2>
     {error ? <><p role="alert">{error}</p><button onClick={() => setRevision(revision + 1)}>Tentar novamente</button></> : !result ? <p role="status">Carregando resultado…</p> : <>
-      <p>Rodada {result.round} · {result.received} de {result.expected} avaliações · {result.pending} pendentes</p>
+      {result.round > 0 && <p>Rodada {result.round} · {result.received} de {result.expected} avaliações · {result.pending} pendentes</p>}
       {!result.released ? <p role="status">Resultado bloqueado. Aguardando liberação pelo professor.</p> : <>
         <h3>{result.complete ? "Resultado liberado" : "Resultado parcial"}</h3>
         <p>Nota: {result.grade === null ? "Pendente" : result.grade.toFixed(2)}</p>

@@ -45,3 +45,7 @@ Execução local com Node 24.19.0 e pnpm 11.25.0 (ferramentas preparadas em `/tm
 Correções durante validação: mock HTTP passou a criar uma Response por chamada; asserções adaptadas aos matchers existentes; chaves React distintas para resultado/feedback; seletor E2E do alerta delimitado à seção de feedback; requisição de isolamento usa sessão do navegador. A primeira execução Supertest foi bloqueada por `listen EPERM` no sandbox; a execução autorizada fora dele passou.
 
 Não confundir testes com doubles dos produtores com aceite integrado de HU10/HU12.
+
+## Atualização na integração com a main
+
+O merge do PR #54 preserva o acervo integrado da main (`Catalog`, `/api/catalog` e bytes autorizados), substituindo o consumidor provisório de acervo descrito acima. Seus testes de filtros, detalhe, vídeo, erros e publicação permanecem em `Catalog.test.tsx` e nos E2E de catálogo/publicação. A tela `GroupResult` adapta o contrato atual da HU09 (`resultReleased`, rubrica e avaliações), sem exibir valores antes da liberação. O contrato experimental `readProviders` continua disponível por injeção; sem override de resultado, a rota da HU09 prevalece. A integração real de avaliações persistidas permanece dependente do produtor C2.
