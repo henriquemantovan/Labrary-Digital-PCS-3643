@@ -1792,6 +1792,7 @@ input[type="file"]::file-selector-button {
   }
   .sidebar nav {
     flex-direction: row;
+    flex-wrap: wrap;
     margin-top: 22px;
     gap: 7px;
   }
