@@ -63,7 +63,7 @@ O teste cria e remove bancos próprios para instalação limpa e adoção da bas
 
 ## Backup e restauração de teste
 
-Pare o único processo escritor e copie conjuntamente o arquivo `PROJECT_DATA_FILE`, `GROUP_DATA_FILE` (no modo local), `RUBRIC_DATA_FILE`, `RESULT_RELEASE_DATA_FILE` e a pasta `UPLOAD_DIR`, conservando permissões privadas. No Google, inclua backup PostgreSQL de identidades, vínculos e sessões. Não publique essas pastas. Restaure em outro diretório de teste, configure os caminhos e verifique arquivos, versões, feedback e decisões após reinício. O [procedimento HU04](hu04.md) trata snapshots antigos e materiais sem bytes; não remova snapshots como migração.
+Pare o único processo escritor e copie conjuntamente o arquivo `PROJECT_DATA_FILE`, `GROUP_DATA_FILE` (no modo local), `RUBRIC_DATA_FILE`, `RESULT_RELEASE_DATA_FILE` e a pasta `UPLOAD_DIR`, conservando permissões privadas. No Google, inclua backup PostgreSQL de identidades, vínculos e sessões. Não publique essas pastas. Restaure em outro diretório de teste, configure os caminhos e verifique arquivos, versões, feedback e decisões após reinício. O [procedimento HU04](hu04.md) trata snapshots antigos e materiais sem bytes; não remova snapshots como migração. A restauração de projetos, rubricas e uploads a partir de outro diretório tem teste automatizado em `packages/api/src/repositories/backupRestore.test.ts` ([C1](contratos/c1-submissao.md#persistência)); ele não substitui o ensaio manual com o entrypoint.
 
 ## Roteiro e divisão de evidências
 

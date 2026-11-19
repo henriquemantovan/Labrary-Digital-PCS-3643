@@ -58,6 +58,14 @@ As rodadas ficam no campo `submissions` do mesmo arquivo privado de projetos (`P
 
 Observação para demonstrações: no seed local, o projeto 1 começa em `EM_AVALIACAO` sem nenhuma rodada. Use o projeto 2 (`PREPARACAO`) para o fluxo completo.
 
+`repositories/backupRestore.test.ts` copia arquivos de projetos, rubricas e uploads para outro diretório, apaga o original e confere, após recriar a aplicação: rodadas, snapshots, versões, bytes, bloqueio, continuação dos IDs e a decisão `FINALIZADO` da HU11 gravada no mesmo arquivo. Também cobre cópia sem `uploads` (metadados preservados, download `404 FILE_NOT_FOUND`) e arquivo de projetos corrompido.
+
+## Adapter para a publicação (HU11)
+
+`services/submissionProvider.ts` exporta `createSubmissionProvider(repository)`, que implementa `PublicationProviders["submissions"]` ([HU11](../hu11.md#integração-de-domínio-para-enzo-e-kauê)). `latest(projectId)` devolve uma cópia da rodada de maior número persistida, ou `undefined` se o projeto não tiver rodadas. Não filtra por estado: rodada `DEVOLVIDA` é entregue como está e o serviço da HU11 recusa finalizá-la (`409 PUBLICATION_NOT_READY`).
+
+O adapter ainda **não** é injetado em `server.ts`: a porta da HU11 exige também o provedor de completude das avaliações (Kauê, #41), e a composição no entrypoint é feita por Henrique (#42). `services/submissionProvider.test.ts` verifica o adapter e a finalização a partir de uma rodada real; nesse teste, só a completude C3 é dublê.
+
 ## Interface
 
 `packages/web/src/Submission.tsx` (`SubmissionPanel`) aparece no detalhe do projeto, abaixo dos materiais, para todos que leem o projeto. Mostra o checklist (presente com versão, ausente ou fora do formato/tamanho), o motivo do bloqueio (`blockedBy`) e o histórico de rodadas com link de download de cada versão submetida. O aluno do grupo vê **Submeter para avaliação** com confirmação; o professor da turma ou ADMIN vê **Devolver para ajustes** quando a última rodada está `SUBMETIDA`. O `clientSubmissionId` é reutilizado quando o envio falha por rede e descartado quando a API responde. Depois de submeter ou devolver, a tela atualiza o estado do projeto e recarrega as regras de upload. O fluxo completo está em `e2e/submission.spec.ts` (desktop e mobile).
