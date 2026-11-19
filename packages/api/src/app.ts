@@ -37,6 +37,9 @@ import {
   ResultReleaseRepository,
 } from "./repositories/resultReleaseRepository.js";
 import { createGradeRouter } from "./routes/gradeRoutes.js";
+import type { EvaluationRepository } from "./repositories/evaluationRepository.js";
+import { createEvaluationRouter } from "./routes/evaluationRoutes.js";
+import { createEvaluationService } from "./services/evaluationService.js";
 
 import { GoogleAuthOptions } from "./controllers/googleAuthController.js";
 
@@ -51,6 +54,7 @@ export interface AppOptions {
   publicationProviders?: PublicationProviders;
 
   evaluations?: EvaluationProvider;
+  evaluationRepository?: EvaluationRepository;
   resultReleases?: ResultReleaseRepository;
   rubrics?: RubricRepository;
   groups?: GroupRepository;
@@ -77,6 +81,8 @@ export function createApp(options: AppOptions = {}) {
   const now = options.now ?? Date.now;
   const storage = options.storage ?? createDiskStorage(".uploads");
   const rubrics = options.rubrics ?? createMemoryRubricRepository();
+  const evaluationService = options.evaluationRepository &&
+    createEvaluationService(repository, auth, options.evaluationRepository, now);
   app.disable("x-powered-by");
   app.use("/api", (_request, response, next) => {
     response.set({
@@ -135,12 +141,13 @@ export function createApp(options: AppOptions = {}) {
       repository,
       auth,
       options.resultReleases ?? createResultReleaseRepository(),
-      options.evaluations,
+      options.evaluations ?? evaluationService,
       now,
     ),
   );
   app.use("/api", createRubricRouter(repository, auth, rubrics, now));
   app.use("/api", createSubmissionRouter(repository, auth, rubrics, now));
+  if (evaluationService) app.use("/api", createEvaluationRouter(evaluationService));
   app.use(
     "/api",
     createGroupRouter(

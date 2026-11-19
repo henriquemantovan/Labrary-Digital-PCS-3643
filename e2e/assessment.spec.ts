@@ -35,7 +35,9 @@ test("HU03 configura requisitos pela API real e preserva versões", async ({ pag
   const rules = (await response.json()).data.rules;
   expect(rules.filter((rule: { required: boolean }) => rule.required)).toHaveLength(3);
   expect(rules[0].dueAt).toMatch(/^2099-11-/);
-  await expect(page.getByRole("button", { name: "Avaliações por rubrica" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Avaliações por rubrica" }).click();
+  await expect(page.getByRole("region", { name: "Avaliações por rubrica" }))
+    .toContainText("Nenhuma rodada submetida ainda.");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: `test-results/rubricas-${test.info().project.name}.png`, fullPage: true });
 });
