@@ -414,3 +414,12 @@ Renderizar **um único** `nav[aria-label="Navegação principal"]` e **um único
 - [ ] **Step 4:** Na raiz: `pnpm build`, `pnpm test` (cobertura ≥ 85% nas quatro métricas da API e da web) e `pnpm test:e2e` (desktop e mobile). Todos verdes. Diferenciar falha preexistente de regressão.
 - [ ] **Step 5:** Capturas finais de todas as telas em 1440px e 390px com as três contas; checar foco por teclado na navegação, formulário de login e filtros; checar ausência de rolagem horizontal da página em 390px (`document.documentElement.scrollWidth <= innerWidth`).
 - [ ] **Step 6: Commit** — `style(web): administração e remoção do CSS legado`.
+
+---
+
+## Notas de execução (19/11/2026)
+
+- **Ganchos de teste por classe.** Alguns testes localizam elementos por classe CSS: `.status-pill` (unitário e E2E), `.material-card`, `.submission-rounds` (E2E) e `.feedback` (unitário). Essas classes foram mantidas, sem estilo próprio, nos elementos equivalentes.
+- **Tarefas 6 e 7 combinadas com a remoção do CSS legado.** Os painéis usam muitos `<button>`, `<input>`, `<label>`, `<details>` e `<progress>` sem classe, estilizados antes por seletores de elemento. Em vez de reescrever cada um, `index.css` define em `@layer base` o estilo padrão desses elementos **apenas quando não têm `class`** (`:where(button):not([class])` etc.); componentes com classe continuam controlados pelos utilitários. As classes antigas compartilhadas (`secondary`, `muted`, `create-panel`…) foram trocadas por `buttonVariants()` e pelas constantes de `components/Panel.tsx`.
+- **`tailwind-merge` e URLs com espaço.** Um `bg-[url(...)]` com espaços quebrava a lista de classes e descartava `bg-card`; o chevron dos selects virou o utilitário `select-chevron` em `index.css`.
+- `Textarea`, `NativeSelect` e `Label` ficaram em `components/ui/input.tsx`; `CardTitle` não foi criado (títulos usam `panelTitle`).

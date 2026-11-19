@@ -25,7 +25,7 @@ export function Classes({
           title="Minhas turmas"
           intro="Grupos e projetos sob sua responsabilidade."
         />
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-4">
           {scope.classes.map((item) => {
             const groups = scope.groups.filter((group) => group.classId === item.id);
             return (

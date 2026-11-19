@@ -4,6 +4,8 @@ import type { Scope } from "./api";
 import { downloadGrades } from "./gradeClient";
 import type { ConsolidatedResult, GradeRow } from "./gradeClient";
 import { noticeClass } from "./components/Feedback";
+import { buttonVariants } from "./components/ui/button";
+import { cn } from "./lib/utils";
 import { buttonRow, mutedText, panelClass } from "./components/Panel";
 
 const labels = { NO_SUBMISSION: "Sem submissão", PENDING: "Pendente", PARTIAL: "Parcial", FINAL: "Final" };
@@ -70,19 +72,22 @@ export function Gradebook({ expired }: { expired: () => void }) {
     } catch (failure) { setConfirmation(null); fail(failure); }
     finally { setBusy(false); }
   }
-  return <section aria-labelledby="grades-title">
-    <h1 id="grades-title">Consolidação de notas</h1>
-    <p className={mutedText}>A nota parcial considera somente avaliações finalizadas. A liberação ao grupo exige todas as avaliações previstas.</p>
+  return <section aria-labelledby="grades-title" className="grid gap-5">
+    <header>
+    <p className="mb-2 text-xs font-medium tracking-wide text-subtle-foreground uppercase">Gestão acadêmica</p>
+    <h1 id="grades-title" className="text-2xl font-semibold tracking-tight md:text-[28px]">Consolidação de notas</h1>
+    <p className={cn(mutedText, "mt-1.5")}>A nota parcial considera somente avaliações finalizadas. A liberação ao grupo exige todas as avaliações previstas.</p>
+    </header>
     {error && <div role="alert" className={noticeClass}>{error}</div>}
-    {success && <p role="status">{success}</p>}
+    {success && <p role="status" className="rounded-lg bg-success/10 px-3.5 py-2.5 text-sm text-success">{success}</p>}
     {classes === null && !error && <p role="status">Carregando turmas…</p>}
     {classes?.length === 0 && <p>Nenhuma turma disponível.</p>}
-    {!!classes?.length && <>
-      <label htmlFor="grades-class">Turma da consolidação</label>
+    {!!classes?.length && <div className="grid max-w-md gap-1.5">
+      <label htmlFor="grades-class" className="text-sm font-medium">Turma da consolidação</label>
       <select id="grades-class" value={classId} disabled={busy} onChange={event => setClassId(event.target.value)}>
         {classes.map(item => <option key={item.id} value={item.id}>{item.name} ({item.academicYear})</option>)}
       </select>
-    </>}
+    </div>}
     <div className={buttonRow}>
       <button disabled={busy} onClick={() => setRevision(value => value + 1)}>Atualizar consolidação</button>
       <button disabled={busy || rows === null || !classId} onClick={() => void exportCsv()}>Exportar CSV</button>
@@ -90,7 +95,7 @@ export function Gradebook({ expired }: { expired: () => void }) {
     {classId && rows === null && !error && <p role="status">Carregando notas…</p>}
     {rows?.length === 0 && <p>Nenhum projeto nesta turma.</p>}
     {!!rows?.length && <div className="overflow-x-auto rounded-xl border" role="region" aria-label="Notas dos grupos" tabIndex={0}>
-      <table className="w-full border-collapse text-sm [&_td]:border-t [&_td]:px-3 [&_td]:py-2.5 [&_td]:align-top [&_th]:bg-muted [&_th]:px-3 [&_th]:py-2.5 [&_th]:text-left [&_th]:text-xs [&_th]:font-medium [&_th]:whitespace-nowrap [&_th]:text-muted-foreground">
+      <table className="w-full border-collapse text-sm [&_td]:border-t [&_td]:px-3 [&_td]:py-2.5 [&_td]:align-top [&_caption]:px-3 [&_caption]:py-2.5 [&_caption]:text-left [&_caption]:text-xs [&_caption]:font-medium [&_tbody_th]:border-t [&_tbody_th]:px-3 [&_tbody_th]:py-2.5 [&_tbody_th]:text-left [&_tbody_th]:font-medium [&_tbody_th]:whitespace-nowrap [&_thead_th]:border-t [&_thead_th]:bg-muted [&_thead_th]:px-3 [&_thead_th]:py-2.5 [&_thead_th]:text-left [&_thead_th]:text-xs [&_thead_th]:font-medium [&_thead_th]:whitespace-nowrap [&_thead_th]:text-muted-foreground [&_td]:whitespace-nowrap">
         <caption>Notas e pendências por grupo</caption>
         <thead><tr>{["Grupo", "Projeto", "Rodada", "Previstos", "Recebidos", "Pendentes", "Nota", "Situação", "Liberação"].map(label => <th key={label} scope="col">{label}</th>)}</tr></thead>
         <tbody>{rows.map(row => <tr key={row.projectId}>
@@ -104,8 +109,10 @@ export function Gradebook({ expired }: { expired: () => void }) {
     {confirmation && <section className={panelClass} aria-label="Confirmar liberação">
       <h2>Liberar resultado ao grupo?</h2>
       <p>Rodada {confirmation.result.round} · Nota {confirmation.result.grade?.toFixed(2) ?? "—"}. A liberação permite que os integrantes consultem as notas e os comentários desta rodada.</p>
+      <div className={buttonRow}>
       <button disabled={busy || !confirmation.result.allEvaluationsCompleted} onClick={() => void release()}>Confirmar liberação</button>
-      <button disabled={busy} onClick={() => setConfirmation(null)}>Cancelar</button>
+      <button className={buttonVariants({ variant: "outline", size: "sm" })} disabled={busy} onClick={() => setConfirmation(null)}>Cancelar</button>
+      </div>
     </section>}
   </section>;
 }
