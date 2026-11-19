@@ -1,5 +1,7 @@
 import type { Project, Scope } from "../api";
-import { Icon } from "../Icons";
+import { ArrowRight, BookOpen } from "lucide-react";
+import { PageHeader } from "../components/PageHeader";
+import { Button } from "../components/ui/button";
 import { Empty } from "../components/Feedback";
 import { GroupManager } from "../Groups";
 
@@ -18,36 +20,38 @@ export function Classes({
 }) {
   return (
       <>
-        <p className="eyebrow">GESTÃO ACADÊMICA</p>
-        <h1>Minhas turmas</h1>
-        <p className="page-intro">
-          Grupos e projetos sob sua responsabilidade.
-        </p>
-        <div className="class-grid">
-          {scope.classes.map((item) => (
-            <article className="class-card" key={item.id}>
-              <Icon name="book" size={28} />
-              <span className="eyebrow">{item.academicYear}</span>
-              <h2>{item.name}</h2>
-              <p>
-                {
-                  scope.groups.filter((group) => group.classId === item.id)
-                    .length
-                }{" "}
-                grupos ·{" "}
-                {
-                  projects.filter((project) => project.classId === item.id)
-                    .length
-                }{" "}
-                projetos
-              </p>
-              <ul className="group-list">
-                {scope.groups
-                  .filter((group) => group.classId === item.id)
-                  .map((group) => (
-                    <li key={group.id}>
+        <PageHeader
+          eyebrow="Gestão acadêmica"
+          title="Minhas turmas"
+          intro="Grupos e projetos sob sua responsabilidade."
+        />
+        <div className="grid gap-4 lg:grid-cols-2">
+          {scope.classes.map((item) => {
+            const groups = scope.groups.filter((group) => group.classId === item.id);
+            return (
+              <article className="flex flex-col rounded-xl border bg-card p-5" key={item.id}>
+                <div className="flex items-start gap-3">
+                  <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
+                    <BookOpen className="size-5" />
+                  </span>
+                  <div className="grid min-w-0 gap-0.5">
+                    <span className="text-xs text-subtle-foreground">{item.academicYear}</span>
+                    <h2 className="text-base font-semibold tracking-tight">{item.name}</h2>
+                    <p className="text-xs text-muted-foreground">
+                      {groups.length} grupos ·{" "}
+                      {
+                        projects.filter((project) => project.classId === item.id)
+                          .length
+                      }{" "}
+                      projetos
+                    </p>
+                  </div>
+                </div>
+                <ul className="my-4 divide-y rounded-lg border text-sm empty:hidden">
+                  {groups.map((group) => (
+                    <li key={group.id} className="flex items-center justify-between gap-3 px-3.5 py-2.5">
                       <span>{group.name}</span>
-                      <span>
+                      <span className="text-xs text-muted-foreground">
                         {projects.some(
                           (project) => project.groupId === group.id,
                         )
@@ -56,20 +60,23 @@ export function Classes({
                       </span>
                     </li>
                   ))}
-              </ul>
-              <GroupManager
-                classId={item.id}
-                onChanged={onChanged}
-                expired={expired}
-              />
-              <button
-                className="text-button"
-                onClick={() => navigate("/projetos")}
-              >
-                Gerenciar projetos <Icon name="arrow" size={16} />
-              </button>
-            </article>
-          ))}
+                </ul>
+                <GroupManager
+                  classId={item.id}
+                  onChanged={onChanged}
+                  expired={expired}
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mt-3 self-start"
+                  onClick={() => navigate("/projetos")}
+                >
+                  Gerenciar projetos <ArrowRight />
+                </Button>
+              </article>
+            );
+          })}
         </div>
         {!scope.classes.length && (
           <Empty

@@ -2,8 +2,10 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { api, ApiError } from "../api";
 import type { Project, Scope } from "../api";
-import { Icon } from "../Icons";
+import { ArrowRight } from "lucide-react";
 import { Notice } from "../components/Feedback";
+import { Button } from "../components/ui/button";
+import { fieldLabel, Input, NativeSelect, Textarea } from "../components/ui/input";
 
 export function CreateProject({
   scope,
@@ -51,25 +53,29 @@ export function CreateProject({
     }
   }
   return (
-    <section className="create-panel">
-      <h2>Novo projeto</h2>
-      {error && <Notice>{error}</Notice>}
+    <section className="mb-8 rounded-xl border bg-card p-5 md:p-6">
+      <h2 className="mb-4 text-base font-semibold tracking-tight">Novo projeto</h2>
+      {error && (
+        <div className="mb-4">
+          <Notice>{error}</Notice>
+        </div>
+      )}
       {!groups.length ? (
-        <p className="muted">
+        <p className="text-sm text-muted-foreground">
           Todos os grupos vinculados já têm projeto. Cadastre outro grupo em
           Minhas turmas.
         </p>
       ) : (
         <form onSubmit={submit}>
-          <fieldset disabled={busy}>
-            <div className="form-grid">
-              <label>
+          <fieldset disabled={busy} className="m-0 grid gap-5 border-0 p-0">
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className={fieldLabel}>
                 Título
-                <input name="title" required maxLength={200} />
+                <Input name="title" required maxLength={200} />
               </label>
-              <label>
+              <label className={fieldLabel}>
                 Grupo
-                <select name="groupId">
+                <NativeSelect name="groupId">
                   {groups.map((group) => (
                     <option key={group.id} value={group.id}>
                       {group.name} ·{" "}
@@ -79,21 +85,21 @@ export function CreateProject({
                       }
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
               </label>
-              <label>
+              <label className={fieldLabel}>
                 Categoria
-                <input name="category" required maxLength={100} />
+                <Input name="category" required maxLength={100} />
               </label>
-              <label>
+              <label className={fieldLabel}>
                 Descrição
-                <textarea name="description" maxLength={10000} rows={2} />
+                <Textarea name="description" maxLength={10000} rows={2} />
               </label>
             </div>
-            <button className="primary" type="submit">
+            <Button type="submit" className="justify-self-start">
               {busy ? "Criando…" : "Criar projeto"}
-              <Icon name="arrow" size={17} />
-            </button>
+              <ArrowRight />
+            </Button>
           </fieldset>
         </form>
       )}

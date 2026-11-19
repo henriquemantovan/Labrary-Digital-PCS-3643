@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { api, ApiError } from "../api";
 import type { Material, MaterialRules, Project, Scope, User } from "../api";
-import { Icon } from "../Icons";
+import { ArrowRight, Folder, Lock, Search, User as UserIcon } from "lucide-react";
+import { PageHeader } from "../components/PageHeader";
+import { StatusBadge } from "../components/StatusBadge";
+import { Badge } from "../components/ui/badge";
+import { Button } from "../components/ui/button";
+import { Input, NativeSelect } from "../components/ui/input";
 import { Empty, Loading, Notice } from "../components/Feedback";
 import { materialLabels, roleDescriptions, statusLabels } from "../labels";
 import { Classes } from "./Classes";
@@ -92,30 +97,31 @@ export function Dashboard({
   }, [user, detailId, revision, expired]);
   if (!knownPath)
     return (
-      <div className="empty">
-        <Icon name="lock" size={30} />
-        <h1>Página indisponível</h1>
-        <p>Este endereço não está disponível no seu espaço.</p>
-        <button className="secondary" onClick={() => navigate("/projetos")}>
+      <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed px-6 py-16 text-center">
+        <span className="grid size-11 place-items-center rounded-full bg-muted text-muted-foreground">
+          <Lock className="size-5" />
+        </span>
+        <h1 className="text-xl font-semibold tracking-tight">Página indisponível</h1>
+        <p className="text-sm text-muted-foreground">
+          Este endereço não está disponível no seu espaço.
+        </p>
+        <Button variant="outline" onClick={() => navigate("/projetos")}>
           Voltar aos projetos
-        </button>
+        </Button>
       </div>
     );
   if (loading) return <Loading />;
   if (error)
     return (
-      <div className="error-page">
+      <div className="grid gap-4">
         <Notice>{error}</Notice>
-        <div className="button-row">
-          <button
-            className="secondary"
-            onClick={() => setRevision(revision + 1)}
-          >
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => setRevision(revision + 1)}>
             Tentar novamente
-          </button>
-          <button className="text-button" onClick={() => navigate("/projetos")}>
+          </Button>
+          <Button variant="ghost" onClick={() => navigate("/projetos")}>
             Voltar aos projetos
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -155,23 +161,28 @@ export function Dashboard({
         .toLocaleLowerCase("pt-BR")
         .includes(query.toLocaleLowerCase("pt-BR")),
   );
+  const stats = [
+    { label: "Em preparação", status: "PREPARACAO", dot: "bg-info" },
+    { label: "Em avaliação", status: "EM_AVALIACAO", dot: "bg-warning" },
+    { label: "Finalizados", status: "FINALIZADO", dot: "bg-success" },
+  ];
   return (
     <>
-      <div className="page-heading">
-        <div>
-          <p className="eyebrow">SEU LABORATÓRIO DE POSSIBILIDADES</p>
-          <h1>
-            Olá, {user.fullName.split(" ")[0]}
-            <span className="greeting-dot">.</span>
-          </h1>
-          <p className="page-intro">{roleDescriptions[user.role]}</p>
-        </div>
-        {["PROFESSOR", "ADMIN"].includes(user.role) && (
-          <button className="primary" onClick={() => setCreating(!creating)}>
-            {creating ? "Fechar formulário" : "+ Novo projeto"}
-          </button>
-        )}
-      </div>
+      <PageHeader
+        eyebrow="Seu laboratório de possibilidades"
+        title={<>Olá, {user.fullName.split(" ")[0]}<span className="text-subtle-foreground">.</span></>}
+        intro={roleDescriptions[user.role]}
+        actions={
+          ["PROFESSOR", "ADMIN"].includes(user.role) && (
+            <Button
+              variant={creating ? "outline" : "default"}
+              onClick={() => setCreating(!creating)}
+            >
+              {creating ? "Fechar formulário" : "+ Novo projeto"}
+            </Button>
+          )
+        }
+      />
       {creating && (
         <CreateProject
           scope={scope}
@@ -180,13 +191,13 @@ export function Dashboard({
           onCreated={(project) => navigate(`/projetos/${project.id}`)}
         />
       )}
-      <div className="overview">
-        <div className="overview-main">
-          <span className="overview-icon">
-            <Icon name="folder" size={25} />
+      <div className="mb-10 grid gap-px overflow-hidden rounded-xl border bg-border sm:grid-cols-[1.6fr_repeat(3,1fr)]">
+        <div className="flex items-center gap-4 bg-card p-5">
+          <span className="grid size-10 place-items-center rounded-lg bg-muted text-muted-foreground">
+            <Folder className="size-5" />
           </span>
-          <div>
-            <span className="muted">
+          <div className="grid">
+            <span className="text-xs text-muted-foreground">
               {user.role === "ALUNO"
                 ? "Projetos do meu grupo"
                 : user.role === "AVALIADOR"
@@ -195,64 +206,54 @@ export function Dashboard({
                     ? "Projetos de todas as turmas"
                     : "Projetos da minha turma"}
             </span>
-            <strong>
+            <strong className="flex items-baseline gap-1.5 text-3xl font-semibold tracking-tight tabular-nums">
               {String(projects.length).padStart(2, "0")}
-              <small>projetos</small>
+              <small className="text-xs font-normal text-muted-foreground">
+                projetos
+              </small>
             </strong>
           </div>
         </div>
-        <div className="overview-stat">
-          <span className="stat-dot purple" />
-          <span>Em preparação</span>
-          <strong>
-            {
-              projects.filter((project) => project.status === "PREPARACAO")
-                .length
-            }
-          </strong>
-        </div>
-        <div className="overview-stat">
-          <span className="stat-dot pink" />
-          <span>Em avaliação</span>
-          <strong>
-            {
-              projects.filter((project) => project.status === "EM_AVALIACAO")
-                .length
-            }
-          </strong>
-        </div>
-        <div className="overview-stat">
-          <span className="stat-dot green" />
-          <span>Finalizados</span>
-          <strong>
-            {
-              projects.filter((project) => project.status === "FINALIZADO")
-                .length
-            }
-          </strong>
-        </div>
+        {stats.map((stat) => (
+          <div
+            key={stat.status}
+            className="flex items-center justify-between gap-2 bg-card px-5 py-4 sm:flex-col sm:items-start sm:justify-center"
+          >
+            <span className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span className={`size-1.5 rounded-full ${stat.dot}`} />
+              {stat.label}
+            </span>
+            <strong className="text-xl font-semibold tabular-nums">
+              {projects.filter((project) => project.status === stat.status).length}
+            </strong>
+          </div>
+        ))}
       </div>
       <section aria-labelledby="projects-title">
-        <div className="section-heading">
-          <h2 id="projects-title">
+        <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+          <h2
+            id="projects-title"
+            className="flex items-center gap-2 text-lg font-semibold tracking-tight"
+          >
             {user.role === "ALUNO" ? "Meu projeto" : "Seus projetos"}
-            <span className="count">{projects.length}</span>
+            <Badge className="tabular-nums">{projects.length}</Badge>
           </h2>
-          <span className="muted section-caption">
+          <span className="text-xs text-subtle-foreground">
             Cada ideia tem um próximo passo.
           </span>
         </div>
-        <div className="filter-bar">
-          <div className="search-field">
-            <Icon name="search" size={18} />
-            <input
+        <div className="mb-6 grid gap-2 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr]">
+          <div className="relative sm:col-span-2 lg:col-span-1">
+            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-subtle-foreground" />
+            <Input
               aria-label="Buscar projetos"
               placeholder="Buscar por projeto, categoria ou grupo…"
+              className="pl-9"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
             />
           </div>
-          <select
+          <NativeSelect
             aria-label="Filtrar por estado"
             value={status}
             onChange={(event) => setStatus(event.target.value)}
@@ -263,8 +264,8 @@ export function Dashboard({
                 {label}
               </option>
             ))}
-          </select>
-          <select
+          </NativeSelect>
+          <NativeSelect
             aria-label="Filtrar por grupo"
             value={group}
             onChange={(event) => setGroup(event.target.value)}
@@ -280,8 +281,8 @@ export function Dashboard({
                   `Grupo ${String(project.groupId).padStart(2, "0")}`}
               </option>
             ))}
-          </select>
-          <select
+          </NativeSelect>
+          <NativeSelect
             aria-label="Filtrar por pendências"
             value={pending}
             onChange={(event) => setPending(event.target.value)}
@@ -289,73 +290,61 @@ export function Dashboard({
             <option value="">Todas as pendências</option>
             <option value="true">Com materiais pendentes</option>
             <option value="false">Sem materiais pendentes</option>
-          </select>
+          </NativeSelect>
         </div>
-        <div className="project-grid">
-          {filtered.map((project, index) => (
-            <article className="project-card" key={project.id}>
-              <div
-                className={`project-cover cover-${index % 3}`}
-                aria-hidden="true"
-              >
-                <div className="cover-grid" />
-                <div className="cover-chip">
-                  <Icon
-                    name={
-                      project.category === "Instrumentação" ? "grid" : "folder"
-                    }
-                    size={38}
-                  />
-                </div>
-                <span className="cover-id">
-                  LD / {String(project.id).padStart(3, "0")}
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {filtered.map((project) => (
+            <article
+              className="group flex flex-col rounded-xl border bg-card p-5 transition-colors hover:border-input"
+              key={project.id}
+            >
+              <div className="mb-4 flex items-center justify-between gap-2">
+                <span className="truncate text-xs text-muted-foreground">
+                  {project.category}
                 </span>
+                <StatusBadge status={project.status} />
               </div>
-              <div className="project-content">
-                <div className="card-meta">
-                  <span className="project-category">{project.category}</span>
-                  <span className={`status-pill status-${project.status}`}>
-                    <span />
-                    {statusLabels[project.status]}
-                  </span>
-                </div>
-                <h3>
-                  <a
-                    href={`/projetos/${project.id}`}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      navigate(`/projetos/${project.id}`);
-                    }}
-                  >
-                    {project.title}
-                  </a>
-                </h3>
-                <p>{project.description || "Descrição ainda não informada."}</p>
-                {project.missingMaterials && (
-                  <p>
-                    {project.missingMaterials.length
-                      ? `Pendentes: ${project.missingMaterials.map((kind) => materialLabels[kind]).join(", ")}`
-                      : "Materiais obrigatórios presentes"}
-                  </p>
-                )}
-                <div className="card-footer">
-                  <span>
-                    <Icon name="user" size={15} />
-                    {project.groupName ??
-                      `Grupo ${String(project.groupId).padStart(2, "0")}`}
-                  </span>
-                  <a
-                    className="project-link"
-                    aria-label={`Abrir ${project.title}`}
-                    href={`/projetos/${project.id}`}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      navigate(`/projetos/${project.id}`);
-                    }}
-                  >
-                    Abrir projeto <Icon name="arrow" size={16} />
-                  </a>
-                </div>
+              <div className="flex-1 pb-5">
+              <h3 className="text-base leading-snug font-medium [overflow-wrap:anywhere]">
+                <a
+                  className="text-foreground no-underline hover:underline"
+                  href={`/projetos/${project.id}`}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    navigate(`/projetos/${project.id}`);
+                  }}
+                >
+                  {project.title}
+                </a>
+              </h3>
+              <p className="mt-1.5 line-clamp-2 text-sm text-muted-foreground [overflow-wrap:anywhere]">
+                {project.description || "Descrição ainda não informada."}
+              </p>
+              {project.missingMaterials && (
+                <p className="mt-3 text-xs text-muted-foreground">
+                  {project.missingMaterials.length
+                    ? `Pendentes: ${project.missingMaterials.map((kind) => materialLabels[kind]).join(", ")}`
+                    : "Materiais obrigatórios presentes"}
+                </p>
+              )}
+              </div>
+              <div className="flex items-center justify-between gap-2 border-t pt-4 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <UserIcon className="size-3.5" />
+                  {project.groupName ??
+                    `Grupo ${String(project.groupId).padStart(2, "0")}`}
+                </span>
+                <a
+                  className="flex items-center gap-1 font-medium text-foreground no-underline hover:underline"
+                  aria-label={`Abrir ${project.title}`}
+                  href={`/projetos/${project.id}`}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    navigate(`/projetos/${project.id}`);
+                  }}
+                >
+                  Abrir projeto <ArrowRight className="size-3.5" />
+                </a>
               </div>
             </article>
           ))}
@@ -375,10 +364,10 @@ export function Dashboard({
           />
         )}
       </section>
-      <div className="access-note">
-        <Icon name="lock" size={16} />
+      <p className="mt-10 flex items-center gap-1.5 text-xs text-subtle-foreground">
+        <Lock className="size-3.5" />
         Você visualiza apenas os projetos permitidos ao seu perfil.
-      </div>
+      </p>
     </>
   );
 }

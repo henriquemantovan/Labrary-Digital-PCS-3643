@@ -1,8 +1,11 @@
 import type { Dispatch, SetStateAction } from "react";
 import { ApiError } from "../api";
 import type { Material, MaterialRules, Project, User } from "../api";
-import { Icon } from "../Icons";
-import { materialLabels, statusLabels } from "../labels";
+import { ArrowLeft, Lock } from "lucide-react";
+import { PageHeader } from "../components/PageHeader";
+import { StatusBadge } from "../components/StatusBadge";
+import { Button } from "../components/ui/button";
+import { materialLabels } from "../labels";
 import { MaterialsPanel } from "../Materials";
 import { SubmissionPanel } from "../Submission";
 import { GroupResult } from "../GroupResult";
@@ -36,33 +39,37 @@ export function ProjectDetail({
 }) {
   return (
       <>
-        <button
-          className="text-button back"
+        <Button
+          variant="ghost"
+          size="sm"
+          className="-ml-3 mb-4 text-muted-foreground"
           onClick={() => navigate("/projetos")}
         >
-          <Icon name="back" size={17} />
+          <ArrowLeft />
           Todos os projetos
-        </button>
-        <p className="eyebrow">
-          {detail.category} ·{" "}
-          {detail.groupName ??
-            `Grupo ${String(detail.groupId).padStart(2, "0")}`}
-        </p>
-        <h1>{detail.title}</h1>
-        <p className="page-intro">
-          {detail.description || "Este projeto ainda não tem uma descrição."}
-        </p>
-        <span className={`status-pill status-${detail.status}`}>
-          <span />
-          {statusLabels[detail.status]}
-        </span>
-        {detail.missingMaterials && (
-          <p>
-            {detail.missingMaterials.length
-              ? `Pendentes: ${detail.missingMaterials.map((kind) => materialLabels[kind]).join(", ")}`
-              : "Materiais obrigatórios presentes"}
-          </p>
-        )}
+        </Button>
+        <PageHeader
+          eyebrow={
+            <>
+              {detail.category} ·{" "}
+              {detail.groupName ??
+                `Grupo ${String(detail.groupId).padStart(2, "0")}`}
+            </>
+          }
+          title={detail.title}
+          intro={detail.description || "Este projeto ainda não tem uma descrição."}
+        />
+        <div className="-mt-4 mb-8 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+          <StatusBadge status={detail.status} />
+          {detail.missingMaterials && (
+            <p>
+              {detail.missingMaterials.length
+                ? `Pendentes: ${detail.missingMaterials.map((kind) => materialLabels[kind]).join(", ")}`
+                : "Materiais obrigatórios presentes"}
+            </p>
+          )}
+        </div>
+        <div className="grid gap-6">
         {materialRules && (
           <MaterialsPanel
             projectId={detail.id}
@@ -103,10 +110,10 @@ export function ProjectDetail({
             });
           }}
         />
-        <div className="access-note">
-          <Icon name="lock" size={17} />
+        <p className="flex items-center gap-1.5 text-xs text-subtle-foreground">
+          <Lock className="size-3.5" />
           Acesso restrito ao grupo e à equipe acadêmica vinculada ao projeto.
-        </div>
+        </p>
         {user.role === "ALUNO" && <GroupResult key={`result-${detail.id}`} projectId={detail.id} expired={expired} />}
         {["PROFESSOR", "ADMIN"].includes(user.role) && (
           <EvaluatorManager
@@ -142,6 +149,7 @@ export function ProjectDetail({
           materials={materials}
           expired={expired}
         />
+        </div>
       </>
   );
 }
