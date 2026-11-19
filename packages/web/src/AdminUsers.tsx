@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, ApiError } from "./api";
 import type { ManagedUser, User } from "./api";
+import { buttonVariants } from "./components/ui/button";
+import { Search } from "lucide-react";
+import { Loading, noticeClass } from "./components/Feedback";
+import { PageHeader } from "./components/PageHeader";
+import { Badge } from "./components/ui/badge";
+import { Input, Label, NativeSelect } from "./components/ui/input";
 const labels: Record<User["role"], string> = {
   ADMIN: "Administrador",
   ALUNO: "Aluno",
@@ -67,68 +73,92 @@ export function AdminUsers({
   );
   return (
     <>
-      <p className="eyebrow">ADMINISTRAÇÃO</p>
-      <h1>Administrar usuários</h1>
-      <button
-        className="secondary"
-        disabled={loading || saving !== null}
-        onClick={() => void load()}
-      >
-        Atualizar usuários
-      </button>
-      <p className="page-intro">
-        Defina os perfis das contas já cadastradas. Alterar o perfil não cria
-        vínculos com turmas, grupos ou projetos.
-      </p>
-      <label htmlFor="admin-search">Buscar usuários</label>
-      <input
-        id="admin-search"
-        className="admin-search"
-        value={search}
-        onChange={(event) => setSearch(event.target.value)}
-        placeholder="Nome ou e-mail"
+      <PageHeader
+        eyebrow="Administração"
+        title="Administrar usuários"
+        intro="Defina os perfis das contas já cadastradas. Alterar o perfil não cria vínculos com turmas, grupos ou projetos."
+        actions={
+          <button
+            className={buttonVariants({ variant: "outline" })}
+            disabled={loading || saving !== null}
+            onClick={() => void load()}
+          >
+            Atualizar usuários
+          </button>
+        }
       />
+      <div className="mb-6 grid max-w-md gap-1.5">
+        <Label htmlFor="admin-search">Buscar usuários</Label>
+        <div className="relative">
+          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-subtle-foreground" />
+          <Input
+            id="admin-search"
+            className="pl-9"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Nome ou e-mail"
+          />
+        </div>
+      </div>
+      <div className="grid gap-4 empty:hidden">
       {loadError && (
-        <div role="alert" className="notice">
+        <div role="alert" className={noticeClass}>
           {loadError}
           <button onClick={() => void load()}>Tentar novamente</button>
         </div>
       )}
       {actionError && (
-        <div role="alert" className="notice">
+        <div role="alert" className={noticeClass}>
           {actionError}
         </div>
       )}
-      {success && <p role="status">{success}</p>}
+      {success && (
+        <p
+          role="status"
+          className="rounded-lg bg-success/10 px-3.5 py-2.5 text-sm text-success"
+        >
+          {success}
+        </p>
+      )}
+      </div>
       {loading ? (
-        <p role="status">Carregando usuários…</p>
+        <Loading label="Carregando usuários…" />
       ) : (
         !loadError && (
-          <div className="admin-users">
-            {filtered.length === 0 && <p>Nenhum usuário encontrado.</p>}
+          <div className="mt-4 divide-y rounded-xl border bg-card">
+            {filtered.length === 0 && (
+              <p className="px-5 py-10 text-center text-sm text-muted-foreground">
+                Nenhum usuário encontrado.
+              </p>
+            )}
             {filtered.map((user) => (
               <article
-                className="admin-user-card"
+                className="flex flex-wrap items-end justify-between gap-4 px-5 py-4"
                 key={user.id}
                 aria-labelledby={`user-${user.id}`}
               >
-                <div>
-                  <h2 id={`user-${user.id}`}>{user.fullName}</h2>
-                  <p>{user.email}</p>
-                  <span className="profile-badge">
+                <div className="grid min-w-0 gap-1 [overflow-wrap:anywhere]">
+                  <h2 id={`user-${user.id}`} className="text-sm font-medium">
+                    {user.fullName}
+                  </h2>
+                  <p className="text-xs text-muted-foreground">{user.email}</p>
+                  <Badge>
                     {labels[user.role]} · {user.active ? "Ativa" : "Desativada"}
-                  </span>
+                  </Badge>
                 </div>
                 <form
+                  className="flex flex-wrap items-end gap-2"
                   onSubmit={(event) => {
                     event.preventDefault();
                     void save(user);
                   }}
                 >
-                  <label htmlFor={`user-role-${user.id}`}>
+                  <div className="grid gap-1.5">
+                  <Label htmlFor={`user-role-${user.id}`} className="text-xs text-muted-foreground">
                     Perfil de {user.fullName}
-                  </label>
-                  <select
+                  </Label>
+                  <NativeSelect
+                    className="h-9 w-48"
                     id={`user-role-${user.id}`}
                     value={drafts[user.id] ?? user.role}
                     disabled={saving !== null}
@@ -144,10 +174,11 @@ export function AdminUsers({
                         {label}
                       </option>
                     ))}
-                  </select>
+                  </NativeSelect>
+                  </div>
                   <button
                     type="submit"
-                    className="primary"
+                    className={buttonVariants()}
                     disabled={
                       saving !== null ||
                       (drafts[user.id] ?? user.role) === user.role

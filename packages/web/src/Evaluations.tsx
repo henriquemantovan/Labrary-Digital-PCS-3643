@@ -5,6 +5,8 @@ import { api, ApiError } from "./api";
 import type { User } from "./api";
 import type { RubricVersion } from "./assessmentTypes";
 import type { Submission } from "./submissionTypes";
+import { buttonVariants } from "./components/ui/button";
+import { blockClass, buttonRow, mutedText, panelClass } from "./components/Panel";
 
 const statuses: Record<Evaluation["status"], string> = {
   PENDENTE: "Pendente",
@@ -88,11 +90,11 @@ export function Evaluations({ projectId, projectStatus, user, expired }: {
 
   const selectedRound = round?.submission.id === selection ? round : null;
   const evaluatorView = user.role === "AVALIADOR";
-  return <section className="create-panel assessment-panel evaluation-panel" aria-label="Avaliações por rubrica">
+  return <section className={panelClass} aria-label="Avaliações por rubrica">
     <h2>Avaliações por rubrica</h2>
     {success && <p role="status">{success}</p>}
     {error && <p role="alert">{error}</p>}
-    <button type="button" className="text-button" disabled={busy} onClick={() => {
+    <button type="button" className={buttonVariants({ variant: "ghost", size: "sm" })} disabled={busy} onClick={() => {
       setError("");
       setSuccess("");
       setReload((value) => value + 1);
@@ -114,7 +116,7 @@ export function Evaluations({ projectId, projectStatus, user, expired }: {
       {selectedRound.evaluations.map((evaluation) => {
         const name = evaluatorView ? "Minha avaliação" : selectedRound.evaluatorNames?.[evaluation.evaluatorId] ?? `Avaliador ${evaluation.evaluatorId}`;
         const { rubric } = selectedRound.submission;
-        return <article className="planning-block" key={evaluation.evaluatorId}>
+        return <article className={blockClass} key={evaluation.evaluatorId}>
           <h3>{name}</h3>
           <p><strong>{statuses[evaluation.status]}</strong>{evaluation.finalizedAt && ` · Finalizada em ${dateTime(evaluation.finalizedAt)}`}</p>
           {evaluatorView && selectedRound.canEdit && evaluation.status !== "FINALIZADA" ? (
@@ -137,9 +139,9 @@ export function Evaluations({ projectId, projectStatus, user, expired }: {
 
 function SubmissionSnapshot({ submission }: { submission: Submission }) {
   const { materials, projectId, rubric } = submission;
-  return <div className="planning-block">
+  return <div className={blockClass}>
     <h3>{rubric.title} · Versão {rubric.versionNumber}</h3>
-    <p className="muted">Rodada {submission.round} · Submetida em {dateTime(submission.submittedAt)}</p>
+    <p className={mutedText}>Rodada {submission.round} · Submetida em {dateTime(submission.submittedAt)}</p>
     <details>
       <summary>Critérios da rubrica</summary>
       <ul>{rubric.criteria.map((criterion) => <li key={criterion.id}>
@@ -151,7 +153,7 @@ function SubmissionSnapshot({ submission }: { submission: Submission }) {
     {materials.length ? <ul>{materials.map((material) => <li key={material.materialId}>
       <a href={`/api/projects/${projectId}/materials/${material.materialId}/versions/${material.versionId}/file`}>
         {material.title} — versão {material.versionNumber}
-      </a>{" "}<span className="muted">({material.originalFilename})</span>
+      </a>{" "}<span className={mutedText}>({material.originalFilename})</span>
     </li>)}</ul> : <p>Nenhum material nesta rodada.</p>}
   </div>;
 }
@@ -187,12 +189,12 @@ function ScoreForm({ evaluation, rubric, busy, onSave }: {
   }
 
   return <form onSubmit={submit}>
-    <div className="evaluation-criteria">
+    <div className="grid gap-3">
       {rubric.criteria.map((criterion) => {
         const saved = evaluation.scores.find((item) => item.criterionId === criterion.id);
         return <fieldset key={criterion.id} disabled={busy}>
           <legend>{criterion.title}</legend>
-          <p className="muted">Peso {criterion.weight}% · Escala de {criterion.minScore} a {criterion.maxScore}</p>
+          <p className={mutedText}>Peso {criterion.weight}% · Escala de {criterion.minScore} a {criterion.maxScore}</p>
           {criterion.description && <p>{criterion.description}</p>}
           <label>Nota — {criterion.title}
             <input type="number" min={criterion.minScore} max={criterion.maxScore} step="any" inputMode="decimal" name={`score-${criterion.id}`} defaultValue={saved?.score} />
@@ -204,9 +206,9 @@ function ScoreForm({ evaluation, rubric, busy, onSave }: {
       })}
     </div>
     {error && <p role="alert">{error}</p>}
-    <div className="button-row">
-      <button type="submit" className="secondary" disabled={busy}>Salvar rascunho</button>
-      <button type="submit" className="primary" value="finalize" disabled={busy}>Finalizar avaliação</button>
+    <div className={buttonRow}>
+      <button type="submit" className={buttonVariants({ variant: "outline", size: "sm" })} disabled={busy}>Salvar rascunho</button>
+      <button type="submit" className={buttonVariants({ size: "sm" })} value="finalize" disabled={busy}>Finalizar avaliação</button>
     </div>
   </form>;
 }
@@ -253,9 +255,9 @@ function ReopenForm({ busy, onReopen }: { busy: boolean; onReopen: (reason: stri
       <textarea name="reason" rows={2} required maxLength={2000} disabled={busy} />
     </label>
     {error && <p role="alert">{error}</p>}
-    <div className="button-row">
-      <button type="submit" className="primary" disabled={busy}>Confirmar reabertura</button>
-      <button type="button" className="secondary" disabled={busy} onClick={() => { setOpen(false); setError(""); }}>Cancelar</button>
+    <div className={buttonRow}>
+      <button type="submit" className={buttonVariants({ size: "sm" })} disabled={busy}>Confirmar reabertura</button>
+      <button type="button" className={buttonVariants({ variant: "outline", size: "sm" })} disabled={busy} onClick={() => { setOpen(false); setError(""); }}>Cancelar</button>
     </div>
-  </form> : <button type="button" className="secondary" disabled={busy} onClick={() => setOpen(true)}>Reabrir avaliação</button>;
+  </form> : <button type="button" className={buttonVariants({ variant: "outline", size: "sm" })} disabled={busy} onClick={() => setOpen(true)}>Reabrir avaliação</button>;
 }

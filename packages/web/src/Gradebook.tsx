@@ -3,6 +3,8 @@ import { api, ApiError } from "./api";
 import type { Scope } from "./api";
 import { downloadGrades } from "./gradeClient";
 import type { ConsolidatedResult, GradeRow } from "./gradeClient";
+import { noticeClass } from "./components/Feedback";
+import { buttonRow, mutedText, panelClass } from "./components/Panel";
 
 const labels = { NO_SUBMISSION: "Sem submissão", PENDING: "Pendente", PARTIAL: "Parcial", FINAL: "Final" };
 type Confirmation = { result: ConsolidatedResult; fingerprint: string | null };
@@ -70,8 +72,8 @@ export function Gradebook({ expired }: { expired: () => void }) {
   }
   return <section aria-labelledby="grades-title">
     <h1 id="grades-title">Consolidação de notas</h1>
-    <p className="muted">A nota parcial considera somente avaliações finalizadas. A liberação ao grupo exige todas as avaliações previstas.</p>
-    {error && <div role="alert" className="notice">{error}</div>}
+    <p className={mutedText}>A nota parcial considera somente avaliações finalizadas. A liberação ao grupo exige todas as avaliações previstas.</p>
+    {error && <div role="alert" className={noticeClass}>{error}</div>}
     {success && <p role="status">{success}</p>}
     {classes === null && !error && <p role="status">Carregando turmas…</p>}
     {classes?.length === 0 && <p>Nenhuma turma disponível.</p>}
@@ -81,14 +83,14 @@ export function Gradebook({ expired }: { expired: () => void }) {
         {classes.map(item => <option key={item.id} value={item.id}>{item.name} ({item.academicYear})</option>)}
       </select>
     </>}
-    <div className="grade-actions">
+    <div className={buttonRow}>
       <button disabled={busy} onClick={() => setRevision(value => value + 1)}>Atualizar consolidação</button>
       <button disabled={busy || rows === null || !classId} onClick={() => void exportCsv()}>Exportar CSV</button>
     </div>
     {classId && rows === null && !error && <p role="status">Carregando notas…</p>}
     {rows?.length === 0 && <p>Nenhum projeto nesta turma.</p>}
-    {!!rows?.length && <div className="grades-scroll" role="region" aria-label="Notas dos grupos" tabIndex={0}>
-      <table className="grades-table">
+    {!!rows?.length && <div className="overflow-x-auto rounded-xl border" role="region" aria-label="Notas dos grupos" tabIndex={0}>
+      <table className="w-full border-collapse text-sm [&_td]:border-t [&_td]:px-3 [&_td]:py-2.5 [&_td]:align-top [&_th]:bg-muted [&_th]:px-3 [&_th]:py-2.5 [&_th]:text-left [&_th]:text-xs [&_th]:font-medium [&_th]:whitespace-nowrap [&_th]:text-muted-foreground">
         <caption>Notas e pendências por grupo</caption>
         <thead><tr>{["Grupo", "Projeto", "Rodada", "Previstos", "Recebidos", "Pendentes", "Nota", "Situação", "Liberação"].map(label => <th key={label} scope="col">{label}</th>)}</tr></thead>
         <tbody>{rows.map(row => <tr key={row.projectId}>
@@ -99,7 +101,7 @@ export function Gradebook({ expired }: { expired: () => void }) {
         </tr>)}</tbody>
       </table>
     </div>}
-    {confirmation && <section className="panel" aria-label="Confirmar liberação">
+    {confirmation && <section className={panelClass} aria-label="Confirmar liberação">
       <h2>Liberar resultado ao grupo?</h2>
       <p>Rodada {confirmation.result.round} · Nota {confirmation.result.grade?.toFixed(2) ?? "—"}. A liberação permite que os integrantes consultem as notas e os comentários desta rodada.</p>
       <button disabled={busy || !confirmation.result.allEvaluationsCompleted} onClick={() => void release()}>Confirmar liberação</button>

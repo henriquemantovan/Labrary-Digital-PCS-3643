@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { api, ApiError } from "./api";
 import type { Requirement, RubricCriterion, RubricVersion } from "./assessmentTypes";
+import { buttonVariants } from "./components/ui/button";
+import { blockClass, buttonRow, mutedText, panelClass } from "./components/Panel";
 
 const mib = 1024 * 1024;
 const kinds = ["VIDEO", "RELATORIO", "MANUAL"] as const;
@@ -37,17 +39,17 @@ export function Rubrics({ projectId, canEdit, expired, onConfigurationSaved }: {
     return () => { active = false; };
   }, [projectId, revision, fail]);
   const current = versions?.at(-1);
-  return <section className="create-panel assessment-panel" aria-label="Requisitos e rubrica">
+  return <section className={panelClass} aria-label="Requisitos e rubrica">
     <h2>Requisitos e rubrica</h2>
-    <p className="muted">Cada versão preserva os requisitos e os critérios usados nas entregas anteriores.</p>
+    <p className={mutedText}>Cada versão preserva os requisitos e os critérios usados nas entregas anteriores.</p>
     {success && <p role="status">{success}</p>}
-    {error && <div role="alert">{error} <button type="button" className="text-button" onClick={() => {
+    {error && <div role="alert">{error} <button type="button" className={buttonVariants({ variant: "ghost", size: "sm" })} onClick={() => {
       setError(""); setEditing(false); setRevision((value) => value + 1);
       void onConfigurationSaved?.().catch(fail);
     }}>Recarregar rubricas</button></div>}
     {versions === null ? (!error && <p role="status">Carregando rubricas…</p>) : <>
       {current ? <RubricSummary version={current} /> : <p>Nenhuma rubrica configurada para este projeto.</p>}
-      {canEdit && <button type="button" className="secondary" onClick={() => { setEditing(!editing); setSuccess(""); }}>
+      {canEdit && <button type="button" className={buttonVariants({ variant: "outline", size: "sm" })} onClick={() => { setEditing(!editing); setSuccess(""); }}>
         {editing ? "Cancelar nova versão" : "Criar nova versão da rubrica"}
       </button>}
       {editing && canEdit && <RubricForm key={current?.id ?? 0} current={current} projectId={projectId} fail={fail} onSaved={(saved) => {
@@ -62,9 +64,9 @@ export function Rubrics({ projectId, canEdit, expired, onConfigurationSaved }: {
   </section>;
 }
 export function RubricSummary({ version }: { version: RubricVersion }) {
-  return <div className="planning-block">
+  return <div className={blockClass}>
     <h3>{version.title} · Versão {version.versionNumber}</h3>
-    <p className="muted">Criada em {new Date(version.createdAt).toLocaleString("pt-BR")} · Conta {version.createdBy}</p>
+    <p className={mutedText}>Criada em {new Date(version.createdAt).toLocaleString("pt-BR")} · Conta {version.createdBy}</p>
     <ul>{version.requirements.map((rule) => <li key={rule.kind}>
       {rule.label}: obrigatório · {rule.allowedMimeTypes.join(", ")} · até {rule.maxSizeBytes / mib} MiB · prazo {new Date(rule.dueAt).toLocaleString("pt-BR")}
     </li>)}</ul>
@@ -111,17 +113,17 @@ function RubricForm({ current, projectId, onSaved, fail }: {
   function update(index: number, change: Partial<RubricCriterion>) {
     setCriteria((items) => items.map((item, itemIndex) => itemIndex === index ? { ...item, ...change } : item));
   }
-  return <form onSubmit={submit} className="rubric-form" aria-label="Nova versão da rubrica">
+  return <form onSubmit={submit} className="grid gap-4" aria-label="Nova versão da rubrica">
     <fieldset disabled={busy}>
       <legend>Nova versão explícita</legend>
       {validation && <p role="alert">{validation}</p>}
       <label>Título da rubrica<input name="title" required maxLength={160} defaultValue={current?.title ?? "Rubrica do projeto"} /></label>
-      <div className="assessment-grid">{kinds.map((kind) => {
+      <div className="grid gap-4 md:grid-cols-2">{kinds.map((kind) => {
         const rule = current?.requirements.find((item) => item.kind === kind);
         const formats = kind === "VIDEO" ? ["video/mp4", "video/webm"] : ["application/pdf"];
-        return <fieldset key={kind} className="planning-block">
+        return <fieldset key={kind} className={blockClass}>
           <legend>{labels[kind]} (obrigatório)</legend>
-          <div className="people-options">{formats.map((format) => <label key={format}>
+          <div className="flex flex-wrap gap-x-4 gap-y-2">{formats.map((format) => <label key={format}>
             <input type="checkbox" name={`${kind}-formats`} value={format} defaultChecked={rule ? rule.allowedMimeTypes.includes(format) : true} />
             {format}
           </label>)}</div>
@@ -130,18 +132,18 @@ function RubricForm({ current, projectId, onSaved, fail }: {
         </fieldset>;
       })}</div>
       <h3>Critérios · escala fixa de 0 a 10</h3>
-      {criteria.map((criterion, index) => <div key={criterion.id} className="planning-block">
-        <div className="form-grid">
+      {criteria.map((criterion, index) => <div key={criterion.id} className={blockClass}>
+        <div className="grid gap-4 md:grid-cols-2">
           <label>Critério {index + 1}<input required maxLength={160} value={criterion.title} onChange={(event) => update(index, { title: event.target.value })} /></label>
           <label>Peso do critério {index + 1} (%)<input type="number" required min="0.01" max="100" step="0.01" value={criterion.weight} onChange={(event) => update(index, { weight: Number(event.target.value) })} /></label>
           <label>Descrição do critério {index + 1}<textarea maxLength={10000} value={criterion.description} onChange={(event) => update(index, { description: event.target.value })} /></label>
         </div>
-        {criteria.length > 1 && <button className="text-button" type="button" onClick={() => setCriteria(criteria.filter((item) => item.id !== criterion.id))}>Remover critério {index + 1}</button>}
+        {criteria.length > 1 && <button className={buttonVariants({ variant: "ghost", size: "sm" })} type="button" onClick={() => setCriteria(criteria.filter((item) => item.id !== criterion.id))}>Remover critério {index + 1}</button>}
       </div>)}
       <p aria-live="polite">Soma dos pesos: {Number(total.toFixed(6))}%</p>
-      <div className="button-row">
-        <button type="button" className="secondary" onClick={() => setCriteria([...criteria, { id: crypto.randomUUID(), title: "", description: "", weight: 1, minScore: 0, maxScore: 10 }])}>Adicionar critério</button>
-        <button className="primary" type="submit">{busy ? "Salvando versão…" : "Salvar nova versão"}</button>
+      <div className={buttonRow}>
+        <button type="button" className={buttonVariants({ variant: "outline", size: "sm" })} onClick={() => setCriteria([...criteria, { id: crypto.randomUUID(), title: "", description: "", weight: 1, minScore: 0, maxScore: 10 }])}>Adicionar critério</button>
+        <button className={buttonVariants({ size: "sm" })} type="submit">{busy ? "Salvando versão…" : "Salvar nova versão"}</button>
       </div>
     </fieldset>
   </form>;

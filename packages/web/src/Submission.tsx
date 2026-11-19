@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError } from "./api";
 import type { Material, Project, User } from "./api";
-import { Icon } from "./Icons";
+import { Lock } from "lucide-react";
 import type { Reopening, Submission, SubmissionBlock, SubmissionChecklist } from "./submissionTypes";
+import { buttonVariants } from "./components/ui/button";
+import { noticeClass } from "./components/Feedback";
+import { buttonRow, lockNote, mutedText, panelClass, sectionHeading } from "./components/Panel";
 
 const formatDate = (value: string) =>
   new Date(value).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
@@ -145,18 +148,18 @@ export function SubmissionPanel({ project, user, materials, refreshKey, expired,
   const reopening = checklist?.lastReopening;
 
   return (
-    <section className="detail-section submission-panel" aria-labelledby="submission-title">
-      <div className="section-heading">
+    <section className={panelClass} aria-labelledby="submission-title">
+      <div className={sectionHeading}>
         <h2 id="submission-title">Entrega para avaliação</h2>
         {checklist && checklist.items.length > 0 && (
           <span>{ready} de {checklist.items.length} obrigatórios prontos</span>
         )}
       </div>
-      {success && <p role="status" className="submission-success">{success}</p>}
+      {success && <p role="status" className="rounded-lg bg-success/10 px-3.5 py-2.5 text-sm text-success">{success}</p>}
       {error && (
-        <div role="alert" className="notice">
+        <div role="alert" className={noticeClass}>
           {error}{" "}
-          <button type="button" className="text-button" onClick={() => { setError(""); setRevision((value) => value + 1); }}>
+          <button type="button" className={buttonVariants({ variant: "ghost", size: "sm" })} onClick={() => { setError(""); setRevision((value) => value + 1); }}>
             Atualizar entrega
           </button>
         </div>
@@ -166,18 +169,18 @@ export function SubmissionPanel({ project, user, materials, refreshKey, expired,
       ) : (
         <>
           {block && (
-            <p className="material-lock">
-              <Icon name="lock" size={16} />
+            <p className={lockNote}>
+              <Lock />
               {block}
             </p>
           )}
           {reopening && (
-            <p className="muted">
+            <p className={mutedText}>
               Entrega reaberta pelo professor em {formatDate(reopening.reopenedAt)}. Justificativa: {reopening.reason}
             </p>
           )}
           {checklist.items.length > 0 && (
-            <ul className="submission-checklist" aria-label="Checklist da entrega">
+            <ul className="m-0 grid list-none gap-1.5 p-0 text-sm [&>li.missing]:text-warning [&>li.ok]:text-success" aria-label="Checklist da entrega">
               {checklist.items.map((item) => {
                 const version = versionNumber(item.materialId, item.versionId);
                 const state = item.ok
@@ -200,28 +203,28 @@ export function SubmissionPanel({ project, user, materials, refreshKey, expired,
             </button>
           )}
           {checklist.canSubmit && confirming === "submit" && (
-            <div className="submission-confirm" role="group" aria-label="Confirmar submissão">
+            <div className="grid gap-3 rounded-lg border bg-muted/50 p-4 text-sm" role="group" aria-label="Confirmar submissão">
               <p>
                 Depois de submeter, os materiais ficam bloqueados até o professor devolver o projeto
                 para ajustes. A versão atual de cada material será registrada nesta rodada.
               </p>
-              <div className="button-row">
+              <div className={buttonRow}>
                 <button type="button" disabled={busy} onClick={() => void submit()}>
                   {busy ? "Submetendo…" : "Confirmar submissão"}
                 </button>
-                <button type="button" className="secondary" disabled={busy} onClick={() => setConfirming(null)}>
+                <button type="button" className={buttonVariants({ variant: "outline", size: "sm" })} disabled={busy} onClick={() => setConfirming(null)}>
                   Cancelar
                 </button>
               </div>
             </div>
           )}
           {canReopen && confirming !== "reopen" && (
-            <button type="button" className="secondary" onClick={() => { setConfirming("reopen"); setSuccess(""); }}>
+            <button type="button" className={buttonVariants({ variant: "outline", size: "sm" })} onClick={() => { setConfirming("reopen"); setSuccess(""); }}>
               Reabrir entrega
             </button>
           )}
           {canReopen && confirming === "reopen" && (
-            <div className="submission-confirm" role="group" aria-label="Confirmar reabertura">
+            <div className="grid gap-3 rounded-lg border bg-muted/50 p-4 text-sm" role="group" aria-label="Confirmar reabertura">
               <p>
                 O prazo terminou sem submissão. Ao reabrir, o projeto passa para Em ajustes e o grupo
                 pode enviar materiais e submeter mesmo depois do prazo original. A justificativa fica registrada.
@@ -231,32 +234,32 @@ export function SubmissionPanel({ project, user, materials, refreshKey, expired,
                 <textarea value={reason} maxLength={1000} disabled={busy}
                   onChange={(event) => setReason(event.target.value)} />
               </label>
-              <div className="button-row">
+              <div className={buttonRow}>
                 <button type="button" disabled={busy || reason.trim().length < 5} onClick={() => void reopen()}>
                   {busy ? "Reabrindo…" : "Confirmar reabertura"}
                 </button>
-                <button type="button" className="secondary" disabled={busy} onClick={() => setConfirming(null)}>
+                <button type="button" className={buttonVariants({ variant: "outline", size: "sm" })} disabled={busy} onClick={() => setConfirming(null)}>
                   Cancelar
                 </button>
               </div>
             </div>
           )}
           {canReturn && latest && confirming !== "return" && (
-            <button type="button" className="secondary" onClick={() => { setConfirming("return"); setSuccess(""); }}>
+            <button type="button" className={buttonVariants({ variant: "outline", size: "sm" })} onClick={() => { setConfirming("return"); setSuccess(""); }}>
               Devolver para ajustes
             </button>
           )}
           {canReturn && latest && confirming === "return" && (
-            <div className="submission-confirm" role="group" aria-label="Confirmar devolução">
+            <div className="grid gap-3 rounded-lg border bg-muted/50 p-4 text-sm" role="group" aria-label="Confirmar devolução">
               <p>
                 A rodada {latest.round} será marcada como devolvida e o grupo poderá enviar novas
                 versões e submeter uma nova rodada. A rodada atual continua no histórico.
               </p>
-              <div className="button-row">
+              <div className={buttonRow}>
                 <button type="button" disabled={busy} onClick={() => void giveBack(latest)}>
                   {busy ? "Devolvendo…" : "Confirmar devolução"}
                 </button>
-                <button type="button" className="secondary" disabled={busy} onClick={() => setConfirming(null)}>
+                <button type="button" className={buttonVariants({ variant: "outline", size: "sm" })} disabled={busy} onClick={() => setConfirming(null)}>
                   Cancelar
                 </button>
               </div>
@@ -264,16 +267,16 @@ export function SubmissionPanel({ project, user, materials, refreshKey, expired,
           )}
           <h3>Rodadas</h3>
           {rounds.length === 0 ? (
-            <p className="muted">Nenhuma rodada submetida ainda.</p>
+            <p className={mutedText}>Nenhuma rodada submetida ainda.</p>
           ) : (
-            <ol className="submission-rounds" reversed>
+            <ol className="submission-rounds m-0 grid list-none gap-3 p-0 text-sm [&>li]:grid [&>li]:gap-1 [&>li]:rounded-lg [&>li]:border [&>li]:p-4 [&_ul]:m-0 [&_ul]:grid [&_ul]:list-none [&_ul]:gap-0.5 [&_ul]:p-0" reversed>
               {[...rounds].reverse().map((round) => (
                 <li key={round.id}>
                   <p>
                     <strong>Rodada {round.round}</strong> ·{" "}
                     {round.status === "SUBMETIDA" ? "Em avaliação" : "Devolvida para ajustes"}
                   </p>
-                  <p className="muted">
+                  <p className={mutedText}>
                     Submetida em {formatDate(round.submittedAt)}
                     {round.submittedBy === user.id ? " por você" : ` pela conta ${round.submittedBy}`}
                     {round.returnedAt && ` · devolvida em ${formatDate(round.returnedAt)}`}
@@ -285,7 +288,7 @@ export function SubmissionPanel({ project, user, materials, refreshKey, expired,
                         <a href={`/api/projects/${project.id}/materials/${item.materialId}/versions/${item.versionId}/file`}>
                           {item.title} — versão {item.versionNumber}
                         </a>{" "}
-                        <span className="muted">({item.originalFilename})</span>
+                        <span className={mutedText}>({item.originalFilename})</span>
                       </li>
                     ))}
                   </ul>

@@ -2,7 +2,21 @@ import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { ApiError, uploadFile } from "./api";
 import type { Material, MaterialRule, MaterialRules } from "./api";
-import { Icon } from "./Icons";
+import { Check, Folder, Lock } from "lucide-react";
+import { Notice } from "./components/Feedback";
+import { Button, buttonVariants } from "./components/ui/button";
+import { fieldLabel, Input } from "./components/ui/input";
+import {
+  fileInput,
+  hintText,
+  lockNote,
+  mutedText,
+  Panel,
+  panelTitle,
+  progressBar,
+  subTitle,
+} from "./components/Panel";
+import { cn } from "./lib/utils";
 
 const numberFormat = new Intl.NumberFormat("pt-BR", {
   maximumFractionDigits: 1,
@@ -105,30 +119,29 @@ function UploadFeedback({ upload, label }: { upload: Upload; label: string }) {
   return (
     <>
       {upload.progress !== null && (
-        <div className="upload-progress">
+        <div className="mt-3 flex items-center gap-3 text-xs text-muted-foreground">
           <progress
+            className={progressBar}
             max={100}
             value={upload.progress}
             aria-label={`Enviando ${label}`}
           />
-          <span aria-live="polite">{upload.progress}%</span>
-          <button className="text-button" type="button" onClick={upload.cancel}>
+          <span aria-live="polite" className="tabular-nums">{upload.progress}%</span>
+          <Button variant="ghost" size="sm" onClick={upload.cancel}>
             Cancelar
-          </button>
+          </Button>
         </div>
       )}
       {upload.error && (
-        <div className="notice upload-error" role="alert">
-          <span>{upload.error}</span>
-          {upload.retry && (
-            <button
-              className="text-button"
-              type="button"
-              onClick={() => void upload.retry?.()}
-            >
-              Tentar novamente
-            </button>
-          )}
+        <div className="mt-3">
+          <Notice>
+            <span>{upload.error}</span>
+            {upload.retry && (
+              <button type="button" onClick={() => void upload.retry?.()}>
+                Tentar novamente
+              </button>
+            )}
+          </Notice>
         </div>
       )}
     </>
@@ -153,18 +166,18 @@ function FileButton({
   const input = useRef<HTMLInputElement>(null);
   return (
     <>
-      <button
-        type="button"
-        className={`${primary ? "primary" : "secondary"} compact`}
+      <Button
+        variant={primary ? "default" : "outline"}
+        size="sm"
         disabled={disabled}
         onClick={() => input.current?.click()}
       >
         {text}
-      </button>
+      </Button>
       <input
         ref={input}
         type="file"
-        className="visually-hidden"
+        className="sr-only"
         tabIndex={-1}
         aria-label={label}
         accept={rule.formats
@@ -202,34 +215,45 @@ function MaterialCard({
   const author = (version: Material["currentVersion"]) =>
     version.uploadedBy.fullName ?? "Autor removido";
   return (
-    <li className={`material-card${current ? " is-sent" : ""}`}>
-      <span className="material-icon">
-        <Icon name={current ? "check" : "folder"} size={19} />
+    // "material-card" é gancho dos testes E2E, sem estilo próprio.
+    <li className="material-card px-4 py-4">
+      <div className="flex flex-wrap items-start gap-3">
+      <span
+        className={cn(
+          "grid size-9 shrink-0 place-items-center rounded-lg",
+          current ? "bg-success/10 text-success" : "bg-muted text-muted-foreground",
+        )}
+      >
+        {current ? <Check className="size-4" /> : <Folder className="size-4" />}
       </span>
-      <div className="material-info">
-        <strong>{title}</strong>
+      <div className="grid min-w-0 flex-1 gap-0.5 text-xs text-muted-foreground [overflow-wrap:anywhere]">
+        <strong className="text-sm font-medium text-foreground">{title}</strong>
         <span>{formatsText(rule)}</span>
         {rule.dueAt && <span>Prazo de {title}: {formatDate(rule.dueAt)}</span>}
         {rule.lock === "DEADLINE_PASSED" && <span>Prazo deste material encerrado.</span>}
         {current ? (
-          <span className="material-state">
+          <span className="text-success">
             Enviado · versão {current.versionNumber} · {author(current)} ·{" "}
             {formatDate(current.uploadedAt)}
           </span>
         ) : (
-          <span className="material-state pending">
+          <span className={rule.required ? "text-warning" : undefined}>
             {rule.required ? "Pendente" : "Opcional"}
           </span>
         )}
         {current && (
-          <span className="material-file">
+          <span>
             {current.originalFilename} · {formatBytes(current.sizeBytes)}
           </span>
         )}
       </div>
-      <div className="material-actions">
+      <div className="flex flex-wrap items-center gap-2">
         {current && (
-          <a className="secondary compact" href={current.downloadUrl} download>
+          <a
+            className={buttonVariants({ variant: "outline", size: "sm" })}
+            href={current.downloadUrl}
+            download
+          >
             Baixar
           </a>
         )}
@@ -246,28 +270,37 @@ function MaterialCard({
           />
         )}
         {material && (
-          <button
-            className="text-button"
-            type="button"
+          <Button
+            variant="ghost"
+            size="sm"
             aria-expanded={history}
             onClick={() => setHistory(!history)}
           >
             Histórico ({material.versions.length})
-          </button>
+          </Button>
         )}
+      </div>
       </div>
       <UploadFeedback upload={upload} label={title} />
       {material && history && (
-        <ol className="version-history" aria-label={`Versões de ${title}`}>
+        <ol
+          className="mt-3 grid gap-1 rounded-lg bg-muted p-2 text-xs"
+          aria-label={`Versões de ${title}`}
+        >
           {material.versions.map((version) => (
-            <li key={version.id}>
-              <span className="tiny-badge">v{version.versionNumber}</span>
-              <span>
+            <li
+              key={version.id}
+              className="flex flex-wrap items-center gap-2 rounded-md px-2 py-1.5"
+            >
+              <span className="rounded-full bg-card px-2 py-0.5 font-medium">
+                v{version.versionNumber}
+              </span>
+              <span className="min-w-0 flex-1 text-muted-foreground [overflow-wrap:anywhere]">
                 {version.originalFilename} · {formatBytes(version.sizeBytes)} ·{" "}
                 {author(version)} · {formatDate(version.uploadedAt)}
               </span>
               <a
-                className="text-button"
+                className="font-medium text-foreground underline-offset-2 hover:underline"
                 href={version.downloadUrl}
                 download
                 aria-label={`Baixar versão ${version.versionNumber} de ${title}`}
@@ -310,22 +343,26 @@ function SupplementForm({
       });
   }
   return (
-    <form className="supplement-form" onSubmit={submit}>
-      <h3>Adicionar material complementar</h3>
-      <p className="muted">{formatsText(rule)}</p>
-      <fieldset disabled={upload.progress !== null}>
-        <label>
+    <form className="mt-5 border-t pt-5" onSubmit={submit}>
+      <h3 className={subTitle}>Adicionar material complementar</h3>
+      <p className={cn(hintText, "mt-0.5 mb-4")}>{formatsText(rule)}</p>
+      <fieldset
+        className="m-0 grid items-end gap-3 border-0 p-0 md:grid-cols-[1fr_1fr_auto]"
+        disabled={upload.progress !== null}
+      >
+        <label className={fieldLabel}>
           Título
-          <input
+          <Input
             value={title}
             onChange={(event) => setTitle(event.target.value)}
             maxLength={200}
             placeholder={rule.defaultTitle}
           />
         </label>
-        <label>
+        <label className={fieldLabel}>
           Arquivo
           <input
+            className={cn(fileInput, "h-10 content-center")}
             ref={file}
             type="file"
             accept={rule.formats
@@ -333,9 +370,9 @@ function SupplementForm({
               .join(",")}
           />
         </label>
-        <button className="secondary compact" type="submit">
+        <Button variant="outline" className="h-10" type="submit">
           Enviar complementar
-        </button>
+        </Button>
       </fieldset>
       <UploadFeedback upload={upload} label="material complementar" />
     </form>
@@ -369,38 +406,42 @@ export function MaterialsPanel({
   });
   const supplement = rules.rules.find((rule) => !rule.required);
   return (
-    <section className="detail-section">
-      <div className="section-heading">
-        <h2>Materiais do projeto</h2>
-        <span>
+    <Panel
+      heading={<h2 className={panelTitle}>Materiais do projeto</h2>}
+      aside={
+        <>
           {required.length - missing.length} de {required.length} obrigatórios
           enviados
           {missing.length > 0 &&
             ` · falta${missing.length > 1 ? "m" : ""}: ${missing
               .map((rule) => rule.defaultTitle)
               .join(", ")}`}
-        </span>
-      </div>
+        </>
+      }
+    >
       {rules.lock === "DEADLINE_PASSED" && (
-        <p className="material-lock">
-          <Icon name="lock" size={16} />O prazo de entrega terminou
-          {rules.dueAt && ` em ${formatDate(rules.dueAt)}`}. Fale com o
-          professor para reabrir a entrega.
+        <p className={cn(lockNote, "mb-4")}>
+          <Lock />
+          <span>
+            O prazo de entrega terminou
+            {rules.dueAt && ` em ${formatDate(rules.dueAt)}`}. Fale com o
+            professor para reabrir a entrega.
+          </span>
         </p>
       )}
       {rules.lock === "PROJECT_LOCKED" && (
-        <p className="material-lock">
-          <Icon name="lock" size={16} />
+        <p className={cn(lockNote, "mb-4")}>
+          <Lock />
           Os materiais ficam bloqueados enquanto o projeto não está em
           preparação ou em ajustes.
         </p>
       )}
       {!rules.lock && rules.dueAt && (
-        <p className="material-due">
+        <p className={cn(mutedText, "mb-4")}>
           Prazo de entrega: {formatDate(rules.dueAt)}
         </p>
       )}
-      <ul className="material-list">
+      <ul className="m-0 list-none divide-y rounded-lg border p-0">
         {cards.map(({ rule, material }) => (
           <MaterialCard
             key={material ? `m${material.id}` : `k${rule.kind}`}
@@ -421,6 +462,6 @@ export function MaterialsPanel({
           expired={expired}
         />
       )}
-    </section>
+    </Panel>
   );
 }

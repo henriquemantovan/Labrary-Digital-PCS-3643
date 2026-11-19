@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { api, ApiError } from "./api";
 import type { PublicationManagement } from "../../api/src/models/publicationDecision";
+import { buttonVariants } from "./components/ui/button";
+import { checkRow, panelClass } from "./components/Panel";
 const labels = {
   FINALIZADO: "Finalizado — acesso privado",
   PUBLICADO: "Publicado no acervo",
@@ -104,7 +106,7 @@ export function PublicationPanel({
   }
   return (
     <section
-      className="create-panel publication-panel"
+      className={panelClass}
       aria-label="Finalização e publicação"
     >
       <h2>Finalização e publicação</h2>
@@ -116,7 +118,7 @@ export function PublicationPanel({
         <>
           <p role="alert">{error}</p>
           <button
-            className="secondary"
+            className={buttonVariants({ variant: "outline", size: "sm" })}
             disabled={busy}
             onClick={() => setAttempt((value) => value + 1)}
           >
@@ -137,7 +139,7 @@ export function PublicationPanel({
           {!["FINALIZADO", "PUBLICADO", "RETIRADO"].includes(data.status) && (
             <form onSubmit={(event) => void action(event, "finalize")}>
               <fieldset disabled={busy || !data.canFinalize}>
-                <label className="publication-check">
+                <label className={checkRow}>
                   <input
                     type="checkbox"
                     checked={confirmed}
@@ -145,7 +147,7 @@ export function PublicationPanel({
                   />
                   Confirmo a finalização desta rodada.
                 </label>
-                <button className="primary" disabled={!confirmed}>
+                <button className={buttonVariants({ size: "sm" })} disabled={!confirmed}>
                   Finalizar projeto
                 </button>
               </fieldset>
@@ -156,7 +158,7 @@ export function PublicationPanel({
               <fieldset disabled={busy || !data.canPublish}>
                 <legend>Materiais autorizados para o acervo</legend>
                 {data.materials.map((material) => (
-                  <label className="publication-check" key={material.versionId}>
+                  <label className={checkRow} key={material.versionId}>
                     <input
                       type="checkbox"
                       name="versions"
@@ -165,7 +167,7 @@ export function PublicationPanel({
                     {material.title} · v{material.versionNumber}
                   </label>
                 ))}
-                <label className="publication-check">
+                <label className={checkRow}>
                   <input type="checkbox" name="authorization" required />O grupo
                   autorizou a divulgação dos materiais selecionados.
                 </label>
@@ -181,7 +183,7 @@ export function PublicationPanel({
                   />
                 </label>
                 <p>Notas, rubrica e mensagens permanecem privadas.</p>
-                <button className="primary">Publicar no acervo</button>
+                <button className={buttonVariants({ size: "sm" })}>Publicar no acervo</button>
               </fieldset>
             </form>
           )}
@@ -192,7 +194,7 @@ export function PublicationPanel({
               </p>
               <form onSubmit={(event) => void action(event, "withdraw")}>
                 <fieldset disabled={busy}>
-                  <label className="publication-check">
+                  <label className={checkRow}>
                     <input
                       type="checkbox"
                       checked={withdrawConfirmed}
@@ -202,7 +204,7 @@ export function PublicationPanel({
                     />
                     Confirmo a retirada do acervo.
                   </label>
-                  <button className="secondary" disabled={!withdrawConfirmed}>
+                  <button className={buttonVariants({ variant: "outline", size: "sm" })} disabled={!withdrawConfirmed}>
                     Retirar publicação
                   </button>
                 </fieldset>

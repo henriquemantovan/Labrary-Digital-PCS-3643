@@ -2,6 +2,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { api, ApiError } from "./api";
 import type { Material, ProjectMessage } from "./api";
+import { buttonVariants } from "./components/ui/button";
+import { mutedText, panelClass, sectionHeading } from "./components/Panel";
+import { cn } from "./lib/utils";
 
 export function ProjectFeedback({
   projectId,
@@ -87,20 +90,20 @@ export function ProjectFeedback({
   }
   return (
     <section
-      className="detail-section feedback"
+      className={cn(panelClass, "feedback")}
       aria-labelledby="feedback-title"
     >
-      <div className="section-heading">
+      <div className={sectionHeading}>
         <h2 id="feedback-title">Feedback do projeto</h2>
         <button
-          className="secondary"
+          className={buttonVariants({ variant: "outline", size: "sm" })}
           disabled={loading || sending}
           onClick={() => void refresh()}
         >
           Atualizar conversa
         </button>
       </div>
-      <p className="muted">
+      <p className={mutedText}>
         Conversa privada do grupo e da equipe acadêmica autorizada. Atualize
         para consultar novas mensagens.
       </p>
@@ -109,28 +112,28 @@ export function ProjectFeedback({
       {!loading && !loadError && !messages.length && (
         <p>Nenhuma mensagem ainda. Comece a conversa.</p>
       )}
-      <ol className="feedback-messages" aria-label="Mensagens do projeto">
+      <ol className="m-0 grid list-none gap-3 p-0 [&>li]:grid [&>li]:gap-1.5 [&>li]:rounded-lg [&>li]:bg-muted [&>li]:p-4" aria-label="Mensagens do projeto">
         {messages.map((message) => (
           <li key={message.id}>
-            <div className="feedback-meta">
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <strong>{message.author.fullName}</strong>
               <time dateTime={message.createdAt}>
                 {new Date(message.createdAt).toLocaleString("pt-BR")}
               </time>
             </div>
-            <p className="muted">
+            <p className={mutedText}>
               {message.materialVersion
                 ? `${message.materialVersion.title} · v${message.materialVersion.versionNumber}`
                 : "Contexto geral do projeto"}
             </p>
-            <p className="feedback-body">{message.body}</p>
+            <p className="text-sm whitespace-pre-wrap">{message.body}</p>
           </li>
         ))}
       </ol>
       {!blocked && (
         <form onSubmit={submit}>
           <fieldset disabled={sending || loading || !!loadError}>
-            <div className="feedback-field">
+            <div className="grid gap-1.5">
               <label htmlFor={`feedback-context-${projectId}`}>
                 Contexto da mensagem
               </label>
@@ -149,7 +152,7 @@ export function ProjectFeedback({
                 )}
               </select>
             </div>
-            <div className="feedback-field">
+            <div className="grid gap-1.5">
               <label htmlFor={`feedback-message-${projectId}`}>Mensagem</label>
               <textarea
                 id={`feedback-message-${projectId}`}
@@ -160,11 +163,11 @@ export function ProjectFeedback({
                 rows={4}
               />
             </div>
-            <p className="muted">
+            <p className={mutedText}>
               Até 5.000 caracteres. Mensagens são exibidas como texto.
             </p>
             <button
-              className="primary"
+              className={buttonVariants({ size: "sm" })}
               type="submit"
               disabled={sending || loading || !!loadError || !body.trim()}
             >

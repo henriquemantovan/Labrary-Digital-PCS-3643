@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { api, ApiError } from "./api";
 import type { Administration, LinkChange, Person, Evaluators } from "./api";
+import { buttonVariants } from "./components/ui/button";
+import { blockClass, panelClass } from "./components/Panel";
 
 type Expiry = { expired: () => void };
 function usePlanningError(expired: () => void) {
@@ -42,7 +44,7 @@ function People({
   name: string;
 }) {
   return (
-    <div className="people-options">
+    <div className="flex flex-wrap gap-x-4 gap-y-2">
       {!people.length && <p>Nenhuma conta ativa disponível.</p>}
       {people.map((person) => (
         <label key={person.id}>
@@ -124,7 +126,7 @@ export function GroupManager({
     }
   }
   return (
-    <section className="create-panel" aria-label="Gestão de grupos">
+    <section className={panelClass} aria-label="Gestão de grupos">
       <h3>Grupos e integrantes</h3>
       {success && <p role="status">{success}</p>}
       {error && (
@@ -150,13 +152,13 @@ export function GroupManager({
                 Nome do novo grupo
                 <input name="name" required maxLength={120} />
               </label>
-              <button className="primary">Cadastrar grupo</button>
+              <button className={buttonVariants({ size: "sm" })}>Cadastrar grupo</button>
             </fieldset>
           </form>
           {!data.groups.length && <p>Nenhum grupo cadastrado.</p>}
-          <div className="managed-groups">
+          <div className="grid gap-3">
             {data.groups.map((group) => (
-              <section key={group.id} className="planning-block">
+              <section key={group.id} className={blockClass}>
                 <h4>{group.name}</h4>
                 <form onSubmit={(event) => void submit(event, group.id)}>
                   <fieldset disabled={busy}>
@@ -169,7 +171,7 @@ export function GroupManager({
                       selected={group.memberIds}
                       name="memberIds"
                     />
-                    <button className="secondary">
+                    <button className={buttonVariants({ variant: "outline", size: "sm" })}>
                       Salvar integrantes de {group.name}
                     </button>
                   </fieldset>
@@ -242,7 +244,7 @@ export function EvaluatorManager({
     }
   }
   return (
-    <section className="create-panel" aria-label="Gestão de avaliadores">
+    <section className={panelClass} aria-label="Gestão de avaliadores">
       <h3>Avaliadores do projeto</h3>
       {error && (
         <>
@@ -271,7 +273,7 @@ export function EvaluatorManager({
                 selected={data.links.evaluatorIds}
                 name="evaluatorIds"
               />
-              <button className="secondary">Salvar avaliadores</button>
+              <button className={buttonVariants({ variant: "outline", size: "sm" })}>Salvar avaliadores</button>
             </fieldset>
           </form>
           <History items={data.links.history} />

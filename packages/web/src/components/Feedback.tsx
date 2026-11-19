@@ -1,12 +1,12 @@
 import type { ReactNode } from "react";
 import { Folder } from "lucide-react";
 
+export const noticeClass =
+  "flex flex-wrap items-center gap-3 rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive [&_button]:h-auto [&_button]:rounded-full [&_button]:border [&_button]:border-destructive/30 [&_button]:bg-card [&_button]:px-3 [&_button]:py-1 [&_button]:text-[13px] [&_button]:font-medium [&_button]:text-destructive";
+
 export function Notice({ children }: { children: ReactNode }) {
   return (
-    <div
-      className="flex flex-wrap items-center gap-3 rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive [&_button]:rounded-full [&_button]:border [&_button]:border-destructive/30 [&_button]:bg-card [&_button]:px-3 [&_button]:py-1 [&_button]:text-[13px] [&_button]:font-medium"
-      role="alert"
-    >
+    <div className={noticeClass} role="alert">
       {children}
     </div>
   );
