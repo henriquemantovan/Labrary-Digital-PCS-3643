@@ -308,3 +308,46 @@ it("repositório recusa rodada em projeto fechado, inexistente ou inválida", ()
     .toThrow("não está aberto para submissão");
   expect(() => repository.returnSubmission(2, 99, "2026-11-09T12:00:00.000Z")).toThrow("Submissão não encontrada");
 });
+
+const reopening = (projectId = 2) => ({
+  projectId, reopenedBy: 3, reopenedAt: "2026-11-26T12:00:00.000Z", reason: "Prazo prorrogado pela coordenação.",
+});
+
+it("reabertura muda Preparação para Ajustes, sobrevive ao reinício e preserva as rodadas seguintes", () => {
+  const path = file();
+  const repository = createMemoryProjectRepository(true, createFileProjectStorage(path));
+  storeRequiredMaterials(repository);
+  expect(JSON.parse(readFileSync(path, "utf8"))).not.toHaveProperty("reopenings");
+  const created = repository.reopenProject(reopening());
+  expect(created).toMatchObject({ id: 1, projectId: 2, reopenedBy: 3 });
+  expect(repository.get(2)).toMatchObject({ status: "AJUSTES", updatedAt: created.reopenedAt });
+
+  const restored = createMemoryProjectRepository(false, createFileProjectStorage(path));
+  expect(restored.get(2)!.status).toBe("AJUSTES");
+  expect(restored.listReopenings(2)).toEqual([created]);
+  expect(restored.listReopenings(1)).toEqual([]);
+  // Outras gravações conservam a reabertura; a rodada seguinte começa em 1.
+  const round = restored.createSubmission(nextRound(restored));
+  expect(round).toMatchObject({ round: 1, status: "SUBMETIDA" });
+  // A reabertura de outro projeto continua a sequência de IDs e fica separada por projeto.
+  const other = restored.create({ classId: 1, groupId: 3, title: "Contador síncrono", description: "", category: "Lógica" });
+  expect(restored.reopenProject(reopening(other.id)).id).toBe(2);
+  const final = createMemoryProjectRepository(false, createFileProjectStorage(path));
+  expect(final.listReopenings(2)).toEqual([created]);
+  expect(final.listReopenings(other.id)).toMatchObject([{ id: 2, projectId: other.id }]);
+});
+
+it("reabertura recusa projeto inexistente, fora de Preparação, motivo inválido ou falha de gravação", () => {
+  const save = vi.fn();
+  const repository = createMemoryProjectRepository(true, { load: () => undefined, save });
+  expect(() => repository.reopenProject(reopening(99))).toThrow("Projeto não encontrado");
+  expect(() => repository.reopenProject(reopening(1))).toThrow("Só é possível reabrir");
+  expect(() => repository.reopenProject({ ...reopening(), reason: " oi " })).toThrow();
+  save.mockImplementationOnce(() => { throw new Error("sem espaço"); });
+  expect(() => repository.reopenProject(reopening())).toThrow("sem espaço");
+  expect(repository.get(2)!.status).toBe("PREPARACAO");
+  expect(repository.listReopenings(2)).toEqual([]);
+  // A cópia devolvida não altera o histórico gravado.
+  repository.reopenProject(reopening()).reason = "alterado";
+  expect(repository.listReopenings(2)[0].reason).toBe("Prazo prorrogado pela coordenação.");
+});

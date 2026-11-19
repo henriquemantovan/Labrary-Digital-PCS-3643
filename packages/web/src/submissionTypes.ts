@@ -21,6 +21,18 @@ export interface SubmissionChecklist {
   items: ChecklistItem[];
   blockedBy: SubmissionBlock | null;
   canSubmit: boolean;
+  /** Professor da turma, em Preparação com prazo vencido (regra do servidor). */
+  canReopen: boolean;
+  lastReopening: Reopening | null;
+}
+
+/** Reabertura explícita pelo professor (POST /projects/:id/reopen). */
+export interface Reopening {
+  id: number;
+  projectId: number;
+  reopenedBy: number;
+  reopenedAt: string;
+  reason: string;
 }
 
 export interface SubmittedMaterial {

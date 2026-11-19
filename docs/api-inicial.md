@@ -163,10 +163,11 @@ Contrato completo, regras e exemplos em [C1 — submissão e rodada](contratos/c
 | `GET /api/projects/:projectId/submissions/:submissionId` | Quem lê o projeto | `200 { data: Submission }` |
 | `POST /api/projects/:projectId/submissions` | Aluno do grupo | `{ clientSubmissionId: uuid }` → `201` (rodada nova) ou `200` (repetição) |
 | `POST /api/projects/:projectId/submissions/:submissionId/return` | Professor da turma ou ADMIN | `200 { data: Submission }` devolvida |
+| `POST /api/projects/:projectId/reopen` | Professor da turma ou ADMIN | `{ reason }` (5–1000 caracteres) → `201 { data: Reopening }` |
 
-`SubmissionChecklist` contém `projectStatus`, `rubricVersionId` (`null` sem C0), `items` (`kind`, `label`, `materialId`, `versionId`, `ok`), `blockedBy` (código do erro que o POST devolveria, ou `null`) e `canSubmit`. Erros: `403 FORBIDDEN` (papel), `400 VALIDATION_ERROR`, `404 SUBMISSION_NOT_FOUND` e `409` com `RUBRIC_NOT_CONFIGURED`, `SUBMISSION_LOCKED`, `DEADLINE_PASSED`, `INCOMPLETE_SUBMISSION` ou `SUBMISSION_NOT_RETURNABLE`.
+`SubmissionChecklist` contém `projectStatus`, `rubricVersionId` (`null` sem C0), `items` (`kind`, `label`, `materialId`, `versionId`, `ok`), `blockedBy` (código do erro que o POST devolveria, ou `null`), `canSubmit`, `canReopen` e `lastReopening` (última reabertura ou `null`). Erros: `403 FORBIDDEN` (papel), `400 VALIDATION_ERROR`, `404 SUBMISSION_NOT_FOUND` e `409` com `RUBRIC_NOT_CONFIGURED`, `SUBMISSION_LOCKED`, `DEADLINE_PASSED`, `INCOMPLETE_SUBMISSION`, `SUBMISSION_NOT_RETURNABLE` ou `REOPEN_NOT_ALLOWED`.
 
-Submeter muda o projeto para `EM_AVALIACAO`, o que bloqueia uploads (`409 PROJECT_LOCKED`). Devolver muda a rodada para `DEVOLVIDA` e o projeto para `AJUSTES`; o próximo envio cria a rodada seguinte. As rodadas ficam no mesmo arquivo privado dos projetos (`PROJECT_DATA_FILE`), gravadas junto com o estado do projeto.
+Submeter muda o projeto para `EM_AVALIACAO`, o que bloqueia uploads (`409 PROJECT_LOCKED`). Devolver muda a rodada para `DEVOLVIDA` e o projeto para `AJUSTES`; o próximo envio cria a rodada seguinte. Reabrir vale só em `PREPARACAO` com prazo vencido: registra quem, quando e a justificativa e muda o projeto para `AJUSTES`, onde os prazos originais não se aplicam. As rodadas ficam no mesmo arquivo privado dos projetos (`PROJECT_DATA_FILE`), gravadas junto com o estado do projeto.
 
 ## Leitura do grupo — integração do PR #54
 

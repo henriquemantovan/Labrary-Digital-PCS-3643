@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError } from "./api";
 import type { Material, Project, User } from "./api";
 import { Icon } from "./Icons";
-import type { Submission, SubmissionBlock, SubmissionChecklist } from "./submissionTypes";
+import type { Reopening, Submission, SubmissionBlock, SubmissionChecklist } from "./submissionTypes";
 
 const formatDate = (value: string) =>
   new Date(value).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
@@ -39,7 +39,8 @@ export function SubmissionPanel({ project, user, materials, refreshKey, expired,
   const [revision, setRevision] = useState(0);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [confirming, setConfirming] = useState<"submit" | "return" | null>(null);
+  const [confirming, setConfirming] = useState<"submit" | "return" | "reopen" | null>(null);
+  const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   // Mesmo identificador enquanto o resultado da tentativa for desconhecido (falha de rede).
   const attempt = useRef<string | null>(null);
@@ -115,10 +116,33 @@ export function SubmissionPanel({ project, user, materials, refreshKey, expired,
     }
   }
 
+  async function reopen() {
+    setBusy(true);
+    setError("");
+    setSuccess("");
+    try {
+      await api<Reopening>(`/projects/${project.id}/reopen`, {
+        method: "POST",
+        body: JSON.stringify({ reason: reason.trim() }),
+      });
+      setConfirming(null);
+      setReason("");
+      setSuccess("Entrega reaberta. O grupo pode enviar materiais e submeter mesmo depois do prazo original.");
+      onStatusChanged("AJUSTES");
+    } catch (failure) {
+      fail(failure);
+      setRevision((value) => value + 1);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const versionNumber = (materialId: number | null, versionId: number | null) =>
     materials.find((item) => item.id === materialId)?.versions.find((item) => item.id === versionId)?.versionNumber;
   const ready = checklist?.items.filter((item) => item.ok).length ?? 0;
   const block = checklist && blockMessage(checklist);
+  const canReopen = !!checklist?.canReopen && project.status === "PREPARACAO";
+  const reopening = checklist?.lastReopening;
 
   return (
     <section className="detail-section submission-panel" aria-labelledby="submission-title">
@@ -145,6 +169,11 @@ export function SubmissionPanel({ project, user, materials, refreshKey, expired,
             <p className="material-lock">
               <Icon name="lock" size={16} />
               {block}
+            </p>
+          )}
+          {reopening && (
+            <p className="muted">
+              Entrega reaberta pelo professor em {formatDate(reopening.reopenedAt)}. Justificativa: {reopening.reason}
             </p>
           )}
           {checklist.items.length > 0 && (
@@ -179,6 +208,32 @@ export function SubmissionPanel({ project, user, materials, refreshKey, expired,
               <div className="button-row">
                 <button type="button" disabled={busy} onClick={() => void submit()}>
                   {busy ? "Submetendo…" : "Confirmar submissão"}
+                </button>
+                <button type="button" className="secondary" disabled={busy} onClick={() => setConfirming(null)}>
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          )}
+          {canReopen && confirming !== "reopen" && (
+            <button type="button" className="secondary" onClick={() => { setConfirming("reopen"); setSuccess(""); }}>
+              Reabrir entrega
+            </button>
+          )}
+          {canReopen && confirming === "reopen" && (
+            <div className="submission-confirm" role="group" aria-label="Confirmar reabertura">
+              <p>
+                O prazo terminou sem submissão. Ao reabrir, o projeto passa para Em ajustes e o grupo
+                pode enviar materiais e submeter mesmo depois do prazo original. A justificativa fica registrada.
+              </p>
+              <label>
+                Justificativa da reabertura
+                <textarea value={reason} maxLength={1000} disabled={busy}
+                  onChange={(event) => setReason(event.target.value)} />
+              </label>
+              <div className="button-row">
+                <button type="button" disabled={busy || reason.trim().length < 5} onClick={() => void reopen()}>
+                  {busy ? "Reabrindo…" : "Confirmar reabertura"}
                 </button>
                 <button type="button" className="secondary" disabled={busy} onClick={() => setConfirming(null)}>
                   Cancelar

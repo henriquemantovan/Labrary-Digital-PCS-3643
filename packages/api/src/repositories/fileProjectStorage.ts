@@ -11,7 +11,7 @@ import { dirname } from "node:path";
 import { z } from "zod";
 import { roles } from "../models/auth.js";
 import { materialKinds, projectStatuses } from "../models/project.js";
-import { submissionSchema } from "../models/submission.js";
+import { reopeningSchema, submissionSchema } from "../models/submission.js";
 import { ProjectStorage } from "./projectRepository.js";
 
 const id = z.number().int().positive();
@@ -77,6 +77,8 @@ const snapshotSchema = z.object({
   ),
   // Arquivos gravados antes da HU05 não têm rodadas; carregam com lista vazia.
   submissions: z.array(submissionSchema).default([]),
+  // Só gravado quando há reaberturas; arquivos anteriores carregam sem o campo.
+  reopenings: z.array(reopeningSchema).optional(),
 });
 
 // Formato anterior à HU04: uma linha por versão, só metadados, sem bytes gravados.

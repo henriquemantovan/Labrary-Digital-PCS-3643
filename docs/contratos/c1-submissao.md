@@ -30,13 +30,14 @@ Materiais e rubrica não mudam depois da submissão; só `status` e `returnedAt`
   1. `clientSubmissionId` já usado: devolve a rodada existente (`repeated: true`).
   2. Sem C0 configurado: `409 RUBRIC_NOT_CONFIGURED`.
   3. Projeto fora de `PREPARACAO`/`AJUSTES`: `409 SUBMISSION_LOCKED`.
-  4. Em `PREPARACAO`, depois do prazo do projeto ou de algum requisito: `409 DEADLINE_PASSED`. Em `AJUSTES` (reabertura pelo professor), os prazos não se aplicam.
+  4. Em `PREPARACAO`, depois do prazo do projeto ou de algum requisito (`deadlinePassed`): `409 DEADLINE_PASSED`. Em `AJUSTES` (devolução ou reabertura pelo professor), os prazos não se aplicam.
   5. Checklist com pendências: `409 INCOMPLETE_SUBMISSION`, com os nomes dos materiais pendentes.
 
 O repositório (`projectRepository.ts`) faz as mudanças de estado:
 
 - `createSubmission`: grava a rodada e muda o projeto para `EM_AVALIACAO`, o que bloqueia uploads (`uploadLock`).
 - `returnSubmission`: só aceita a rodada mais recente, com status `SUBMETIDA` e projeto em `EM_AVALIACAO` (`409 SUBMISSION_NOT_RETURNABLE` nos demais casos). Marca `DEVOLVIDA` com `returnedAt` e muda o projeto para `AJUSTES`. Não há campo de motivo.
+- `reopenProject`: reabertura explícita de entrega que perdeu o prazo **sem nenhuma submissão**. Só aceita projeto em `PREPARACAO` (`409 REOPEN_NOT_ALLOWED`), grava `{ id, projectId, reopenedBy, reopenedAt, reason }` e muda o projeto para `AJUSTES` na mesma escrita. Não cria rodada; a próxima submissão é a rodada 1. A rota também exige prazo vencido (`deadlinePassed`).
 
 ## Rotas
 
@@ -44,19 +45,28 @@ Prefixo `/api`; sessão obrigatória; POST com `X-CSRF-Protection: 1`. Projeto f
 
 | Rota | Quem | Resposta |
 | --- | --- | --- |
-| `GET /projects/:projectId/submission-checklist` | Quem lê o projeto | `{ projectStatus, rubricVersionId, items, blockedBy, canSubmit }` |
+| `GET /projects/:projectId/submission-checklist` | Quem lê o projeto | `{ projectStatus, rubricVersionId, items, blockedBy, canSubmit, canReopen, lastReopening }` |
 | `GET /projects/:projectId/submissions` | Quem lê o projeto | Rodadas em ordem crescente |
 | `GET /projects/:projectId/submissions/:submissionId` | Quem lê o projeto | Uma rodada; `404 SUBMISSION_NOT_FOUND` se não for do projeto |
 | `POST /projects/:projectId/submissions` | Aluno do grupo (`403` para os demais) | Body `{ clientSubmissionId }` (UUID, sem outros campos); `201` com a rodada nova ou `200` com a rodada existente na repetição |
 | `POST /projects/:projectId/submissions/:submissionId/return` | Professor da turma ou ADMIN (`403` para os demais) | `200` com a rodada devolvida |
+| `POST /projects/:projectId/reopen` | Professor da turma ou ADMIN (`403` para os demais) | Body `{ reason }` (5–1000 caracteres após `trim`, sem outros campos); `201` com a reabertura; `409 REOPEN_NOT_ALLOWED` fora de `PREPARACAO` ou antes do prazo |
 
-`blockedBy` é o código que o POST devolveria naquele momento (mesma função `prepareSubmission`, sem gravar); `canSubmit` também exige que o usuário seja aluno do grupo. `submittedBy` é a conta autenticada real, mesmo em prévia de ADMIN. A repetição vale para qualquer integrante do grupo que reenvie o mesmo `clientSubmissionId`.
+`blockedBy` é o código que o POST devolveria naquele momento (mesma função `prepareSubmission`, sem gravar); `canSubmit` também exige que o usuário seja aluno do grupo; `canReopen` só é verdadeiro para o professor da turma (ou ADMIN), em `PREPARACAO` com prazo vencido. `submittedBy` é a conta autenticada real, mesmo em prévia de ADMIN. A repetição vale para qualquer integrante do grupo que reenvie o mesmo `clientSubmissionId`.
 
 ## Persistência
 
-As rodadas ficam no campo `submissions` do mesmo arquivo privado de projetos (`PROJECT_DATA_FILE`). Submeter e devolver gravam a rodada e o novo estado do projeto numa única escrita (arquivo temporário + renomeação), então uma falha não deixa rodada sem mudança de estado. Na carga, cada rodada é validada com `submissionSchema`; arquivo inválido impede a inicialização e não é sobrescrito. Arquivos anteriores à HU05, sem `submissions`, carregam com histórico vazio. O backup continua sendo o arquivo de projetos junto com grupos, rubricas e `UPLOAD_DIR`.
+As rodadas ficam no campo `submissions` do mesmo arquivo privado de projetos (`PROJECT_DATA_FILE`); as reaberturas, no campo `reopenings`, gravado só quando existe alguma. Submeter e devolver gravam a rodada e o novo estado do projeto numa única escrita (arquivo temporário + renomeação), então uma falha não deixa rodada sem mudança de estado. Na carga, cada rodada é validada com `submissionSchema`; arquivo inválido impede a inicialização e não é sobrescrito. Arquivos anteriores à HU05, sem `submissions`, carregam com histórico vazio. O backup continua sendo o arquivo de projetos junto com grupos, rubricas e `UPLOAD_DIR`.
 
 Observação para demonstrações: no seed local, o projeto 1 começa em `EM_AVALIACAO` sem nenhuma rodada. Use o projeto 2 (`PREPARACAO`) para o fluxo completo.
+
+`repositories/backupRestore.test.ts` copia arquivos de projetos, rubricas e uploads para outro diretório, apaga o original e confere, após recriar a aplicação: rodadas, snapshots, versões, bytes, bloqueio, continuação dos IDs e a decisão `FINALIZADO` da HU11 gravada no mesmo arquivo. Também cobre cópia sem `uploads` (metadados preservados, download `404 FILE_NOT_FOUND`) e arquivo de projetos corrompido.
+
+## Adapter para a publicação (HU11)
+
+`services/submissionProvider.ts` exporta `createSubmissionProvider(repository)`, que implementa `PublicationProviders["submissions"]` ([HU11](../hu11.md#integração-de-domínio-para-enzo-e-kauê)). `latest(projectId)` devolve uma cópia da rodada de maior número persistida, ou `undefined` se o projeto não tiver rodadas. Não filtra por estado: rodada `DEVOLVIDA` é entregue como está e o serviço da HU11 recusa finalizá-la (`409 PUBLICATION_NOT_READY`).
+
+O adapter ainda **não** é injetado em `server.ts`: a porta da HU11 exige também o provedor de completude das avaliações (Kauê, #41), e a composição no entrypoint é feita por Henrique (#42). `services/submissionProvider.test.ts` verifica o adapter e a finalização a partir de uma rodada real; nesse teste, só a completude C3 é dublê.
 
 ## Interface
 

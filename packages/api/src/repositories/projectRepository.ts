@@ -6,7 +6,10 @@ import {
 import { NewMessage, ProjectMessage } from "../models/message.js";
 import { ApiError } from "../errors.js";
 import {
+  NewReopening,
   NewSubmission,
+  Reopening,
+  reopeningSchema,
   Submission,
   submissionSchema,
 } from "../models/submission.js";
@@ -65,6 +68,10 @@ export interface ProjectRepository {
     submissionId: number,
     returnedAt: string,
   ): Submission;
+  /** Reaberturas do projeto em ordem cronológica. */
+  listReopenings(projectId: number): Reopening[];
+  /** Registra a reabertura e muda o projeto de PREPARACAO para AJUSTES na mesma gravação. */
+  reopenProject(input: NewReopening): Reopening;
 }
 
 export interface ProjectSnapshot {
@@ -74,6 +81,8 @@ export interface ProjectSnapshot {
   messages: ProjectMessage[];
   /** Ausente em arquivos anteriores à HU05; tratado como lista vazia. */
   submissions?: Submission[];
+  /** Gravado só quando há reaberturas (HU05). */
+  reopenings?: Reopening[];
 }
 export interface ProjectStorage {
   load(): ProjectSnapshot | undefined;
@@ -138,7 +147,8 @@ export function createMemoryProjectRepository(
   let nextMessageId = Math.max(0, ...messages.map((item) => item.id)) + 1;
   let decisions = saved?.publicationDecisions ?? [];
   let nextSubmissionId = Math.max(0, ...submissions.map((item) => item.id)) + 1;
-  // Conserva rodadas e decisões em todas as mutações, confirmando antes de trocar a memória.
+  let reopenings = saved?.reopenings ?? [];
+  // Conserva rodadas, decisões e reaberturas em todas as mutações, confirmando antes de trocar a memória.
   const commit = (changes: Partial<ProjectSnapshot>) => {
     const next: ProjectSnapshot = {
       projects,
@@ -146,12 +156,14 @@ export function createMemoryProjectRepository(
       messages,
       submissions,
       ...(decisions.length ? { publicationDecisions: decisions } : {}),
+      ...(reopenings.length ? { reopenings } : {}),
       ...changes,
     };
     storage?.save(next);
     ({ projects, materials, messages } = next);
     submissions = next.submissions ?? [];
     decisions = next.publicationDecisions ?? [];
+    reopenings = next.reopenings ?? [];
   };
   const withStatus = (
     projectId: number,
@@ -405,6 +417,31 @@ export function createMemoryProjectRepository(
         ),
       });
       return structuredClone(returned);
+    },
+    listReopenings(projectId) {
+      return structuredClone(
+        reopenings.filter((item) => item.projectId === projectId),
+      );
+    },
+    reopenProject(input) {
+      const project = projects.find((item) => item.id === input.projectId);
+      if (!project)
+        throw new ApiError(404, "PROJECT_NOT_FOUND", "Projeto não encontrado.");
+      if (project.status !== "PREPARACAO")
+        throw new ApiError(
+          409,
+          "REOPEN_NOT_ALLOWED",
+          "Só é possível reabrir uma entrega em preparação com prazo vencido.",
+        );
+      const reopening = reopeningSchema.parse({
+        ...input,
+        id: Math.max(0, ...reopenings.map((item) => item.id)) + 1,
+      });
+      commit({
+        projects: withStatus(project.id, "AJUSTES", reopening.reopenedAt),
+        reopenings: [...reopenings, reopening],
+      });
+      return structuredClone(reopening);
     },
   };
 }
