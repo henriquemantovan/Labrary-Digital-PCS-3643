@@ -47,6 +47,9 @@
   --warning: #c98a1a;
   --info: #3a6fd8;
   color-scheme: light;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
 }
 
 @utility select-chevron {

@@ -5,7 +5,12 @@ import type {
   PublicProject,
   PublicPublicationProvider,
 } from "./catalogClient";
-import { Icon } from "./Icons";
+import { Download } from "lucide-react";
+import { Brand } from "./components/Brand";
+import { Loading, Notice } from "./components/Feedback";
+import { PageHeader } from "./components/PageHeader";
+import { Button, buttonVariants } from "./components/ui/button";
+import { fieldLabel, Input, NativeSelect } from "./components/ui/input";
 
 export function Catalog({
   provider,
@@ -70,59 +75,69 @@ export function Catalog({
   }
   const filtered = filterCatalog(projects, filter);
   return (
-    <div className="catalog-shell">
-      <a className="skip-link" href="#catalog-main">
+    <div className="min-h-dvh bg-background">
+      <a
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-full focus:bg-card focus:px-4 focus:py-2 focus:text-sm"
+        href="#catalog-main"
+      >
         Pular para o conteúdo
       </a>
-      <header className="catalog-header">
-        <a
-          href={basePath}
-          onClick={(event) => {
-            event.preventDefault();
-            navigate(basePath);
-          }}
-          className="brand"
-        >
-          <Icon name="book" /> labrary digital
-        </a>
-        <a className="secondary" href="/login">
-          Meu espaço
-        </a>
+      <header className="sticky top-0 z-10 border-b bg-background/85 backdrop-blur">
+        <div className="mx-auto flex max-w-[1120px] items-center justify-between gap-4 px-5 py-3 md:px-8">
+          <a
+            href={basePath}
+            aria-label="labrary digital"
+            className="no-underline"
+            onClick={(event) => {
+              event.preventDefault();
+              navigate(basePath);
+            }}
+          >
+            <Brand />
+          </a>
+          <a className={buttonVariants({ variant: "outline", size: "sm" })} href="/login">
+            Meu espaço
+          </a>
+        </div>
       </header>
-      <main id="catalog-main">
+      <main
+        id="catalog-main"
+        className="mx-auto max-w-[1120px] px-5 py-10 md:px-8 [overflow-wrap:anywhere]"
+      >
         {demo && (
-          <aside className="catalog-demo" aria-label="Demonstração">
+          <aside
+            className="mb-6 rounded-xl border border-info/25 bg-info/5 px-4 py-3 text-sm text-foreground"
+            aria-label="Demonstração"
+          >
             Demonstração — dados fictícios. Os materiais são exemplos, sem
             arquivos disponíveis. A publicação real ainda não está integrada.
           </aside>
         )}
         {isDetail && (
-          <button className="secondary" onClick={() => navigate(basePath)}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="mb-4 -ml-3 text-muted-foreground"
+            onClick={() => navigate(basePath)}
+          >
             ← Voltar ao acervo
-          </button>
+          </Button>
         )}
         {!isDetail && (
-          <div className="page-heading">
-            <div>
-              <p className="eyebrow">IDEIAS PARA EXPLORAR</p>
-              <h1>Acervo de projetos</h1>
-              <p className="page-intro">
-                Explore projetos por título, ano, turma e categoria.
-              </p>
-            </div>
-          </div>
+          <PageHeader
+            eyebrow="Ideias para explorar"
+            title="Acervo de projetos"
+            intro="Explore projetos por título, ano, turma e categoria."
+          />
         )}
-        {loading && <p role="status">Carregando acervo…</p>}
+        {loading && <Loading label="Carregando acervo…" />}
         {error && (
-          <div className="notice" role="alert">
+          <Notice>
             <p>{error}</p>
-            <button
-              className="secondary"
-              onClick={() => setAttempt((value) => value + 1)}
-            >
+            <button onClick={() => setAttempt((value) => value + 1)}>
               Tentar novamente
             </button>
-          </div>
+          </Notice>
         )}
         {!loading &&
           !error &&
@@ -130,20 +145,24 @@ export function Catalog({
             detail ? (
               <CatalogDetail key={detail.id} project={detail} demo={demo} />
             ) : (
-              <div className="empty">
-                <h1>Publicação não encontrada</h1>
-                <p>O projeto não está disponível no acervo.</p>
+              <div className="rounded-xl border border-dashed bg-card px-6 py-16 text-center">
+                <h1 className="text-xl font-semibold tracking-tight">
+                  Publicação não encontrada
+                </h1>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  O projeto não está disponível no acervo.
+                </p>
               </div>
             )
           ) : (
             <>
               <section
-                className="catalog-filters"
+                className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1.4fr_1.4fr_auto]"
                 aria-label="Filtros do acervo"
               >
-                <label>
+                <label className={fieldLabel}>
                   Buscar por título
-                  <input
+                  <Input
                     type="search"
                     value={filter.q ?? ""}
                     onChange={(e) =>
@@ -151,9 +170,9 @@ export function Catalog({
                     }
                   />
                 </label>
-                <label>
+                <label className={fieldLabel}>
                   Ano
-                  <select
+                  <NativeSelect
                     value={filter.academicYear ?? ""}
                     onChange={(e) =>
                       setFilter({
@@ -172,11 +191,11 @@ export function Catalog({
                           {year}
                         </option>
                       ))}
-                  </select>
+                  </NativeSelect>
                 </label>
-                <label>
+                <label className={fieldLabel}>
                   Turma
-                  <select
+                  <NativeSelect
                     value={filter.classId ?? ""}
                     onChange={(e) =>
                       setFilter({
@@ -197,11 +216,11 @@ export function Catalog({
                         {item.name}
                       </option>
                     ))}
-                  </select>
+                  </NativeSelect>
                 </label>
-                <label>
+                <label className={fieldLabel}>
                   Categoria
-                  <select
+                  <NativeSelect
                     value={filter.category ?? ""}
                     onChange={(e) =>
                       setFilter({
@@ -216,57 +235,60 @@ export function Catalog({
                       .map((category) => (
                         <option key={category}>{category}</option>
                       ))}
-                  </select>
+                  </NativeSelect>
                 </label>
-                <button className="secondary" onClick={() => setFilter({})}>
+                <Button
+                  variant="ghost"
+                  className="h-10"
+                  onClick={() => setFilter({})}
+                >
                   Limpar filtros
-                </button>
+                </Button>
               </section>
-              <p role="status">{filtered.length} projeto(s) encontrado(s)</p>
+              <p role="status" className="mt-6 mb-4 text-xs text-muted-foreground">
+                {filtered.length} projeto(s) encontrado(s)
+              </p>
               {!filtered.length && (
-                <div className="empty">
-                  <h2>
+                <div className="rounded-xl border border-dashed bg-card px-6 py-14 text-center">
+                  <h2 className="text-base font-medium">
                     {projects.length
                       ? "Nenhum resultado"
                       : "Nenhum projeto publicado"}
                   </h2>
-                  <p>
+                  <p className="mt-1 text-sm text-muted-foreground">
                     {projects.length
                       ? "Ajuste a busca ou limpe os filtros."
                       : "Novas publicações aparecerão aqui."}
                   </p>
                 </div>
               )}
-              <div className="project-grid catalog-grid">
-                {filtered.map((project, index) => (
-                  <article className="project-card" key={project.id}>
-                    <div
-                      className={`project-cover cover-${index % 3}`}
-                      aria-hidden="true"
-                    >
-                      <div className="cover-grid" />
-                      <div className="cover-chip">
-                        <Icon name="folder" size={38} />
-                      </div>
-                    </div>
-                    <div className="project-content">
-                      <p className="project-category">
-                        {project.category} · {project.academicYear}
-                      </p>
-                      <h2>
-                        <a
-                          href={`${basePath}/${project.id}`}
-                          onClick={(event) => {
-                            event.preventDefault();
-                            navigate(`${basePath}/${project.id}`);
-                          }}
-                        >
-                          {project.title}
-                        </a>
-                      </h2>
-                      <p>{project.description}</p>
-                      <p className="muted">{project.class.name}</p>
-                    </div>
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {filtered.map((project) => (
+                  <article
+                    className="flex flex-col rounded-xl border bg-card p-5 transition-colors hover:border-input"
+                    key={project.id}
+                  >
+                    <p className="mb-3 text-xs text-muted-foreground">
+                      {project.category} · {project.academicYear}
+                    </p>
+                    <h2 className="text-base leading-snug font-medium">
+                      <a
+                        className="text-foreground no-underline hover:underline"
+                        href={`${basePath}/${project.id}`}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          navigate(`${basePath}/${project.id}`);
+                        }}
+                      >
+                        {project.title}
+                      </a>
+                    </h2>
+                    <p className="mt-1.5 line-clamp-3 flex-1 text-sm text-muted-foreground">
+                      {project.description}
+                    </p>
+                    <p className="mt-4 border-t pt-3 text-xs text-subtle-foreground">
+                      {project.class.name}
+                    </p>
                   </article>
                 ))}
               </div>
@@ -286,66 +308,92 @@ function CatalogDetail({
 }) {
   const [failedVideos, setFailedVideos] = useState<number[]>([]);
   return (
-    <article className="catalog-detail">
-      <div className="page-heading">
-        <div>
-          <p className="eyebrow">
+    <article>
+      <PageHeader
+        eyebrow={
+          <>
             {project.category} · {project.academicYear}
+          </>
+        }
+        title={project.title}
+        intro={project.class.name}
+      />
+      <div className="grid gap-6">
+        <section className="rounded-xl border bg-card p-5 md:p-6">
+          <h2 className="mb-3 text-base font-semibold tracking-tight">Sobre o projeto</h2>
+          <p className="text-sm leading-relaxed whitespace-pre-wrap text-muted-foreground">
+            {project.description}
           </p>
-          <h1>{project.title}</h1>
-          <p className="page-intro">{project.class.name}</p>
-        </div>
+        </section>
+        <section
+          className="rounded-xl border bg-card p-5 md:p-6"
+          aria-labelledby="public-materials"
+        >
+          <h2
+            id="public-materials"
+            className="mb-4 text-base font-semibold tracking-tight"
+          >
+            Materiais autorizados
+          </h2>
+          {!project.materials.length && (
+            <p className="text-sm text-muted-foreground">
+              Nenhum material autorizado para consulta pública.
+            </p>
+          )}
+          <div className="grid gap-4 md:grid-cols-2">
+            {project.materials.map((material) => (
+              <section
+                key={material.versionId}
+                className="grid content-start gap-3 rounded-lg border p-4"
+              >
+                <h3 className="text-sm font-medium">{material.title}</h3>
+                {demo ? (
+                  <p className="text-sm text-muted-foreground">
+                    Exemplo de {material.kind.toLocaleLowerCase("pt-BR")}{" "}
+                    autorizado — sem arquivo nesta demonstração.
+                  </p>
+                ) : material.kind === "VIDEO" ? (
+                  <>
+                    {failedVideos.includes(material.versionId) ? (
+                      <p role="alert" className="text-sm text-destructive">
+                        Não foi possível reproduzir o vídeo. A publicação pode ter
+                        sido retirada. Recarregue a página para consultar a
+                        disponibilidade.
+                      </p>
+                    ) : (
+                      <video
+                        className="block max-h-[420px] w-full rounded-lg bg-black"
+                        controls
+                        preload="metadata"
+                        aria-label={material.title}
+                        src={material.contentUrl}
+                        onError={() =>
+                          setFailedVideos((items) => [
+                            ...items,
+                            material.versionId,
+                          ])
+                        }
+                      />
+                    )}
+                  </>
+                ) : (
+                  <a
+                    className={buttonVariants({
+                      variant: "outline",
+                      size: "sm",
+                      className: "justify-self-start",
+                    })}
+                    href={material.contentUrl}
+                  >
+                    <Download />
+                    Baixar {material.title}
+                  </a>
+                )}
+              </section>
+            ))}
+          </div>
+        </section>
       </div>
-      <section className="detail-section">
-        <h2>Sobre o projeto</h2>
-        <p className="catalog-description">{project.description}</p>
-      </section>
-      <section className="detail-section" aria-labelledby="public-materials">
-        <h2 id="public-materials">Materiais autorizados</h2>
-        {!project.materials.length && (
-          <p>Nenhum material autorizado para consulta pública.</p>
-        )}
-        <div className="catalog-materials">
-          {project.materials.map((material) => (
-            <section key={material.versionId} className="catalog-material">
-              <h3>{material.title}</h3>
-              {demo ? (
-                <p className="muted">
-                  Exemplo de {material.kind.toLocaleLowerCase("pt-BR")}{" "}
-                  autorizado — sem arquivo nesta demonstração.
-                </p>
-              ) : material.kind === "VIDEO" ? (
-                <>
-                  {failedVideos.includes(material.versionId) ? (
-                    <p role="alert">
-                      Não foi possível reproduzir o vídeo. A publicação pode ter
-                      sido retirada. Recarregue a página para consultar a
-                      disponibilidade.
-                    </p>
-                  ) : (
-                    <video
-                      controls
-                      preload="metadata"
-                      aria-label={material.title}
-                      src={material.contentUrl}
-                      onError={() =>
-                        setFailedVideos((items) => [
-                          ...items,
-                          material.versionId,
-                        ])
-                      }
-                    />
-                  )}
-                </>
-              ) : (
-                <a className="secondary" href={material.contentUrl}>
-                  Baixar {material.title}
-                </a>
-              )}
-            </section>
-          ))}
-        </div>
-      </section>
     </article>
   );
 }
