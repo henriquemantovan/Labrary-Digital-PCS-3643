@@ -7,6 +7,8 @@ import { AdminUsers } from "./AdminUsers";
 import { Gradebook } from "./Gradebook";
 import { Brand } from "./components/Brand";
 import { Loading, Notice } from "./components/Feedback";
+import { Button } from "./components/ui/button";
+import { Label, NativeSelect } from "./components/ui/input";
 import { roleLabels } from "./labels";
 import { AppShell } from "./layout/AppShell";
 import { Dashboard } from "./pages/Dashboard";
@@ -121,19 +123,17 @@ function PrivateApp() {
   }
   if (initializing)
     return (
-      <main className="startup">
+      <main className="grid min-h-dvh place-content-center justify-items-center gap-2 bg-background p-6">
         <Brand />
         <Loading />
       </main>
     );
   if (startupError)
     return (
-      <main className="startup">
+      <main className="grid min-h-dvh place-content-center justify-items-center gap-4 bg-background p-6">
         <Brand />
         <Notice>{startupError}</Notice>
-        <button className="primary" onClick={() => void bootstrap()}>
-          Tentar novamente
-        </button>
+        <Button onClick={() => void bootstrap()}>Tentar novamente</Button>
       </main>
     );
   if (!user)
@@ -161,30 +161,36 @@ function PrivateApp() {
       busy={busy}
       logout={logout}
     >
-          {logoutError && <Notice>{logoutError}</Notice>}
-          {user.role === "ADMIN" && (
-            <section className="admin-view" aria-label="Visualização de perfis">
-              <label htmlFor="view-role">Visualizar como</label>
-              <select
-                id="view-role"
-                value={user.viewRole ?? "ADMIN"}
-                disabled={viewBusy}
-                onChange={(event) => void changeView(event.target.value)}
-              >
-                <option value="ADMIN">Administrador</option>
-                <option value="ALUNO">Aluno</option>
-                <option value="AVALIADOR">Avaliador</option>
-                <option value="PROFESSOR">Professor</option>
-              </select>
-              <p>
-                {user.viewRole
-                  ? `Visualização de ${roleLabels[user.viewRole]}. Sua conta continua sendo Administrador; o acesso segue seus vínculos nesse perfil.`
-                  : "Visão administrativa de todas as turmas e projetos."}
-              </p>
-            </section>
-          )}
-          {viewError && <Notice>{viewError}</Notice>}
-          {path === "/notas" && ["PROFESSOR", "ADMIN"].includes(visibleUser.role) ? (
+      <div className="mb-6 grid gap-4 empty:hidden">
+        {logoutError && <Notice>{logoutError}</Notice>}
+        {user.role === "ADMIN" && (
+          <section
+            className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl bg-muted px-4 py-3"
+            aria-label="Visualização de perfis"
+          >
+            <Label htmlFor="view-role">Visualizar como</Label>
+            <NativeSelect
+              id="view-role"
+              className="h-9 w-auto min-w-44"
+              value={user.viewRole ?? "ADMIN"}
+              disabled={viewBusy}
+              onChange={(event) => void changeView(event.target.value)}
+            >
+              <option value="ADMIN">Administrador</option>
+              <option value="ALUNO">Aluno</option>
+              <option value="AVALIADOR">Avaliador</option>
+              <option value="PROFESSOR">Professor</option>
+            </NativeSelect>
+            <p className="basis-full text-xs text-muted-foreground md:basis-auto">
+              {user.viewRole
+                ? `Visualização de ${roleLabels[user.viewRole]}. Sua conta continua sendo Administrador; o acesso segue seus vínculos nesse perfil.`
+                : "Visão administrativa de todas as turmas e projetos."}
+            </p>
+          </section>
+        )}
+        {viewError && <Notice>{viewError}</Notice>}
+      </div>
+      {path === "/notas" && ["PROFESSOR", "ADMIN"].includes(visibleUser.role) ? (
             <Gradebook key={`${user.id}-${user.viewRole ?? ""}`} expired={expired} />
           ) : path === "/administracao" && user.role === "ADMIN" ? (
             <AdminUsers

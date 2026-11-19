@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { api } from "../api";
 import type { User } from "../api";
-import { Icon } from "../Icons";
+import { ArrowRight, Eye, EyeOff, Lock } from "lucide-react";
 import { Brand } from "../components/Brand";
-import { Notice } from "../components/Feedback";
+import { Notice, Spinner } from "../components/Feedback";
+import { Button, buttonVariants } from "../components/ui/button";
+import { Input, Label } from "../components/ui/input";
 
 export function Login({
   onLogin,
@@ -65,147 +67,137 @@ export function Login({
     }
   }
   return (
-    <main className="login-layout">
-      <section className="login-story" aria-labelledby="story-title">
-        <Brand />
-        <div className="story-copy">
-          <p className="eyebrow">
-            <span className="live-dot" /> UM ESPAÇO PARA CONSTRUIR
+    <main className="grid min-h-dvh place-items-center bg-background px-4 py-10">
+      <div className="w-full max-w-[400px]">
+        <div className="mb-6 flex items-center justify-between">
+          <Brand />
+          <a
+            className={buttonVariants({ variant: "ghost", size: "sm" })}
+            href="/acervo"
+          >
+            Explorar acervo público
+          </a>
+        </div>
+        <section
+          className="rounded-xl border bg-card p-8 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+          aria-labelledby="login-title"
+        >
+          <p className="text-xs font-medium tracking-wide text-subtle-foreground uppercase">
+            Bem-vindo de volta
           </p>
-          <h1 id="story-title">
-            Grandes ideias.
-            <br />
-            Conexões <em>reais.</em>
-          </h1>
-          <p>
-            Do primeiro circuito à última entrega.
-            <br />O ponto de encontro dos seus projetos de sistemas digitais.
-          </p>
-        </div>
-        <div className="circuit-art" aria-hidden="true">
-          <div className="orbit orbit-one" />
-          <div className="orbit orbit-two" />
-          <div className="orbit orbit-three" />
-          <div className="circuit-line line-one" />
-          <div className="circuit-line line-two" />
-          <span className="art-node node-one">01</span>
-          <span className="art-node node-two">10</span>
-          <span className="art-label label-one">ideia</span>
-          <span className="art-label label-two">conexão</span>
-          <div className="chip">
-            <span className="chip-pins" />
-            <Icon name="book" size={60} />
-            <span className="chip-caption">LABRARY / DIGITAL</span>
-          </div>
-          <span className="orbit-dot dot-one" />
-          <span className="orbit-dot dot-two" />
-        </div>
-        <div className="story-footer">
-          <span>Aprender. Criar. Compartilhar.</span>
-          <span>PCS3643 ↗</span>
-        </div>
-      </section>
-      <section className="login-form-panel" aria-labelledby="login-title">
-        <div className="login-top">
-          <span className="small-dot" /> AMBIENTE ACADÊMICO
-        </div>
-        <div className="login-form-wrap">
-          <span className="login-symbol">
-            <Icon name="lock" size={24} />
-          </span>
-          <p className="eyebrow">BEM-VINDO DE VOLTA</p>
-          <h2 id="login-title">
+          <h1
+            id="login-title"
+            className="mt-2 text-2xl leading-tight font-semibold tracking-tight"
+          >
             Seu próximo projeto <br />
             começa aqui.
-          </h2>
-          <a href="/acervo">Explorar acervo público</a>
-          <p className="muted login-description">
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
             Entre com sua conta para acessar seu espaço.
           </p>
-          {(error || message || googleError) && (
-            <Notice>{error || message || googleError}</Notice>
-          )}
-          {providerError && (
-            <Notice>
-              {providerError}
-              <button onClick={() => void loadProviders()}>
-                Tentar novamente
-              </button>
-            </Notice>
-          )}
-          {!providers && !providerError && (
-            <p role="status">Carregando opções de acesso…</p>
-          )}
-          {providers?.google && (
-            <p>
-              <a
-                className="primary login-submit google-login"
-                href="/api/auth/google"
-              >
-                <img
-                  src="/google-logo.webp"
-                  alt=""
-                  aria-hidden="true"
-                  width={28}
-                  height={28}
-                />
-                <span>Entrar com Google</span>
-              </a>
-            </p>
-          )}
-          {providers?.google && (
-            <p className="muted">
-              Use sua conta Google para acessar seu espaço.
-            </p>
-          )}
-          {providers?.local && (
-            <form onSubmit={submit} aria-label="Entrar na conta">
-              <label htmlFor="email">E-mail institucional</label>
-              <input
-                id="email"
-                type="email"
-                autoComplete="username"
-                placeholder="seu.nome@instituicao.br"
-                required
-                maxLength={254}
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                disabled={busy}
-              />
-              <label htmlFor="password">Senha</label>
-              <div className="password-field">
-                <input
-                  id="password"
-                  type={visible ? "text" : "password"}
-                  autoComplete="current-password"
-                  placeholder="Digite sua senha"
-                  required
-                  maxLength={256}
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  disabled={busy}
-                />
-                <button
-                  type="button"
-                  className="icon-button"
-                  aria-label={visible ? "Ocultar senha" : "Mostrar senha"}
-                  aria-pressed={visible}
-                  onClick={() => setVisible(!visible)}
-                >
-                  <Icon name={visible ? "eyeOff" : "eye"} />
+          <div className="mt-6 grid gap-4">
+            {(error || message || googleError) && (
+              <Notice>{error || message || googleError}</Notice>
+            )}
+            {providerError && (
+              <Notice>
+                {providerError}
+                <button onClick={() => void loadProviders()}>
+                  Tentar novamente
                 </button>
+              </Notice>
+            )}
+            {!providers && !providerError && (
+              <p role="status" className="text-sm text-muted-foreground">
+                Carregando opções de acesso…
+              </p>
+            )}
+            {providers?.google && (
+              <div className="grid gap-2">
+                <a
+                  className={buttonVariants({
+                    variant: "outline",
+                    size: "lg",
+                    className: "w-full",
+                  })}
+                  href="/api/auth/google"
+                >
+                  <img
+                    src="/google-logo.webp"
+                    alt=""
+                    aria-hidden="true"
+                    width={20}
+                    height={20}
+                  />
+                  <span>Entrar com Google</span>
+                </a>
+                <p className="text-center text-xs text-muted-foreground">
+                  Use sua conta Google para acessar seu espaço.
+                </p>
               </div>
-              <button
-                className="primary login-submit"
-                disabled={busy}
-                type="submit"
+            )}
+            {providers?.local && (
+              <form
+                onSubmit={submit}
+                aria-label="Entrar na conta"
+                className="grid gap-4"
               >
-                <span>{busy ? "Entrando…" : "Entrar no meu espaço"}</span>
-                {busy ? <span className="spinner" /> : <Icon name="arrow" />}
-              </button>
-            </form>
-          )}
-          <p className="account-help">
+                <div className="grid gap-1.5">
+                  <Label htmlFor="email">E-mail institucional</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    autoComplete="username"
+                    placeholder="seu.nome@instituicao.br"
+                    required
+                    maxLength={254}
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    disabled={busy}
+                  />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="password">Senha</Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={visible ? "text" : "password"}
+                      autoComplete="current-password"
+                      placeholder="Digite sua senha"
+                      required
+                      maxLength={256}
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                      disabled={busy}
+                      className="pr-11"
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute top-0.5 right-0.5 text-muted-foreground"
+                      aria-label={visible ? "Ocultar senha" : "Mostrar senha"}
+                      aria-pressed={visible}
+                      onClick={() => setVisible(!visible)}
+                    >
+                      {visible ? <EyeOff /> : <Eye />}
+                    </Button>
+                  </div>
+                </div>
+                <Button
+                  type="submit"
+                  size="lg"
+                  className="mt-1 w-full"
+                  disabled={busy}
+                >
+                  <span>{busy ? "Entrando…" : "Entrar no meu espaço"}</span>
+                  {busy ? <Spinner /> : <ArrowRight />}
+                </Button>
+              </form>
+            )}
+          </div>
+        </section>
+        <div className="mt-6 grid gap-3 text-center text-xs text-muted-foreground">
+          <p className="[&_a]:text-foreground [&_a]:underline [&_a]:underline-offset-2">
             Precisa de acesso ou esqueceu sua senha?
             <br />
             {providers?.google ? (
@@ -218,15 +210,12 @@ export function Login({
               <span>Entre em contato com o professor da sua turma.</span>
             )}
           </p>
-          <div className="login-security">
-            <Icon name="lock" size={15} />
-            <span>Acesso de acordo com o seu perfil acadêmico.</span>
-          </div>
+          <p className="inline-flex items-center justify-center gap-1.5 text-subtle-foreground">
+            <Lock className="size-3.5" />
+            Acesso de acordo com o seu perfil acadêmico.
+          </p>
         </div>
-        <footer className="login-footer">
-          Labrary Digital <span>Projetos que conectam.</span>
-        </footer>
-      </section>
+      </div>
     </main>
   );
 }
