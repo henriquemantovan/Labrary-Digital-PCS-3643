@@ -25,6 +25,8 @@ const checklist = (overrides: Partial<SubmissionChecklist> = {}): SubmissionChec
   ],
   blockedBy: "INCOMPLETE_SUBMISSION",
   canSubmit: false,
+  canReopen: false,
+  lastReopening: null,
   ...overrides,
 });
 const round = (overrides: Partial<Submission> = {}): Submission => ({
@@ -210,4 +212,59 @@ it("sessão expirada durante a submissão chama expired", async () => {
   await userEvent.click(await screen.findByRole("button", { name: "Submeter para avaliação" }));
   await userEvent.click(screen.getByRole("button", { name: "Confirmar submissão" }));
   await waitFor(() => expect(expired).toHaveBeenCalled());
+});
+
+const reopening = {
+  id: 1, projectId: 2, reopenedBy: 3, reopenedAt: "2026-11-26T12:00:00.000Z", reason: "Prazo prorrogado pela coordenação.",
+};
+
+it("professor reabre entrega com prazo vencido informando a justificativa", async () => {
+  state.checklist = checklist({ blockedBy: "DEADLINE_PASSED", canReopen: true });
+  let sent: unknown;
+  post = (url, body) => {
+    expect(url).toBe("/api/projects/2/reopen");
+    sent = body;
+    return json(reopening, 201);
+  };
+  const { onStatusChanged } = panel({ user: professor });
+  expect(await screen.findByText(/O prazo de entrega terminou/)).toBeDefined();
+
+  await userEvent.click(screen.getByRole("button", { name: "Reabrir entrega" }));
+  const confirm = screen.getByRole("group", { name: "Confirmar reabertura" });
+  expect(confirm.textContent).toContain("A justificativa fica registrada");
+  await userEvent.click(within(confirm).getByRole("button", { name: "Cancelar" }));
+  await userEvent.click(screen.getByRole("button", { name: "Reabrir entrega" }));
+
+  const submitButton = screen.getByRole("button", { name: "Confirmar reabertura" }) as HTMLButtonElement;
+  const field = screen.getByLabelText("Justificativa da reabertura");
+  await userEvent.type(field, "  oi ");
+  expect(submitButton.disabled).toBe(true);
+  await userEvent.clear(field);
+  await userEvent.type(field, "  Prazo prorrogado pela coordenação.  ");
+  expect(submitButton.disabled).toBe(false);
+  await userEvent.click(submitButton);
+  expect(await screen.findByText(/Entrega reaberta. O grupo pode enviar materiais/)).toBeDefined();
+  expect(sent).toEqual({ reason: "Prazo prorrogado pela coordenação." });
+  expect(onStatusChanged).toHaveBeenCalledWith("AJUSTES");
+});
+
+it("mostra recusa da reabertura e não oferece a ação ao aluno nem fora de Preparação", async () => {
+  state.checklist = checklist({ blockedBy: "DEADLINE_PASSED", canReopen: true });
+  post = () => json("Só é possível reabrir uma entrega em preparação com prazo vencido.", 409);
+  const view = panel({ user: professor });
+  await userEvent.click(await screen.findByRole("button", { name: "Reabrir entrega" }));
+  await userEvent.type(screen.getByLabelText("Justificativa da reabertura"), "Motivo suficiente");
+  await userEvent.click(screen.getByRole("button", { name: "Confirmar reabertura" }));
+  expect((await screen.findByRole("alert")).textContent).toContain("Só é possível reabrir");
+
+  // O estado já mudou (por exemplo, em outra aba): a ação some mesmo com checklist antigo.
+  view.rerender(<SubmissionPanel project={{ id: 2, status: "AJUSTES" }} user={professor} materials={materials}
+    expired={vi.fn()} onStatusChanged={vi.fn()} />);
+  await waitFor(() => expect(screen.queryByRole("button", { name: "Reabrir entrega" })).toBeNull());
+  view.unmount();
+
+  state.checklist = checklist({ projectStatus: "AJUSTES", blockedBy: "INCOMPLETE_SUBMISSION", lastReopening: reopening });
+  panel({ project: { id: 2, status: "AJUSTES" } });
+  expect(await screen.findByText(/Entrega reaberta pelo professor em .*Justificativa: Prazo prorrogado pela coordenação\./)).toBeDefined();
+  expect(screen.queryByRole("button", { name: "Reabrir entrega" })).toBeNull();
 });

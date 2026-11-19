@@ -200,3 +200,73 @@ describe("HU05: checklist e submissão (C1)", () => {
     expect((await professor.post(`${base}/submissions/${second.body.data.id}/return`)).status).toBe(200);
   });
 });
+
+describe("HU05: reabertura explícita de entrega com prazo vencido", () => {
+  const reason = "Prazo prorrogado pela coordenação.";
+  const reopen = (actor: Setup["professor"], body: unknown = { reason }) =>
+    actor.post(`${base}/reopen`).send(body as object);
+
+  it("exige sessão, CSRF e professor da turma; valida a justificativa", async () => {
+    const { app, student, evaluator, professor, auth, setClock } = setup();
+    setClock(afterDue);
+    expect((await request(app).post(`${base}/reopen`).set("X-CSRF-Protection", "1").send({ reason })).status).toBe(401);
+    const token = auth.createSession(3, afterDue, 60_000) as string;
+    expect((await request(app).post(`${base}/reopen`).set("Cookie", `labrary_session=${token}`).send({ reason })).status).toBe(403);
+    auth.directory.assignments.push({ projectId: 2, evaluatorId: 2 });
+    for (const actor of [student, evaluator]) {
+      const denied = await reopen(actor);
+      expect(denied.status).toBe(403);
+      expect(denied.body.error.code).toBe("FORBIDDEN");
+    }
+    for (const body of [{}, { reason: "  ok  " }, { reason: "x".repeat(1001) }, { reason, extra: true }]) {
+      const invalid = await reopen(professor, body);
+      expect(invalid.status).toBe(400);
+      expect(invalid.body.error.code).toBe("VALIDATION_ERROR");
+    }
+    expect((await professor.post(`/api/projects/99/reopen`).send({ reason })).status).toBe(404);
+    expect((await student.get(base)).body.data.status).toBe("PREPARACAO");
+  });
+
+  it("só reabre em Preparação depois do prazo; o checklist indica quem pode reabrir", async () => {
+    const { student, professor, setClock } = setup();
+    const early = await reopen(professor);
+    expect(early.status).toBe(409);
+    expect(early.body.error.code).toBe("REOPEN_NOT_ALLOWED");
+    expect((await professor.get(`${base}/submission-checklist`)).body.data).toMatchObject({ canReopen: false, lastReopening: null });
+
+    setClock(afterDue);
+    expect((await professor.get(`${base}/submission-checklist`)).body.data).toMatchObject({ blockedBy: "DEADLINE_PASSED", canReopen: true });
+    // O aluno vê o bloqueio, mas não a ação de reabrir.
+    expect((await student.get(`${base}/submission-checklist`)).body.data).toMatchObject({ blockedBy: "DEADLINE_PASSED", canReopen: false });
+
+    // Sem requisitos configurados e sem prazo do projeto, não há prazo vencido para reabrir.
+    const unconfigured = setup({ configured: false });
+    unconfigured.setClock(afterDue);
+    expect((await reopen(unconfigured.professor)).body.error.code).toBe("REOPEN_NOT_ALLOWED");
+  });
+
+  it("reabre, registra quem e por quê, dispensa o prazo e permite a primeira rodada", async () => {
+    const { student, professor, setClock } = setup();
+    setClock(afterDue);
+    const reopened = await reopen(professor, { reason: `  ${reason}  ` });
+    expect(reopened.status).toBe(201);
+    expect(reopened.body.data).toEqual({
+      id: 1, projectId: 2, reopenedBy: 3, reopenedAt: new Date(afterDue).toISOString(), reason,
+    });
+    expect((await student.get(base)).body.data.status).toBe("AJUSTES");
+    const checklist = (await student.get(`${base}/submission-checklist`)).body.data;
+    expect(checklist).toMatchObject({ projectStatus: "AJUSTES", blockedBy: "INCOMPLETE_SUBMISSION", canReopen: false });
+    expect(checklist.lastReopening).toEqual(reopened.body.data);
+
+    // Repetir não reabre de novo.
+    expect((await reopen(professor)).body.error.code).toBe("REOPEN_NOT_ALLOWED");
+
+    // Em Ajustes, o grupo envia depois do prazo original e submete a rodada 1.
+    await sendAll(student);
+    const first = await submit(student);
+    expect(first.status).toBe(201);
+    expect(first.body.data).toMatchObject({ round: 1, status: "SUBMETIDA" });
+    expect((await student.get(base)).body.data.status).toBe("EM_AVALIACAO");
+    expect((await reopen(professor)).body.error.code).toBe("REOPEN_NOT_ALLOWED");
+  });
+});

@@ -44,3 +44,15 @@ export const submissionSchema = z.object({
 export type SubmittedMaterial = z.infer<typeof submittedMaterialSchema>;
 export type Submission = z.infer<typeof submissionSchema>;
 export type NewSubmission = Omit<Submission, "id">;
+
+/** Reabertura explícita pelo professor de entrega em Preparação com prazo vencido (HU05). */
+export const reopeningSchema = z.object({
+  id,
+  projectId: id,
+  reopenedBy: id,
+  reopenedAt: z.iso.datetime(),
+  reason: z.string().trim().min(5).max(1000),
+}).strict();
+
+export type Reopening = z.infer<typeof reopeningSchema>;
+export type NewReopening = Omit<Reopening, "id">;

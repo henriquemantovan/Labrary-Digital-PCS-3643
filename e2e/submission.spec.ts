@@ -53,7 +53,7 @@ async function configure(page: Page, dueAt: string) {
 // Os cenários compartilham o projeto 2 do aluno de demonstração: a ordem importa.
 test.describe.configure({ mode: "serial" });
 
-test("HU04/HU05 bloqueiam formato inválido, entrega incompleta e prazo vencido", async ({ page }) => {
+test("HU04/HU05 bloqueiam formato inválido, entrega incompleta e prazo vencido até a reabertura", async ({ page }) => {
   await page.goto("/projetos/2");
   await login(page, "professor");
   await configure(page, openDueAt);
@@ -89,6 +89,25 @@ test("HU04/HU05 bloqueiam formato inválido, entrega incompleta e prazo vencido"
   await expect(panel.getByRole("button", { name: "Submeter para avaliação" })).toHaveCount(0);
   await expect(manualCard.getByText("Prazo deste material encerrado.")).toBeVisible();
   await expect(page.locator(".status-pill")).toHaveText("Em preparação");
+  await expect(panel.getByRole("button", { name: "Reabrir entrega" })).toHaveCount(0);
+  await noHorizontalOverflow(page);
+
+  // Reabertura explícita pela professora, com justificativa registrada.
+  await switchTo(page, "professor");
+  await panel.getByRole("button", { name: "Reabrir entrega" }).click();
+  const confirmReopen = panel.getByRole("group", { name: "Confirmar reabertura" });
+  await confirmReopen.getByLabel("Justificativa da reabertura").fill("Prazo prorrogado pela coordenação.");
+  await noHorizontalOverflow(page);
+  await confirmReopen.getByRole("button", { name: "Confirmar reabertura" }).click();
+  await expect(panel.getByText(/Entrega reaberta. O grupo pode enviar materiais/)).toBeVisible();
+  await expect(page.locator(".status-pill")).toHaveText("Em ajustes");
+
+  // A aluna volta a poder enviar, mesmo com o prazo original vencido.
+  await switchTo(page, "aluno");
+  await expect(page.locator(".status-pill")).toHaveText("Em ajustes");
+  await expect(panel.getByText(/Entrega reaberta pelo professor em .*Justificativa: Prazo prorrogado pela coordenação\./)).toBeVisible();
+  await expect(page.getByLabel("Arquivo para Manual de uso")).toBeVisible();
+  await expect(panel.getByText("O prazo de entrega terminou.", { exact: false })).toHaveCount(0);
   await noHorizontalOverflow(page);
 });
 

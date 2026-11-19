@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { Project, ProjectMaterial } from "../models/project.js";
 import { evaluationContractExamples } from "../test/evaluationContractExamples.js";
 import { submissionContractExamples } from "../test/submissionContractExamples.js";
-import { prepareSubmission, submissionChecklist, SubmissionInput } from "./submissionRules.js";
+import { deadlinePassed, prepareSubmission, submissionChecklist, SubmissionInput } from "./submissionRules.js";
 
 const rubric = evaluationContractExamples().pending.rubric;
 const project: Project = {
@@ -87,5 +87,18 @@ describe("S5: regras de submissão", () => {
     expect(result).toEqual({ repeated: true, submission: submitted });
     expect(error({ project: { ...project, status: "EM_AVALIACAO" }, previous: [submitted] }))
       .toMatchObject({ code: "SUBMISSION_LOCKED" });
+  });
+});
+
+describe("prazo vencido para submissão e reabertura", () => {
+  const dueAt = Date.parse(rubric.requirements[0].dueAt);
+  it("considera o prazo do projeto e o de cada requisito, só em Preparação", () => {
+    expect(deadlinePassed(project, rubric, dueAt - 1)).toBe(false);
+    expect(deadlinePassed(project, rubric, dueAt)).toBe(true);
+    expect(deadlinePassed(project, null, dueAt)).toBe(false);
+    const projectDue = { ...project, dueAt: "2026-11-10T00:00:00.000Z" };
+    expect(deadlinePassed(projectDue, null, Date.parse("2026-11-10T00:00:00.000Z"))).toBe(true);
+    expect(deadlinePassed({ ...project, status: "AJUSTES" }, rubric, dueAt)).toBe(false);
+    expect(deadlinePassed({ ...project, status: "EM_AVALIACAO" }, rubric, dueAt)).toBe(false);
   });
 });

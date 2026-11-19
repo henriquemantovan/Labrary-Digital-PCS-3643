@@ -2146,6 +2146,8 @@ input[type="file"]::file-selector-button {
   margin: 12px 0;
 }
 .submission-confirm p { margin: 0 0 12px; line-height: 1.6; }
+.submission-confirm label { margin-bottom: 12px; }
+.submission-confirm textarea { min-height: 88px; resize: vertical; }
 .submission-success { color: #a4ccb8; }
 .submission-rounds { padding-left: 22px; font-size: 14px; line-height: 1.6; }
 .submission-rounds > li { margin: 14px 0; }

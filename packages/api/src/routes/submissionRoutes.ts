@@ -5,13 +5,16 @@ import { ApiError } from "../errors.js";
 import { AuthRepository } from "../repositories/authRepository.js";
 import { ProjectRepository } from "../repositories/projectRepository.js";
 import { RubricRepository } from "../repositories/rubricRepository.js";
+import { Project } from "../models/project.js";
+import { RubricVersion } from "../models/rubric.js";
 import { createPermissions } from "../services/permissions.js";
-import { prepareSubmission, submissionChecklist } from "../services/submissionRules.js";
+import { deadlinePassed, prepareSubmission, submissionChecklist } from "../services/submissionRules.js";
 
 const id = z.coerce.number().int().positive().safe();
 const submitSchema = z.object({ clientSubmissionId: z.uuid() }).strict();
+const reopenSchema = z.object({ reason: z.string().trim().min(5).max(1000) }).strict();
 
-/** HU05 / C1: checklist, submissão, histórico de rodadas e devolução para ajustes. */
+/** HU05 / C1: checklist, submissão, histórico de rodadas, devolução para ajustes e reabertura. */
 export function createSubmissionRouter(
   projects: ProjectRepository,
   auth: AuthRepository,
@@ -40,6 +43,11 @@ export function createSubmissionRouter(
     });
   };
 
+  // Reabrir só cabe ao professor da turma (ou ADMIN), em Preparação com prazo vencido.
+  const canReopen = (response: Response, item: Project, rubric: RubricVersion | null) =>
+    permissions.ownsClass(response.locals.user, item.classId) &&
+    item.status === "PREPARACAO" && deadlinePassed(item, rubric, now());
+
   router.get("/projects/:projectId/submission-checklist", (request, response) => {
     const item = project(request, response);
     const rubric = rubrics.latest(item.id) ?? null;
@@ -58,6 +66,8 @@ export function createSubmissionRouter(
         items: rubric ? submissionChecklist(rubric.requirements, projects.listMaterials(item.id)) : [],
         blockedBy,
         canSubmit: blockedBy === null && permissions.canUpload(response.locals.user, item),
+        canReopen: canReopen(response, item, rubric),
+        lastReopening: projects.listReopenings(item.id).at(-1) ?? null,
       },
     });
   });
@@ -99,6 +109,22 @@ export function createSubmissionRouter(
       new Date(now()).toISOString(),
     );
     response.json({ data: submission });
+  });
+
+  router.post("/projects/:projectId/reopen", (request, response) => {
+    const item = project(request, response);
+    if (!permissions.ownsClass(response.locals.user, item.classId))
+      throw new ApiError(403, "FORBIDDEN", "Somente o professor da turma pode reabrir a entrega.");
+    const { reason } = reopenSchema.parse(request.body);
+    if (!canReopen(response, item, rubrics.latest(item.id) ?? null))
+      throw new ApiError(409, "REOPEN_NOT_ALLOWED", "Só é possível reabrir uma entrega em preparação com prazo vencido.");
+    const reopening = projects.reopenProject({
+      projectId: item.id,
+      reopenedBy: response.locals.accountUser.id,
+      reopenedAt: new Date(now()).toISOString(),
+      reason,
+    });
+    response.status(201).json({ data: reopening });
   });
 
   return router;

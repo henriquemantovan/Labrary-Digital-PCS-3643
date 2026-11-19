@@ -28,6 +28,15 @@ export function submissionChecklist(requirements: Requirement[], materials: Proj
   });
 }
 
+/**
+ * Prazo vencido em Preparação: do projeto ou de algum requisito C0. Em Ajustes,
+ * a reabertura pelo professor dispensa os prazos originais.
+ */
+export function deadlinePassed(project: Project, rubric: RubricVersion | null, now: number) {
+  return uploadLock(project, now) === "DEADLINE_PASSED" || (project.status === "PREPARACAO" &&
+    !!rubric?.requirements.some((requirement) => now >= Date.parse(requirement.dueAt)));
+}
+
 export interface SubmissionInput {
   project: Project;
   rubric: RubricVersion | null;
@@ -53,9 +62,7 @@ export function prepareSubmission(input: SubmissionInput): PreparedSubmission {
   const lock = uploadLock(project, now);
   if (lock === "PROJECT_LOCKED")
     throw new ApiError(409, "SUBMISSION_LOCKED", "O projeto não está aberto para submissão.");
-  // Em Ajustes, a reabertura pelo professor dispensa os prazos originais.
-  if (lock === "DEADLINE_PASSED" || (project.status === "PREPARACAO" &&
-    rubric.requirements.some((requirement) => now >= Date.parse(requirement.dueAt))))
+  if (deadlinePassed(project, rubric, now))
     throw new ApiError(409, "DEADLINE_PASSED", "O prazo de entrega terminou.");
   const missing = submissionChecklist(rubric.requirements, materials).filter((item) => !item.ok);
   if (missing.length)
