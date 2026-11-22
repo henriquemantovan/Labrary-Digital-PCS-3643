@@ -15,8 +15,8 @@ Limites operacionais e pendências acadêmicas da aplicação. Os comandos estã
 | Testes mobile usam Chromium emulado | Não demonstram dispositivo físico ou Safari |
 | Login Google real e instalação limpa Ubuntu 26.04 | Exigem evidências próprias do ambiente e responsáveis (#46); a execução local não as substitui |
 | Modelo SQL mais amplo que os adapters atuais | Projetos, entregas, avaliações e publicação não foram migrados integralmente ao PostgreSQL; novas migrations não são justificadas apenas pelo DER |
-| Histórico/favoritos/estatísticas/recomendações | HU13–HU14 permanecem propostas, sem implementação nesta entrega |
-| Decisão sobre escopo acadêmico | Sem decisão verificável disponível nesta entrega. Tema adaptado, assinaturas, idade e receita permanecem pendentes do professor; [requisitos pendentes de decisão](../README.md#alinhamento-com-o-enunciado-geral) |
+| Histórico/favoritos/estatísticas/recomendações | HU13–HU14 foram excluídas do escopo desta entrega |
+| Decisão sobre assinaturas | Fluxo acadêmico mantido; restrição etária, funcionalidades financeiras e HU13–HU14 dispensadas. Assinaturas e seus perfis ainda precisam de definição; [escopo da entrega](../README.md#alinhamento-com-o-enunciado-geral) |
 | Revisão cruzada e vídeos finais | O roteiro está na apresentação. Aprovação de outro integrante, cinco vídeos revisados e retrospectiva dependem de registros humanos; não presumidos |
 
 As rotas legadas `/api/public/projects` continuam dependendo de um provedor específico e não substituem o C4. O acervo integrado usa `/api/catalog`. `/demo/acervo` é demonstração de componentes no desenvolvimento; não é a evidência de publicação real.

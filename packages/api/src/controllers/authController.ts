@@ -16,8 +16,10 @@ const credentialsSchema = z
   })
   .strict();
 import { GoogleAuthOptions } from "./googleAuthController.js";
+import type { AcademicAccessRepository } from "../repositories/academicAccessRepository.js";
 
 export interface AuthOptions {
+  academicAccess?: AcademicAccessRepository;
   google?: GoogleAuthOptions;
   localLogin?: boolean;
   now: () => number;

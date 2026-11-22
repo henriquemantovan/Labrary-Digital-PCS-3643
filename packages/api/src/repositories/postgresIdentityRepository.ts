@@ -2,7 +2,7 @@ import { Pool } from "pg";
 import { ApiError } from "../errors.js";
 import { Directory, User } from "../models/auth.js";
 import { GoogleProfile } from "../services/googleOAuth.js";
-type UserRow = {
+export type UserRow = {
   id: string;
   full_name: string;
   email: string;
@@ -10,8 +10,12 @@ type UserRow = {
   role: User["role"];
   active: boolean;
   google_subject: string | null;
+  usp_number?: string | null;
+  entry_year?: number | null;
+  academic_profile_completed_at?: Date | null;
+  guest?: boolean;
 };
-function userFromRow(row: UserRow): User {
+export function userFromRow(row: UserRow): User {
   const id = Number(row.id);
   if (!Number.isSafeInteger(id) || id <= 0)
     throw new Error("ID fora do intervalo seguro.");
@@ -23,6 +27,10 @@ function userFromRow(row: UserRow): User {
     role: row.role,
     active: row.active,
     googleLinked: Boolean(row.google_subject),
+    guest: Boolean(row.guest),
+    uspNumber: row.usp_number ?? null,
+    entryYear: row.entry_year ?? null,
+    academicProfileCompleted: Boolean(row.academic_profile_completed_at),
   };
 }
 export function createPostgresIdentityRepository(pool: Pool) {
@@ -39,7 +47,9 @@ export function createPostgresIdentityRepository(pool: Pool) {
           `
           INSERT INTO app_user (full_name,email,password_hash,role,google_subject,email_verified,google_synced_at)
           VALUES ($1,$2,NULL,'ALUNO',$3,TRUE,now())
-          ON CONFLICT (google_subject) DO UPDATE SET full_name=EXCLUDED.full_name,email=EXCLUDED.email,
+          ON CONFLICT (google_subject) DO UPDATE SET
+            full_name=CASE WHEN app_user.academic_profile_completed_at IS NULL THEN EXCLUDED.full_name ELSE app_user.full_name END,
+            email=EXCLUDED.email,
             email_verified=TRUE,google_synced_at=now()
           RETURNING *`,
           [profile.fullName, profile.email.toLowerCase(), profile.subject],
@@ -57,7 +67,7 @@ export function createPostgresIdentityRepository(pool: Pool) {
     },
     async refresh(directory: Directory) {
       const users = await pool.query<UserRow>(
-        "SELECT id,full_name,email,password_hash,role,active,google_subject FROM app_user",
+        "SELECT u.*, EXISTS(SELECT 1 FROM guest_invitation g WHERE g.email=u.email AND g.revoked_at IS NULL) AS guest FROM app_user u",
       );
       const classes = await pool.query(
         'SELECT id::integer, name, academic_year AS "academicYear", professor_id::integer AS "professorId" FROM course_class',

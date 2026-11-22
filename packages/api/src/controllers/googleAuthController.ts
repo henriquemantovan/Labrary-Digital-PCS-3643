@@ -6,6 +6,10 @@ import { AuthRepository } from "../repositories/authRepository.js";
 import { OAuthAttemptRepository } from "../repositories/oauthAttemptRepository.js";
 import { GoogleOAuth, GoogleProfile } from "../services/googleOAuth.js";
 import { User } from "../models/auth.js";
+import {
+  isUspEmail,
+  requiresAcademicProfile,
+} from "../models/academicAccess.js";
 import { AuthOptions } from "./authController.js";
 export interface GoogleAuthOptions {
   client: GoogleOAuth;
@@ -96,13 +100,19 @@ export function createGoogleAuthController(
           fail(response);
           return;
         }
-        const user = await google.saveProfile(
-          await google.client.profile(
-            request.query.code,
-            attempt.verifier,
-            attempt.nonce,
-          ),
+        const profile = await google.client.profile(
+          request.query.code,
+          attempt.verifier,
+          attempt.nonce,
         );
+        const guest =
+          (await options.academicAccess?.isGuest(profile.email)) ?? false;
+        if (!isUspEmail(profile.email) && !guest) {
+          fail(response, "usp_only");
+          return;
+        }
+        const user = await google.saveProfile(profile);
+        user.guest = guest;
         if (!user.active) {
           fail(response, "inactive");
           return;
@@ -123,7 +133,9 @@ export function createGoogleAuthController(
           path: "/api",
           maxAge: options.sessionTtlMs,
         });
-        response.redirect(`${google.origin}/projetos`);
+        response.redirect(
+          `${google.origin}/${requiresAcademicProfile(user) ? "cadastro" : "projetos"}`,
+        );
       } catch (error) {
         fail(
           response,

@@ -18,13 +18,22 @@ import {
   GroupRepository,
 } from "./repositories/groupRepository.js";
 import express from "express";
+import { createAcademicAccessRouter } from "./routes/academicAccessRoutes.js";
+import {
+  createMemoryAcademicAccessRepository,
+  type AcademicAccessRepository,
+} from "./repositories/academicAccessRepository.js";
 import { ZodError } from "zod";
 import {
   createAuthRepository,
   AuthRepository,
 } from "./repositories/authRepository.js";
 import { createAuthRouter } from "./routes/authRoutes.js";
-import { protectMutations, requireAuth } from "./middleware/auth.js";
+import {
+  protectMutations,
+  requireAuth,
+  requireCompleteAcademicProfile,
+} from "./middleware/auth.js";
 import { ApiError } from "./errors.js";
 import {
   createMemoryProjectRepository,
@@ -52,6 +61,7 @@ import {
 } from "./repositories/adminRepository.js";
 
 export interface AppOptions {
+  academicAccess?: AcademicAccessRepository;
   readProviders?: ReadProviders;
   publicationProviders?: PublicationProviders;
 
@@ -81,6 +91,8 @@ export function createApp(options: AppOptions = {}) {
 
   const auth = options.auth ?? createAuthRepository();
   const now = options.now ?? Date.now;
+  const academicAccess =
+    options.academicAccess ?? createMemoryAcademicAccessRepository(auth);
   const storage = options.storage ?? createDiskStorage(".uploads");
   const rubrics = options.rubrics ?? createMemoryRubricRepository();
   const evaluationService =
@@ -125,6 +137,7 @@ export function createApp(options: AppOptions = {}) {
     "/api",
     createAuthRouter(auth, {
       google: options.google,
+      academicAccess,
       localLogin: options.localLogin ?? !options.google,
       now,
       secureCookies: options.secureCookies ?? false,
@@ -132,6 +145,7 @@ export function createApp(options: AppOptions = {}) {
       loginLimit: options.loginLimit ?? 20,
     }),
   );
+  app.use("/api", createAcademicAccessRouter(auth, academicAccess, now));
   app.use(
     "/api/admin",
     createAdminRouter(
@@ -140,8 +154,16 @@ export function createApp(options: AppOptions = {}) {
       now,
     ),
   );
-  app.use("/api/classes", requireAuth(auth, now));
-  app.use("/api/projects", requireAuth(auth, now));
+  app.use(
+    "/api/classes",
+    requireAuth(auth, now),
+    requireCompleteAcademicProfile,
+  );
+  app.use(
+    "/api/projects",
+    requireAuth(auth, now),
+    requireCompleteAcademicProfile,
+  );
   app.use(
     "/api",
     createReadRouter(options.readProviders ?? {}, repository, auth),

@@ -74,7 +74,7 @@ O WebM fica sob `test-results/publication/`, junto às capturas. O vídeo mostra
 
 Mostre o build, as suítes com cobertura mínima de 85% por métrica/pacote e o navegador desktop/celular. Destaque a regressão de concorrência: reabrir uma avaliação durante a verificação de arquivos bloqueia a finalização.
 
-**Limites declarados:** um escritor, disco persistente, consentimento docente por referência e mobile emulado. Instalação limpa Ubuntu 26.04, Google real, revisão cruzada, cinco vídeos finais e decisão acadêmica exigem registros próprios. HU13–HU14 não foram incluídas nesta entrega.
+**Limites declarados:** um escritor, disco persistente, consentimento docente por referência e mobile emulado. Instalação limpa Ubuntu 26.04, Google real, revisão cruzada, cinco vídeos finais e definição sobre assinaturas exigem registros próprios. HU13–HU14 não foram incluídas nesta entrega.
 
 **Fala:** “A evidência automatizada sustenta o comportamento técnico. Mantemos separado o que ainda depende de validação da equipe e do professor.”
 

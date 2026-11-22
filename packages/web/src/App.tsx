@@ -1,6 +1,8 @@
 import { GroupResult } from "./GroupResult";
 import { PublicationPanel } from "./PublicationPanel";
 import { GroupManager, EvaluatorManager } from "./Groups";
+import { AcademicRegistration } from "./AcademicRegistration";
+import { GuestInvitations } from "./GuestInvitations";
 import { AdminUsers } from "./AdminUsers";
 import { ProjectFeedback } from "./ProjectFeedback";
 import {
@@ -102,13 +104,15 @@ function Login({
     "authError",
   );
   const googleError =
-    authError === "account_conflict"
-      ? "Já existe uma conta com esse e-mail. Solicite ao responsável a vinculação da conta Google."
-      : authError === "inactive"
-        ? "Sua conta está desativada. Contate o responsável."
-        : authError
-          ? "Não foi possível entrar com o Google. Tente novamente; se persistir, contate o responsável."
-          : "";
+    authError === "usp_only"
+      ? "Use seu e-mail USP (@usp.br). Contas externas precisam de convite autorizado pelo administrador."
+      : authError === "account_conflict"
+        ? "Já existe uma conta com esse e-mail. Solicite ao responsável a vinculação da conta Google."
+        : authError === "inactive"
+          ? "Sua conta está desativada. Contate o responsável."
+          : authError
+            ? "Não foi possível entrar com o Google. Tente novamente; se persistir, contate o responsável."
+            : "";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [visible, setVisible] = useState(false);
@@ -187,7 +191,8 @@ function Login({
           </h2>
           <a href="/acervo">Explorar acervo público</a>
           <p className="muted login-description">
-            Entre com sua conta para acessar seu espaço.
+            Entre com seu e-mail USP (@usp.br). O acesso com outra conta Google
+            é exclusivo para convidados autorizados.
           </p>
           {(error || message || googleError) && (
             <Notice>{error || message || googleError}</Notice>
@@ -434,6 +439,20 @@ function PrivateApp() {
         }}
       />
     );
+  if (user.requiresAcademicProfile)
+    return (
+      <AcademicRegistration
+        user={user}
+        expired={expired}
+        logout={logout}
+        logoutBusy={busy}
+        logoutError={logoutError}
+        onSaved={(current) => {
+          setUser(current);
+          navigate("/projetos");
+        }}
+      />
+    );
   const visibleUser: User =
     user.role === "ADMIN" && user.viewRole
       ? { ...user, role: user.viewRole }
@@ -461,7 +480,9 @@ function PrivateApp() {
         </div>
         <p className="nav-label">MEU ESPAÇO</p>
         <nav aria-label="Navegação principal">
-          <a className="nav-item" href="/acervo">Acervo público</a>
+          <a className="nav-item" href="/acervo">
+            Acervo público
+          </a>
           <button
             className={
               path.startsWith("/projetos") || path === "/"
@@ -493,7 +514,10 @@ function PrivateApp() {
             </button>
           )}
           {["PROFESSOR", "ADMIN"].includes(visibleUser.role) && (
-            <button className={`nav-item ${path === "/notas" ? "active" : ""}`} onClick={() => navigate("/notas")}>
+            <button
+              className={`nav-item ${path === "/notas" ? "active" : ""}`}
+              onClick={() => navigate("/notas")}
+            >
               <Icon name="book" /> Consolidação de notas
             </button>
           )}
@@ -543,13 +567,15 @@ function PrivateApp() {
           <span>
             Meu espaço <span className="breadcrumb">/</span>{" "}
             <strong>
-              {path === "/notas" ? "Notas" : path === "/administracao"
-                ? "Administração"
-                : path === "/perfil"
-                  ? "Perfil"
-                  : path === "/turmas"
-                    ? "Turmas"
-                    : "Projetos"}
+              {path === "/notas"
+                ? "Notas"
+                : path === "/administracao"
+                  ? "Administração"
+                  : path === "/perfil"
+                    ? "Perfil"
+                    : path === "/turmas"
+                      ? "Turmas"
+                      : "Projetos"}
             </strong>
           </span>
           <span className="profile-badge">
@@ -581,16 +607,23 @@ function PrivateApp() {
             </section>
           )}
           {viewError && <Notice>{viewError}</Notice>}
-          {path === "/notas" && ["PROFESSOR", "ADMIN"].includes(visibleUser.role) ? (
-            <Gradebook key={`${user.id}-${user.viewRole ?? ""}`} expired={expired} />
-          ) : path === "/administracao" && user.role === "ADMIN" ? (
-            <AdminUsers
+          {path === "/notas" &&
+          ["PROFESSOR", "ADMIN"].includes(visibleUser.role) ? (
+            <Gradebook
+              key={`${user.id}-${user.viewRole ?? ""}`}
               expired={expired}
-              onSessionChanged={(current) => {
-                setUser(current);
-                if (current.role !== "ADMIN") navigate("/projetos");
-              }}
             />
+          ) : path === "/administracao" && user.role === "ADMIN" ? (
+            <>
+              <AdminUsers
+                expired={expired}
+                onSessionChanged={(current) => {
+                  setUser(current);
+                  if (current.role !== "ADMIN") navigate("/projetos");
+                }}
+              />
+              <GuestInvitations expired={expired} />
+            </>
           ) : (
             <Dashboard
               key={`${user.id}-${user.role}-${user.viewRole ?? ""}`}
@@ -735,6 +768,18 @@ function Dashboard({
           <dl>
             <dt>E-mail</dt>
             <dd>{user.email}</dd>
+            {user.uspNumber && (
+              <>
+                <dt>NUSP</dt>
+                <dd>{user.uspNumber}</dd>
+              </>
+            )}
+            {user.entryYear && (
+              <>
+                <dt>Ano de ingresso</dt>
+                <dd>{user.entryYear}</dd>
+              </>
+            )}
             {user.googleLinked && (
               <>
                 <dt>Autenticação</dt>
@@ -880,7 +925,8 @@ function Dashboard({
             setDetail((current) => current && { ...current, status });
             // O novo estado muda o bloqueio de upload; recarrega as regras dos materiais.
             refreshMaterialRules().catch((failure) => {
-              if (failure instanceof ApiError && failure.status === 401) expired();
+              if (failure instanceof ApiError && failure.status === 401)
+                expired();
               else setRevision((value) => value + 1);
             });
           }}
@@ -889,7 +935,13 @@ function Dashboard({
           <Icon name="lock" size={17} />
           Acesso restrito ao grupo e à equipe acadêmica vinculada ao projeto.
         </div>
-        {user.role === "ALUNO" && <GroupResult key={`result-${detail.id}`} projectId={detail.id} expired={expired} />}
+        {user.role === "ALUNO" && (
+          <GroupResult
+            key={`result-${detail.id}`}
+            projectId={detail.id}
+            expired={expired}
+          />
+        )}
         {["PROFESSOR", "ADMIN"].includes(user.role) && (
           <EvaluatorManager
             key={`evaluators-${detail.id}`}

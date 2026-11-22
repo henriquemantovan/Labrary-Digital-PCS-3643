@@ -34,13 +34,27 @@ pnpm db:status
 pnpm dev
 ```
 
-Abra `http://localhost:5173` e clique em **Entrar com Google**. O primeiro acesso cria a conta, o retorno abre `/projetos`, e **Meu perfil** mostra nome, e-mail, papel e conta Google vinculada. Sair revoga a sessão no banco. Usuários novos começam sem turma/grupo; a autenticação não cria vínculos acadêmicos automaticamente.
+Abra `http://localhost:5173` e clique em **Entrar com Google**, usando seu e-mail `@usp.br`. Depois de validar a identidade e o e-mail verificado no Google, a API aceita somente esse domínio ou um convidado previamente autorizado. Uma conta externa sem convite não é cadastrada nem recebe sessão. A orientação de uso da conta USP aparece na tela de login.
+
+O primeiro acesso cria a conta como ALUNO. Antes de acessar a área acadêmica, o aluno USP deve confirmar o nome completo, preencher NUSP e ano de ingresso em `/cadastro`. O bloqueio também existe na API; acessar uma URL de projeto diretamente não o contorna. Usuários novos começam sem turma/grupo; concluir o cadastro não cria vínculos nem concede outro papel. **Meu perfil** mostra os dados preenchidos. Sair revoga a sessão no banco.
 
 Para demonstrar sem credenciais Google: `AUTH_PROVIDER=local`, `AUTH_DEMO=true`, sem `AUTH_USERS_FILE`; os dados demonstrativos e a senha local estão em [HU01](hu01.md). Esse modo é proibido em produção e não autentica no Google.
 
+## Cadastro acadêmico e convidados
+
+`POST /api/auth/profile` recebe somente `{fullName, uspNumber, entryYear}` da própria conta autenticada. O nome deve ter ao menos duas partes, o NUSP é uma sequência numérica de até 32 dígitos e deve ser único entre contas, e o ano de ingresso é inteiro entre 1900 e o ano atual. Esses dados são declarados pelo aluno; não há consulta automática à matrícula USP. Erro ou NUSP duplicado não conclui parcialmente o cadastro.
+
+Uma nova migration acrescenta `entry_year`, `academic_profile_completed_at` e `guest_invitation`. O NUSP já existente é preservado. Contas antigas de alunos USP também precisam confirmar os dados se ainda não concluíram esse cadastro. Depois da conclusão, novos logins Google preservam o nome confirmado e os dados acadêmicos. As migrations anteriores e os snapshots SQL iniciais não foram alterados.
+
+Em **Administrar usuários → Convidados externos**, ADMIN autoriza o e-mail Google do convidado antes do primeiro login. Não é enviado e-mail de convite automaticamente: trata-se de uma autorização persistida para aquele endereço. O convidado deve autenticar a conta Google correspondente; não recebe um link que dispense autenticação. O convite não atribui turma, grupo ou papel privilegiado. Contas novas continuam ALUNO; o administrador define o perfil apropriado separadamente. Convidados ficam dispensados de NUSP e ano de ingresso.
+
+O administrador pode revogar o convite com confirmação. O histórico registra quem autorizou/revogou e quando; novo convite após revogação cria outro registro. A revogação remove as sessões desse usuário no PostgreSQL e impede novos logins. Outro administrador precisa revogar o convite da própria conta administrativa. Contas externas antigas não são automaticamente consideradas convidadas; antes da atualização, planeje o acesso de um administrador USP ou o provisionamento autorizado dos convites.
+
+O acervo continua público. A exigência de domínio e cadastro refere-se à área autenticada. No modo Google, os dados e convites ficam no PostgreSQL; a factory e o modo de demonstração local usam o adapter em memória. Testes de banco cobrem instalação nova e atualização com preservação das identidades antigas; testes de navegador usam o provedor OIDC de teste, sem comprovar uma execução no Google real.
+
 ## Identidade, perfis e contas antigas
 
-A chave da identidade é o `sub` estável e verificado do Google, persistido como `google_subject` único. Nome/e-mail são sincronizados em cada login. Não são armazenados access token, refresh token, ID token nem senha Google. Um e-mail não verificado, token adulterado/expirado ou conta desativada não cria sessão.
+A chave da identidade é o `sub` estável e verificado do Google, persistido como `google_subject` único. O e-mail é sincronizado em cada login; o nome também, até a confirmação do cadastro acadêmico, quando passa a ser preservado. Não são armazenados access token, refresh token, ID token nem senha Google. Um e-mail não verificado, token adulterado/expirado ou conta desativada não cria sessão.
 
 O Google não informa se alguém é aluno, professor ou avaliador. Novos usuários recebem **ALUNO**. O papel **ADMIN** concede a área de administração e precisa ser atribuído por outro administrador ou por uma operação inicial autorizada no banco. Contas existentes conservam o `role` e o estado `active`; o callback nunca promove alguém por claims, domínio de e-mail, parâmetros da URL ou escolha no navegador. Administradores gerenciam papéis em **Administrar usuários** (`/administracao`) após verificar a identidade. A operação no banco abaixo fica reservada a manutenção administrativa, usando o ID confirmado:
 

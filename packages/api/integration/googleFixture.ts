@@ -34,6 +34,11 @@ provider.get("/authorize", (req, res) => {
     ["aluno", "Selecionar conta de aluno"],
     ["professor", "Selecionar conta de professor"],
     ["admin", "Selecionar conta de administrador"],
+    ["new-desktop", "Selecionar nova conta de aluno desktop"],
+    ["new-mobile", "Selecionar nova conta de aluno mobile"],
+    ["guest-desktop", "Selecionar convidado desktop"],
+    ["guest-mobile", "Selecionar convidado mobile"],
+    ["external", "Selecionar conta externa não convidada"],
     ["unverified", "Selecionar e-mail não verificado"],
     ["cancel", "Cancelar"],
   ]
@@ -85,17 +90,30 @@ provider.post("/token", async (req, res) => {
   }
   const teacher = record.choice === "professor";
   const administrator = record.choice === "admin";
+  const newStudent = record.choice.startsWith("new-");
+  const guest = record.choice.startsWith("guest-");
+  const external = record.choice === "external";
   const token = await new SignJWT({
-    email: administrator
-      ? "admin@gmail.com"
-      : teacher
-        ? "helena@gmail.com"
-        : "marina@gmail.com",
-    name: administrator
-      ? "Administrador Google"
-      : teacher
-        ? "Helena Google"
-        : "Marina Google",
+    email: newStudent
+      ? `${record.choice}@usp.br`
+      : guest
+        ? `${record.choice}@gmail.com`
+        : external
+          ? "nao-convidado@gmail.com"
+          : administrator
+            ? "admin@usp.br"
+            : teacher
+              ? "helena@usp.br"
+              : "marina@usp.br",
+    name: newStudent
+      ? "Nova Pessoa Google"
+      : guest
+        ? "Pessoa Convidada"
+        : administrator
+          ? "Administrador Google"
+          : teacher
+            ? "Helena Google"
+            : "Marina Google",
     email_verified: record.choice !== "unverified",
     nonce: record.params.get("nonce"),
   })
@@ -103,7 +121,13 @@ provider.post("/token", async (req, res) => {
     .setIssuer("https://accounts.google.com")
     .setAudience("fixture-client")
     .setSubject(
-      administrator ? "admin-sub" : teacher ? "teacher-sub" : "student-sub",
+      newStudent || guest || external
+        ? record.choice
+        : administrator
+          ? "admin-sub"
+          : teacher
+            ? "teacher-sub"
+            : "student-sub",
     )
     .setIssuedAt()
     .setExpirationTime("1h")
@@ -117,7 +141,7 @@ const auth = createAuthRepository({
     {
       id: 40,
       fullName: "Administrador Google",
-      email: "admin@gmail.com",
+      email: "admin@usp.br",
       passwordHash: null,
       role: "ADMIN",
       active: true,
@@ -126,7 +150,10 @@ const auth = createAuthRepository({
     {
       id: 30,
       fullName: "Marina Google",
-      email: "marina@gmail.com",
+      email: "marina@usp.br",
+      uspNumber: "12345678",
+      entryYear: 2020,
+      academicProfileCompleted: true,
       passwordHash: null,
       role: "ALUNO",
       active: true,
@@ -135,7 +162,7 @@ const auth = createAuthRepository({
     {
       id: 20,
       fullName: "Helena Google",
-      email: "helena@gmail.com",
+      email: "helena@usp.br",
       passwordHash: null,
       role: "PROFESSOR",
       active: true,
@@ -171,12 +198,17 @@ createApp({
     origin,
     attempts: createMemoryOAuthAttempts(),
     async saveProfile(profile) {
-      const id = ids.get(profile.subject) ?? 30;
+      const id = ids.get(profile.subject) ?? Math.max(...ids.values()) + 1;
       ids.set(profile.subject, id);
       const existing = auth.findById(id);
       return {
         id,
-        fullName: profile.fullName,
+        fullName: existing?.academicProfileCompleted
+          ? existing.fullName
+          : profile.fullName,
+        uspNumber: existing?.uspNumber,
+        entryYear: existing?.entryYear,
+        academicProfileCompleted: existing?.academicProfileCompleted,
         email: profile.email,
         role: existing?.role ?? "ALUNO",
         passwordHash: null,

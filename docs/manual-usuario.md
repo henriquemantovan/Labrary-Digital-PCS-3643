@@ -21,6 +21,12 @@ Abra <http://localhost:5173>. O script cria dados de demonstração isolados e i
 
 Senha comum: `Labrary@2026`. Essas contas são exclusivas do modo local de demonstração. A configuração Google usa contas e vínculos próprios; primeiro login não atribui turma automaticamente.
 
+## Entrar com Google e completar o cadastro
+
+Use **Entrar com Google** com seu e-mail `@usp.br`. Contas externas só entram se o administrador já tiver autorizado aquele e-mail como convidado. Após autenticar no Google, o aluno USP confirma o nome completo e informa NUSP e ano de ingresso. A área acadêmica permanece bloqueada até salvar dados válidos; o NUSP não pode estar vinculado a outra conta. Os dados aparecem em **Meu perfil** e permanecem após novos logins. Concluir o cadastro não atribui uma turma ou grupo; solicite o vínculo ao professor.
+
+O administrador usa **Administrar usuários → Convidados externos** para autorizar ou revogar e-mails externos. O convidado entra com a conta Google correspondente, sem precisar de NUSP ou ano de ingresso. Papel e vínculos são definidos separadamente. A revogação impede novos acessos autenticados; o acervo publicado continua aberto a visitantes.
+
 ## Professor: preparar a entrega
 
 1. Entre, abra **Minhas turmas** e confira grupos, integrantes e projetos. Para uma demonstração desde o início, abra em **Projetos** o trabalho do **Grupo 02**, em preparação.
@@ -76,3 +82,13 @@ Acesse `/acervo` sem fazer login. Combine busca por título e filtros de ano, tu
 | Nenhum projeto publicado | Conclua uma publicação explícita; finalizar ou liberar nota não alimenta o acervo |
 
 Para executar a demonstração automatizada com gravação do fluxo real de publicação, use `pnpm demo:publicacao`. O vídeo local fica em `test-results/publication/`; é uma execução automatizada com contas de teste, a ser revisada antes da apresentação. [Roteiro e falas da apresentação](apresentacao-final.md).
+
+## Onde ficam vídeos e imagens
+
+O servidor é o computador que executa a API. Se você iniciou o Labrary no seu computador, os arquivos enviados ficam no seu próprio disco, na pasta `.uploads` da raiz do projeto. Quando um aluno envia um vídeo pelo navegador, a API recebe os bytes e cria um arquivo nessa pasta. Fechar o navegador não apaga esse arquivo.
+
+O comando `pnpm demo` usa uma pasta temporária isolada em `/tmp`, em vez da `.uploads` padrão. Os arquivos dessa demonstração não devem ser usados para guardar a entrega definitiva.
+
+Se a API estiver hospedada em outra máquina, os arquivos ficam no armazenamento dessa máquina, configurado por `UPLOAD_DIR`; esse armazenamento precisa ser persistente. Não há envio automático para Google Drive nem armazenamento do vídeo dentro do PostgreSQL. Os metadados do projeto, em `PROJECT_DATA_FILE`, guardam a referência para localizar o arquivo. Por isso, o backup deve conservar tanto os metadados quanto a pasta dos arquivos. O acesso aos arquivos passa pela API, que verifica as permissões.
+
+As opções para melhorar esse armazenamento estão na [análise de persistência de vídeos e imagens](arquitetura.md#evolução-da-persistência-de-vídeos-e-imagens).

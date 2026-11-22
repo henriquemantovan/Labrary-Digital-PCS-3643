@@ -8,8 +8,12 @@ Rotas REST usam JSON, exceto o envio de arquivos de materiais (`multipart/form-d
 | --- | --- | --- | --- |
 | GET | `/api/auth/providers` | Opções disponíveis `{ google, local }` | `200` |
 | GET | `/api/auth/google` | Inicia OpenID Connect no Google | `302` |
-| GET | `/api/auth/google/callback` | Valida tentativa e cria sessão | `302` para `/projetos` ou `/login?authError=google` |
+| GET | `/api/auth/google/callback` | Valida tentativa e cria sessão | `302` para `/cadastro`, `/projetos` ou `/login?authError=google` |
 | POST | `/api/auth/login` | Autentica `{ email, password }` e emite cookie HttpOnly | `200 { data: PublicUser }` |
+| POST | `/api/auth/profile` | Aluno Google USP confirma `{fullName, uspNumber, entryYear}` | `200 { data: PublicUser }` |
+| GET | `/api/admin/guests` | ADMIN consulta autorizações de convidados e histórico de revogação | `200 { data: GuestInvitation[] }` |
+| POST | `/api/admin/guests` | ADMIN autoriza `{email}` externo antes do login Google | `201 { data: GuestInvitation }` |
+| DELETE | `/api/admin/guests/:invitationId` | ADMIN revoga autorização e sessões do convidado | `204` |
 | POST | `/api/auth/view-role` | ADMIN seleciona `{ role: "ALUNO" | "AVALIADOR" | "PROFESSOR" | null }` para sua sessão | `200 { data: PublicUser }` |
 | GET | `/api/admin/users` | ADMIN lista contas com ID, nome, e-mail, papel e estado | `200 { data: ManagedUser[] }` |
 | PATCH | `/api/admin/users/:userId/role` | ADMIN altera `{ role: "ALUNO" | "AVALIADOR" | "PROFESSOR" | "ADMIN" }` | `200 { data: ManagedUser }` |
@@ -31,6 +35,10 @@ Rotas REST usam JSON, exceto o envio de arquivos de materiais (`multipart/form-d
 Todas as rotas de projetos, materiais e escopo exigem sessão válida. `GET /projects` aplica o escopo antes de retornar dados; filtros não ampliam acesso. Um projeto fora do escopo responde com o mesmo `404` de um projeto inexistente. Apenas professor cria projetos para grupos da própria turma; apenas aluno do grupo registra metadados enquanto o projeto está em Preparação/Ajustes (`409 PROJECT_LOCKED` nos demais estados).
 
 `PublicUser` contém `id`, `fullName`, `email`, `role`; contas Google incluem `googleLinked: true`. Segredos OAuth não são retornados. Em modo Google, o login local responde `403 LOCAL_LOGIN_DISABLED`. Veja [configuração Google e migrations](login-google.md). Credenciais inválidas/inativas retornam `401 INVALID_CREDENTIALS`, sempre com `E-mail ou senha inválidos.`. Cada POST exige o cabeçalho `X-CSRF-Protection: 1`; `Origin`, se informado, deve ser igual a `APP_ORIGIN`. Não há CORS. Use a mesma origem para frontend e `/api`.
+
+Contas Google também recebem `guest`, `uspNumber`, `entryYear` e `requiresAcademicProfile`. NUSP e ano ficam nulos antes do preenchimento; esses campos são da própria conta e não entram no catálogo ou nas listas de integrantes. A API exige `@usp.br` ou convite vigente; validar o domínio só na interface não autoriza a conta. Aluno USP sem cadastro completo recebe `403 ACADEMIC_PROFILE_REQUIRED` em projetos, turmas e escopo. `/auth/me`, `/auth/profile` e logout continuam disponíveis para concluir o cadastro ou sair.
+
+O cadastro usa nome completo com duas partes, NUSP numérico de até 32 dígitos e ano inteiro entre 1900 e o ano atual. Dados inválidos recebem 400; NUSP de outra conta recebe `409 USP_NUMBER_IN_USE`. Autor, conta e papel não são aceitos no corpo. Convites são exclusivos de ADMIN: `GuestInvitation` contém `id,email,invitedBy,createdAt,revokedAt,revokedBy`, sem conceder permissões acadêmicas. Convite inexistente recebe 404, e tentativa de revogar o próprio convite administrativo recebe `409 OWN_INVITATION`. Novos registros e revogações conservam histórico no PostgreSQL.
 
 As respostas da API incluem `Cache-Control: no-store`. Veja [HU01](hu01.md) para matriz de permissões, configurações, contas e ciclo da sessão.
 

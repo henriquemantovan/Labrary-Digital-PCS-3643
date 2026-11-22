@@ -12,7 +12,10 @@ export default defineConfig({
   testDir: "./e2e",
   testMatch: "**/evaluation.spec.ts",
   outputDir: "test-results/evaluation",
-  timeout: recordDemo ? 90_000 : 30_000,
+  // Duas rodadas, reabertura e várias trocas de conta: o limite global de
+  // 30 s encerrou ações válidas ao final do fluxo neste ambiente. As esperas
+  // individuais e todas as asserções permanecem com os limites anteriores.
+  timeout: recordDemo ? 90_000 : 60_000,
   workers: 1,
   forbidOnly: !!process.env.CI,
   reporter: "list",

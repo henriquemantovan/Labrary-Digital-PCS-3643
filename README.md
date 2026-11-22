@@ -32,26 +32,26 @@ Arquivos, comentários e avaliações dispersos dificultam acompanhar pendência
 - Finalização e publicação explícita de materiais autorizados.
 - Galeria pública de projetos concluídos, com busca e filtros.
 
-Histórico, favoritos, estatísticas e sugestões são complementos propostos no backlog P2. Chat em tempo real e pagamentos não fazem parte do MVP. O SSO Google foi adicionado ao escopo: [configuração de login e migrations](docs/login-google.md).
+Histórico, favoritos, estatísticas e sugestões (HU13–HU14) ficam fora do escopo desta entrega. Chat em tempo real e pagamentos não fazem parte do MVP. O SSO Google foi adicionado ao escopo: [configuração de login e migrations](docs/login-google.md).
 
 ### Alinhamento com o enunciado geral
 
-O tema é uma **adaptação proposta de plataforma de conteúdo digital**. O enunciado aceita propor outro tipo de conteúdo, sujeito à avaliação do professor. Não há registro de aprovação nesta entrega.
+O escopo definido para esta entrega usa a **gestão acadêmica de projetos** como adaptação de plataforma de conteúdo digital. As decisões de 22/11/2026 mantêm o fluxo atual, dispensam restrição etária e funcionalidades financeiras e deixam HU13–HU14 fora da entrega. Assinaturas e seus perfis ainda precisam de definição.
 
 | Requisito do enunciado | Tratamento no Labrary Digital |
 | --- | --- |
 | Conteúdo digital, categorias, metadados e acesso mobile | Vídeo, relatório e manual; categoria, título, turma e ano; layout responsivo |
-| Cadastro de usuários | Contas e vínculos provisionados pelo professor no MVP; cadastro público depende de validação |
-| Avaliações e comentários | Rubrica docente e feedback privado; confirmar se substituem avaliação pública do catálogo |
+| Cadastro de usuários | Login Google com e-mail USP ou convite; aluno USP confirma nome completo, NUSP e ano de ingresso antes da área acadêmica |
+| Avaliações e comentários | Fluxo aceito: rubrica de avaliadores atribuídos e feedback privado |
 | Busca e filtros | HU12 |
-| Histórico, vistos, listas e recomendações | HU13–HU14, complementares; se o professor mantiver a exigência, promover a P0 |
-| Administração e estatísticas | Professor gerencia projetos; estatísticas previstas na HU14 |
+| Histórico, vistos, listas e recomendações | Fora do escopo desta entrega; HU13–HU14 não serão implementadas |
+| Administração e estatísticas | Gestão acadêmica mantida; estatísticas fora do escopo |
 | Assinatura individual/familiar e quatro perfis | Não incorporadas ao MVP acadêmico; solicitar decisão explícita do professor |
-| Restrição etária e idade mínima da assinatura individual | Não incorporadas; validar a adaptação com o professor |
-| Receita, custos de conteúdo e infraestrutura | Não incorporados como funcionalidade; validar dispensa ou criar histórias adicionais |
+| Restrição etária e idade mínima da assinatura individual | Dispensadas no escopo definido |
+| Receita, custos de conteúdo e infraestrutura | Funcionalidades dispensadas no escopo definido |
 | MVC, REST, testes, cobertura, CI e instalação | Mantidos no planejamento técnico |
 
-**Pendência acadêmica:** validar tema, substituições e dispensas com o professor antes de considerar o escopo aprovado. Os requisitos que precisam de decisão estão na tabela acima; não há aprovação acadêmica registrada. Não interpretar esta tabela como atendimento integral aos requisitos originais.
+**Decisão ainda em aberto:** definir se assinaturas e os quatro perfis de assinatura serão dispensados ou adaptados. Os papéis Aluno, Avaliador, Professor e Administrador representam permissões acadêmicas; não equivalem a planos de assinatura.
 
 ## 2. Nome do sistema e do grupo
 
@@ -257,7 +257,7 @@ As funcionalidades foram registradas como issues no formato **Como [papel], eu g
 - [x] Somente metadados e materiais autorizados tornam-se públicos; notas e feedback continuam privados.
 - [x] Professor pode retirar publicação preservando conteúdo e histórico privados.
 
-**Incremento S7 (#42):** os critérios técnicos acima são exercitados com submissões C1 persistidas, avaliações C2 de Yuhang e consolidação C3 de Kauê, no servidor normal. Publicação compartilha a fonte real da consolidação e não exige liberação de notas. A integração inclui reinício dos repositórios, isolamento, retirada de bytes e revalidação após leituras assíncronas. A entrega de avaliação `47fc731`, ainda fora da `main` analisada, foi incorporada nesta branch preservando sua autoria. Revisão cruzada, demonstração humana e decisão acadêmica continuam pendentes. Veja [HU11](docs/hu11.md) e [validação da entrega](#validação-da-entrega).
+**Incremento S7 (#42):** os critérios técnicos acima são exercitados com submissões C1 persistidas, avaliações C2 de Yuhang e consolidação C3 de Kauê, no servidor normal. Publicação compartilha a fonte real da consolidação e não exige liberação de notas. A integração inclui reinício dos repositórios, isolamento, retirada de bytes e revalidação após leituras assíncronas. A entrega de avaliação `47fc731`, ainda fora da `main` analisada, foi incorporada nesta branch preservando sua autoria. Revisão cruzada, demonstração humana e definição sobre assinaturas continuam pendentes. Veja [HU11](docs/hu11.md) e [validação da entrega](#validação-da-entrega).
 
 ### [HU12 — Explorar projetos publicados](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/12)
 
@@ -595,7 +595,7 @@ A API inicial implementa health check, consulta/criação de projetos e registro
 
 | Exigência da aula | Local ou próximo passo |
 | --- | --- |
-| Tema | Seção 1; aprovação da adaptação pendente |
+| Tema | Seção 1; fluxo acadêmico mantido conforme escopo definido |
 | Nome do sistema/grupo | Seção 2; nome do grupo proposto e número a confirmar |
 | Crazy 8 e três escolhas | Seção 3 e SVG; sessão e imagens reais pendentes |
 | Histórias de usuário | Seção 4 e issues HU01–HU14 |
@@ -620,4 +620,4 @@ pnpm test:e2e
 
 Para gerar a gravação de publicação com dados isolados, execute `pnpm demo:publicacao`. Capturas, vídeos e traces ficam em `test-results/`, ignorado pelo Git; os relatórios de cobertura ficam em `packages/api/coverage/` e `packages/web/coverage/`. Instalação do navegador, ambiente e restauração: [guia de instalação e aceitação](docs/instalacao-e-aceitacao.md).
 
-A aprovação técnica não substitui revisão cruzada, cinco vídeos finais, retrospectiva, evidências de Google real e instalação limpa, nem a decisão do professor sobre o escopo adaptado. Veja [limitações e pendências](docs/limitacoes.md) e [roteiro da apresentação](docs/apresentacao-final.md).
+A aprovação técnica não substitui revisão cruzada, cinco vídeos finais, retrospectiva, evidências de Google real e instalação limpa, nem a definição ainda pendente sobre assinaturas. Veja [limitações e pendências](docs/limitacoes.md) e [roteiro da apresentação](docs/apresentacao-final.md).

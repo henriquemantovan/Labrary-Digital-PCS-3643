@@ -84,3 +84,9 @@ Fluxos integrados: alvo 23/11; cinco vídeos: alvo 24/11; relatório e entrega a
 `pnpm test:e2e` inclui, ao final, `playwright.publication.config.ts`. Essa configuração usa o entrypoint normal e os mesmos adapters da aplicação, com dados separados por execução e perfil, nas portas 3008/3009 e 5184/5185. Roda depois da suíte de avaliação, que usa essas mesmas portas e encerra seus servidores antes da próxima etapa. As suítes isoladas de publicação com provedores de teste continuam nas portas 3006/3007 e 5182/5183; não confundir suas capturas com aceite da integração real.
 
 `pnpm demo:publicacao` conserva o vídeo do roteiro automatizado em `test-results/publication/`, com capturas de publicação, acervo e retirada. O comando usa as mesmas verificações do E2E normal, com movimentos mais lentos apenas para a gravação. Não substitui a revisão/narração dos responsáveis pelos cinco fluxos da apresentação.
+
+## Cadastro USP e convidados
+
+Após atualizar o código no modo Google, execute `pnpm db:deploy` e `pnpm db:status` para aplicar a migration de cadastro/convites. Alunos USP ainda sem cadastro completo precisam confirmar nome, NUSP e ano de ingresso. Contas externas exigem autorização explícita; nenhuma conta antiga recebe essa exceção automaticamente. Configuração e administração estão no [guia Google](login-google.md#cadastro-acadêmico-e-convidados).
+
+`pnpm test:e2e` inclui ao final `playwright.academic.config.ts`, em instâncias novas da API/provedor OIDC/interface nas portas 3004/3005/5181. Isso preserva a cota de login das outras suítes. Desktop e celular exercitam rejeição de conta externa, conclusão do cadastro USP, preservação dos dados, convite e revogação. `pnpm db:test` também valida os dados e convites no PostgreSQL real descartável, tanto em banco vazio quanto na atualização de um banco anterior.

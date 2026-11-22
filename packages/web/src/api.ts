@@ -5,6 +5,10 @@ export interface User {
   role: "ALUNO" | "AVALIADOR" | "PROFESSOR" | "ADMIN";
   viewRole?: "ALUNO" | "AVALIADOR" | "PROFESSOR";
   googleLinked?: boolean;
+  guest?: boolean;
+  uspNumber?: string | null;
+  entryYear?: number | null;
+  requiresAcademicProfile?: boolean;
 }
 export interface ManagedUser {
   id: number;

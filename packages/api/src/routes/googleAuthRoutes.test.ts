@@ -7,7 +7,7 @@ import { GoogleProfile } from "../services/googleOAuth.js";
 const profile: GoogleProfile = {
   subject: "google-123",
   fullName: "Maria Google",
-  email: "maria@gmail.com",
+  email: "maria@usp.br",
   emailVerified: true,
 };
 function setup(extra = {}) {
@@ -67,6 +67,63 @@ const sessionOf = (response: request.Response) =>
     .find((s) => s.startsWith("labrary_session="))!
     .split(";")[0];
 describe("login Google", () => {
+  it("recusa conta externa após validar Google, antes de criar usuário ou sessão", async () => {
+    for (const email of [
+      "maria@gmail.com",
+      "maria@usp.br.evil.com",
+      "maria@fakeusp.br",
+    ]) {
+      const ctx = setup();
+      ctx.client.profile.mockResolvedValue({ ...profile, email });
+      const result = await ctx.callback(cookieOf(await ctx.start()));
+      expect(result.headers.location).toContain("authError=usp_only");
+      expect(ctx.saveProfile).not.toHaveBeenCalled();
+      expect(JSON.stringify(result.headers["set-cookie"])).not.toContain(
+        "labrary_session=",
+      );
+    }
+  });
+  it("aceita convidado previamente autorizado sem exigir os dados de aluno", async () => {
+    const ctx = setup();
+    ctx.auth.directory.users.push({
+      ...ctx.auth.directory.users[2],
+      id: 4,
+      role: "ADMIN",
+      email: "admin@usp.br",
+    });
+    const token = await ctx.auth.createSession(4, 0, 10000);
+    expect(
+      (
+        await request(ctx.app)
+          .post("/api/admin/guests")
+          .set("Cookie", `labrary_session=${token}`)
+          .set("X-CSRF-Protection", "1")
+          .send({ email: "externo@gmail.com" })
+      ).status,
+    ).toBe(201);
+    ctx.client.profile.mockResolvedValue({
+      ...profile,
+      email: "externo@gmail.com",
+    });
+    ctx.saveProfile.mockResolvedValue({
+      id: 50,
+      fullName: "Convidado Externo",
+      email: "externo@gmail.com",
+      active: true,
+      passwordHash: null,
+      role: "ALUNO",
+      googleLinked: true,
+    });
+    const result = await ctx.callback(cookieOf(await ctx.start()));
+    expect(result.headers.location).toBe("https://labrary.example/projetos");
+    const me = await request(ctx.app)
+      .get("/api/auth/me")
+      .set("Cookie", sessionOf(result));
+    expect(me.body.data).toMatchObject({
+      guest: true,
+      requiresAcademicProfile: false,
+    });
+  });
   it("oferece Google, desabilita senha local e inicia tentativa HttpOnly", async () => {
     const ctx = setup();
     expect(
@@ -90,7 +147,7 @@ describe("login Google", () => {
     const ctx = setup();
     const cookie = cookieOf(await ctx.start());
     const result = await ctx.callback(cookie);
-    expect(result.headers.location).toBe("https://labrary.example/projetos");
+    expect(result.headers.location).toBe("https://labrary.example/cadastro");
     const session = sessionOf(result);
     const me = await request(ctx.app)
       .get("/api/auth/me")
@@ -101,12 +158,33 @@ describe("login Google", () => {
       email: profile.email,
       role: "ALUNO",
       googleLinked: true,
+      guest: false,
+      uspNumber: null,
+      entryYear: null,
+      requiresAcademicProfile: true,
     });
     expect(ctx.saveProfile).toHaveBeenCalledWith(profile);
     expect((await ctx.callback(cookie)).headers.location).toContain(
       "authError=google",
     );
     expect(ctx.saveProfile).toHaveBeenCalledTimes(1);
+    expect(
+      (await request(ctx.app).get("/api/projects").set("Cookie", session)).body
+        .error.code,
+    ).toBe("ACADEMIC_PROFILE_REQUIRED");
+    expect(
+      (
+        await request(ctx.app)
+          .post("/api/auth/profile")
+          .set("Cookie", session)
+          .set("X-CSRF-Protection", "1")
+          .send({
+            fullName: "Maria Nome Completo",
+            uspNumber: "12345678",
+            entryYear: 1970,
+          })
+      ).status,
+    ).toBe(200);
     expect(
       (await request(ctx.app).get("/api/projects").set("Cookie", session)).body
         .data,

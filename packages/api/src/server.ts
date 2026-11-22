@@ -11,6 +11,7 @@ import { loadDirectory, resolveUploadDir } from "./services/configuration.js";
 import { createDiskStorage } from "./services/fileStorage.js";
 import { createPostgresAdminRepository } from "./repositories/postgresAdminRepository.js";
 import { Pool } from "pg";
+import { createPostgresAcademicAccessRepository } from "./repositories/postgresAcademicAccessRepository.js";
 import { createPostgresIdentityRepository } from "./repositories/postgresIdentityRepository.js";
 import { createGoogleOAuth } from "./services/googleOAuth.js";
 import {
@@ -43,8 +44,10 @@ let auth: AuthRepository;
 let google;
 let admin;
 let groups;
+let academicAccess;
 if (googleConfig) {
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  academicAccess = createPostgresAcademicAccessRepository(pool);
   const identity = createPostgresIdentityRepository(pool);
   admin = createPostgresAdminRepository(pool);
   groups = createPostgresGroupRepository(pool);
@@ -76,13 +79,18 @@ groups ??= createMemoryGroupRepository(
   ),
 );
 createApp({
+  academicAccess,
   evaluationRepository: createEvaluationRepository(
     process.env.EVALUATION_DATA_FILE ?? `${dataFile}.evaluations.json`,
   ),
-  resultReleases: createResultReleaseRepository(process.env.RESULT_RELEASE_DATA_FILE ?? `${dataFile}.results.json`),
-  rubrics: createMemoryRubricRepository(createFileRubricStorage(
-    process.env.RUBRIC_DATA_FILE ?? `${dataFile}.rubrics.json`,
-  )),
+  resultReleases: createResultReleaseRepository(
+    process.env.RESULT_RELEASE_DATA_FILE ?? `${dataFile}.results.json`,
+  ),
+  rubrics: createMemoryRubricRepository(
+    createFileRubricStorage(
+      process.env.RUBRIC_DATA_FILE ?? `${dataFile}.rubrics.json`,
+    ),
+  ),
   groups,
   repository,
   admin,

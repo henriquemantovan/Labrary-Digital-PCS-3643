@@ -1,4 +1,5 @@
 import { verifyGroups } from "./groups.js";
+import { verifyAcademicAccess } from "./academicAccess.js";
 // Disposable cluster only: this test creates and removes its own databases.
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
@@ -71,7 +72,7 @@ try {
             "SELECT count(*)::int AS count FROM _prisma_migrations WHERE finished_at IS NOT NULL",
           )
         ).rows[0].count,
-        5,
+        6,
       );
       assert.equal(
         (
@@ -79,7 +80,7 @@ try {
             "SELECT count(*)::int AS count FROM pg_tables WHERE schemaname='public' AND tablename<>'_prisma_migrations'",
           )
         ).rows[0].count,
-        24,
+        25,
       );
       if (index === 1)
         assert.deepEqual(
@@ -98,7 +99,7 @@ try {
       const profile: GoogleProfile = {
         subject: "google-student",
         fullName: "Maria Google",
-        email: "maria@gmail.com",
+        email: "maria@usp.br",
         emailVerified: true,
       };
       const user = await identity.saveProfile(profile);
@@ -108,7 +109,7 @@ try {
       const updated = await identity.saveProfile({
         ...profile,
         fullName: "Maria Atualizada",
-        email: "maria.updated@gmail.com",
+        email: "maria.updated@usp.br",
       });
       assert.equal(updated.id, user.id);
       assert.equal(updated.fullName, "Maria Atualizada");
@@ -277,7 +278,7 @@ try {
       const student = await identity.saveProfile({
         ...profile,
         subject: "second-admin-sub",
-        email: "second-admin@gmail.com",
+        email: "second-admin@usp.br",
       });
       await request(adminApp)
         .post("/api/auth/view-role")
@@ -362,8 +363,9 @@ try {
         2,
       );
       await verifyGroups(pool, url.toString());
+      await verifyAcademicAccess(pool);
       console.log(
-        `PASS: ${index === 0 ? "banco vazio" : "banco existente com identidade USP preservada"}; 24 tabelas, administrador com auditoria, proteção concorrente do último admin, visualização por sessão, migrations idempotentes, identidade Google, perfis, sessão entre processos, expiração, logout, desativação e tentativa OAuth de uso único.`,
+        `PASS: ${index === 0 ? "banco vazio" : "banco existente com identidade USP preservada"}; 25 tabelas, administrador com auditoria, proteção concorrente do último admin, visualização por sessão, migrations idempotentes, identidade Google, perfis, sessão entre processos, expiração, logout, desativação e tentativa OAuth de uso único.`,
       );
     } finally {
       await pool.end();

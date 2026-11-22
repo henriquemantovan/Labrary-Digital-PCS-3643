@@ -8,6 +8,7 @@ const targets = [
 export default defineConfig({
   testDir: "./e2e",
   testIgnore: [
+    "**/google-academic.spec.ts",
     "**/grades-flow.spec.ts",
     "**/submission.spec.ts",
     "**/evaluation.spec.ts",
