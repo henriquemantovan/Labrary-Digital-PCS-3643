@@ -1,6 +1,8 @@
 import { createReadRouter } from "./routes/readRoutes.js";
 import type { ReadProviders } from "./models/readModels.js";
 import { createPublicationService } from "./services/publicationService.js";
+import { createSubmissionProvider } from "./services/submissionProvider.js";
+import { createPublicationEvaluationProvider } from "./services/publicationEvaluationProvider.js";
 import { PublicationProviders } from "./services/publicationProviders.js";
 import { createPublicationRouter } from "./routes/publicationRoutes.js";
 import { createGroupRouter } from "./routes/groupRoutes.js";
@@ -81,8 +83,28 @@ export function createApp(options: AppOptions = {}) {
   const now = options.now ?? Date.now;
   const storage = options.storage ?? createDiskStorage(".uploads");
   const rubrics = options.rubrics ?? createMemoryRubricRepository();
-  const evaluationService = options.evaluationRepository &&
-    createEvaluationService(repository, auth, options.evaluationRepository, now);
+  const evaluationService =
+    options.evaluationRepository &&
+    createEvaluationService(
+      repository,
+      auth,
+      options.evaluationRepository,
+      now,
+    );
+  const evaluations = options.evaluations ?? evaluationService;
+  const resultReleases =
+    options.resultReleases ?? createResultReleaseRepository();
+  const publicationProviders =
+    options.publicationProviders ??
+    (evaluations
+      ? {
+          submissions: createSubmissionProvider(repository),
+          evaluations: createPublicationEvaluationProvider(
+            evaluations,
+            resultReleases,
+          ),
+        }
+      : undefined);
   app.disable("x-powered-by");
   app.use("/api", (_request, response, next) => {
     response.set({
@@ -120,7 +142,10 @@ export function createApp(options: AppOptions = {}) {
   );
   app.use("/api/classes", requireAuth(auth, now));
   app.use("/api/projects", requireAuth(auth, now));
-  app.use("/api", createReadRouter(options.readProviders ?? {}, repository, auth));
+  app.use(
+    "/api",
+    createReadRouter(options.readProviders ?? {}, repository, auth),
+  );
   app.use(
     "/api",
     createPublicationRouter(
@@ -129,7 +154,7 @@ export function createApp(options: AppOptions = {}) {
         auth,
         storage,
         now,
-        options.publicationProviders,
+        publicationProviders,
       ),
       storage,
     ),
@@ -137,17 +162,12 @@ export function createApp(options: AppOptions = {}) {
 
   app.use(
     "/api",
-    createGradeRouter(
-      repository,
-      auth,
-      options.resultReleases ?? createResultReleaseRepository(),
-      options.evaluations ?? evaluationService,
-      now,
-    ),
+    createGradeRouter(repository, auth, resultReleases, evaluations, now),
   );
   app.use("/api", createRubricRouter(repository, auth, rubrics, now));
   app.use("/api", createSubmissionRouter(repository, auth, rubrics, now));
-  if (evaluationService) app.use("/api", createEvaluationRouter(evaluationService));
+  if (evaluationService)
+    app.use("/api", createEvaluationRouter(evaluationService));
   app.use(
     "/api",
     createGroupRouter(
