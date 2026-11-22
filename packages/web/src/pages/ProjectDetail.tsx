@@ -1,11 +1,12 @@
+import { useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { ApiError } from "../api";
 import type { Material, MaterialRules, Project, User } from "../api";
 import { ArrowLeft, Lock } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
-import { StatusBadge } from "../components/StatusBadge";
 import { Button } from "../components/ui/button";
-import { materialLabels } from "../labels";
+import type { SubmissionChecklist } from "../submissionTypes";
+import { ProjectProgress, SectionNav } from "./ProjectProgress";
 import { MaterialsPanel } from "../Materials";
 import { SubmissionPanel } from "../Submission";
 import { GroupResult } from "../GroupResult";
@@ -37,6 +38,25 @@ export function ProjectDetail({
   navigate: (path: string) => void;
   expired: () => void;
 }) {
+  const [checklist, setChecklist] = useState<SubmissionChecklist | null>(null);
+  const staff = ["PROFESSOR", "ADMIN"].includes(user.role);
+  const missing =
+    detail.missingMaterials ??
+    (materialRules?.rules ?? [])
+      .filter(
+        (rule) =>
+          rule.required && !materials.some((material) => material.kind === rule.kind),
+      )
+      .map((rule) => rule.kind);
+  const sections = [
+    materialRules && { id: "secao-materiais", label: "Materiais" },
+    { id: "secao-entrega", label: "Entrega" },
+    user.role === "ALUNO" && { id: "secao-resultado", label: "Resultado" },
+    staff && { id: "secao-avaliadores", label: "Avaliadores" },
+    staff && { id: "secao-publicacao", label: "Publicação" },
+    { id: "secao-avaliacao", label: "Avaliação" },
+    { id: "secao-feedback", label: "Feedback" },
+  ].filter((item): item is { id: string; label: string } => !!item);
   return (
       <>
         <Button
@@ -59,18 +79,16 @@ export function ProjectDetail({
           title={detail.title}
           intro={detail.description || "Este projeto ainda não tem uma descrição."}
         />
-        <div className="-mt-4 mb-8 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-          <StatusBadge status={detail.status} />
-          {detail.missingMaterials && (
-            <p>
-              {detail.missingMaterials.length
-                ? `Pendentes: ${detail.missingMaterials.map((kind) => materialLabels[kind]).join(", ")}`
-                : "Materiais obrigatórios presentes"}
-            </p>
-          )}
-        </div>
-        <div className="grid gap-6">
+        <ProjectProgress
+          project={detail}
+          role={user.role}
+          missing={missing}
+          checklist={checklist}
+        />
+        <SectionNav items={sections} />
+        <div className="grid gap-6 [&>div]:scroll-mt-16">
         {materialRules && (
+          <div id="secao-materiais">
           <MaterialsPanel
             projectId={detail.id}
             materials={materials}
@@ -93,7 +111,9 @@ export function ProjectDetail({
             }}
             expired={expired}
           />
+          </div>
         )}
+        <div id="secao-entrega">
         <SubmissionPanel
           key={`submission-${detail.id}`}
           project={detail}
@@ -101,6 +121,7 @@ export function ProjectDetail({
           materials={materials}
           refreshKey={materialRules}
           expired={expired}
+          onChecklist={setChecklist}
           onStatusChanged={(status) => {
             setDetail((current) => current && { ...current, status });
             // O novo estado muda o bloqueio de upload; recarrega as regras dos materiais.
@@ -110,20 +131,24 @@ export function ProjectDetail({
             });
           }}
         />
-        <p className="flex items-center gap-1.5 text-xs text-subtle-foreground">
-          <Lock className="size-3.5" />
-          Acesso restrito ao grupo e à equipe acadêmica vinculada ao projeto.
-        </p>
-        {user.role === "ALUNO" && <GroupResult key={`result-${detail.id}`} projectId={detail.id} expired={expired} />}
-        {["PROFESSOR", "ADMIN"].includes(user.role) && (
+        </div>
+        {user.role === "ALUNO" && (
+          <div id="secao-resultado">
+            <GroupResult key={`result-${detail.id}`} projectId={detail.id} expired={expired} />
+          </div>
+        )}
+        {staff && (
+          <div id="secao-avaliadores">
           <EvaluatorManager
             key={`evaluators-${detail.id}`}
             projectId={detail.id}
             classId={detail.classId}
             expired={expired}
           />
+          </div>
         )}
-        {["PROFESSOR", "ADMIN"].includes(user.role) && (
+        {staff && (
+          <div id="secao-publicacao">
           <PublicationPanel
             key={`publication-${detail.id}`}
             projectId={detail.id}
@@ -134,7 +159,9 @@ export function ProjectDetail({
               )
             }
           />
+          </div>
         )}
+        <div id="secao-avaliacao">
         <ProjectAssessment
           key={`assessment-${detail.id}-${user.role}`}
           projectId={detail.id}
@@ -143,12 +170,19 @@ export function ProjectDetail({
           expired={expired}
           onConfigurationSaved={refreshMaterialRules}
         />
+        </div>
+        <div id="secao-feedback">
         <ProjectFeedback
           key={detail.id}
           projectId={detail.id}
           materials={materials}
           expired={expired}
         />
+        </div>
+        <p className="flex items-center gap-1.5 text-xs text-subtle-foreground">
+          <Lock className="size-3.5" />
+          Acesso restrito ao grupo e à equipe acadêmica vinculada ao projeto.
+        </p>
         </div>
       </>
   );

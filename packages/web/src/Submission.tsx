@@ -28,7 +28,7 @@ function blockMessage(checklist: SubmissionChecklist) {
  * devolução para ajustes pelo professor. As regras ficam na API; aqui só se
  * mostra o que ela decide.
  */
-export function SubmissionPanel({ project, user, materials, refreshKey, expired, onStatusChanged }: {
+export function SubmissionPanel({ project, user, materials, refreshKey, expired, onStatusChanged, onChecklist }: {
   project: Pick<Project, "id" | "status">;
   user: User;
   materials: Material[];
@@ -36,6 +36,8 @@ export function SubmissionPanel({ project, user, materials, refreshKey, expired,
   refreshKey?: unknown;
   expired: () => void;
   onStatusChanged: (status: string) => void;
+  /** Repassa o checklist carregado para o resumo de andamento do projeto. */
+  onChecklist?: (checklist: SubmissionChecklist) => void;
 }) {
   const [checklist, setChecklist] = useState<SubmissionChecklist | null>(null);
   const [rounds, setRounds] = useState<Submission[] | null>(null);
@@ -67,10 +69,11 @@ export function SubmissionPanel({ project, user, materials, refreshKey, expired,
         if (!active) return;
         setChecklist(items);
         setRounds(history);
+        onChecklist?.(items);
       })
       .catch((failure) => { if (active) fail(failure); });
     return () => { active = false; };
-  }, [project.id, project.status, materials, refreshKey, revision, fail]);
+  }, [project.id, project.status, materials, refreshKey, revision, fail, onChecklist]);
 
   const latest = rounds?.at(-1);
   const canReturn = ["PROFESSOR", "ADMIN"].includes(user.role) &&

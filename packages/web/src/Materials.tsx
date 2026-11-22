@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { ApiError, uploadFile } from "./api";
 import type { Material, MaterialRule, MaterialRules } from "./api";
-import { Check, Folder, Lock } from "lucide-react";
+import { BookOpen, Check, File, FileText, Lock, Video } from "lucide-react";
 import { Notice } from "./components/Feedback";
 import { Button, buttonVariants } from "./components/ui/button";
 import { fieldLabel, Input } from "./components/ui/input";
@@ -193,6 +193,13 @@ function FileButton({
   );
 }
 
+function KindIcon({ kind }: { kind: string }) {
+  if (kind === "VIDEO") return <Video aria-hidden="true" />;
+  if (kind === "RELATORIO") return <FileText aria-hidden="true" />;
+  if (kind === "MANUAL") return <BookOpen aria-hidden="true" />;
+  return <File aria-hidden="true" />;
+}
+
 function MaterialCard({
   projectId,
   rule,
@@ -220,25 +227,24 @@ function MaterialCard({
       <div className="flex flex-wrap items-start gap-3">
       <span
         className={cn(
-          "grid size-9 shrink-0 place-items-center rounded-lg",
+          "relative grid size-9 shrink-0 place-items-center rounded-lg [&>svg]:size-4",
           current ? "bg-success/10 text-success" : "bg-muted text-muted-foreground",
         )}
       >
-        {current ? <Check className="size-4" /> : <Folder className="size-4" />}
+        <KindIcon kind={rule.kind} />
+        {current && (
+          <Check className="absolute -right-1 -bottom-1 size-3.5! rounded-full bg-success p-0.5 text-white" />
+        )}
       </span>
       <div className="grid min-w-0 flex-1 gap-0.5 text-xs text-muted-foreground [overflow-wrap:anywhere]">
         <strong className="text-sm font-medium text-foreground">{title}</strong>
         <span>{formatsText(rule)}</span>
         {rule.dueAt && <span>Prazo de {title}: {formatDate(rule.dueAt)}</span>}
         {rule.lock === "DEADLINE_PASSED" && <span>Prazo deste material encerrado.</span>}
-        {current ? (
-          <span className="text-success">
+        {current && (
+          <span>
             Enviado · versão {current.versionNumber} · {author(current)} ·{" "}
             {formatDate(current.uploadedAt)}
-          </span>
-        ) : (
-          <span className={rule.required ? "text-warning" : undefined}>
-            {rule.required ? "Pendente" : "Opcional"}
           </span>
         )}
         {current && (
@@ -248,6 +254,16 @@ function MaterialCard({
         )}
       </div>
       <div className="flex flex-wrap items-center gap-2">
+        {!current && (
+          <span
+            className={cn(
+              "rounded-full px-2.5 py-0.5 text-xs font-medium",
+              rule.required ? "bg-warning/10 text-warning" : "bg-muted text-muted-foreground",
+            )}
+          >
+            {rule.required ? "Pendente" : "Opcional"}
+          </span>
+        )}
         {current && (
           <a
             className={buttonVariants({ variant: "outline", size: "sm" })}
@@ -440,6 +456,16 @@ export function MaterialsPanel({
         <p className={cn(mutedText, "mb-4")}>
           Prazo de entrega: {formatDate(rules.dueAt)}
         </p>
+      )}
+      {required.length > 0 && (
+        <div aria-hidden="true" className="-mt-1 mb-4 h-1 overflow-hidden rounded-full bg-muted">
+          <div
+            className="h-full rounded-full bg-success transition-[width]"
+            style={{
+              width: `${((required.length - missing.length) / required.length) * 100}%`,
+            }}
+          />
+        </div>
       )}
       <ul className="m-0 list-none divide-y rounded-lg border p-0">
         {cards.map(({ rule, material }) => (

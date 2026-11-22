@@ -15,6 +15,9 @@ test("HU02 cadastra grupo e projeto e altera acesso de integrantes e avaliadores
   await expect(
     page.getByRole("heading", { name: "Grupo Semana 5", exact: true }),
   ).toBeVisible();
+  const editMembers = () =>
+    page.getByRole("button", { name: "Editar integrantes de Grupo Semana 5" }).click();
+  // Grupo sem integrantes já abre a edição.
   const members = page.getByRole("group", {
     name: "Integrantes de Grupo Semana 5",
     exact: true,
@@ -25,6 +28,7 @@ test("HU02 cadastra grupo e projeto e altera acesso de integrantes e avaliadores
     .click();
   await expect(page.getByText("Integrantes atualizados.")).toBeVisible();
   await page.reload();
+  await editMembers();
   await expect(members.getByLabel("Marina Oliveira")).toBeChecked();
   expect(
     await page.evaluate(
@@ -92,6 +96,7 @@ test("HU02 cadastra grupo e projeto e altera acesso de integrantes e avaliadores
       (await evaluator.request.get(`/api/projects/${projectId}`)).status(),
     ).toBe(404);
     await page.getByRole("button", { name: "Minhas turmas" }).click();
+    await editMembers();
     await members.getByLabel("Marina Oliveira").uncheck();
     await members
       .getByRole("button", { name: "Salvar integrantes de Grupo Semana 5" })
@@ -100,12 +105,14 @@ test("HU02 cadastra grupo e projeto e altera acesso de integrantes e avaliadores
     expect(
       (await student.request.get(`/api/projects/${projectId}`)).status(),
     ).toBe(404);
-    const section = page
-      .getByRole("heading", { name: "Grupo Semana 5", exact: true })
-      .locator("..");
+    const section = page.getByRole("region", {
+      name: "Grupo Semana 5",
+      exact: true,
+    });
     await section.getByText("Histórico de vínculos (2)").click();
     await expect(section.getByText(/Conta 3:/)).toHaveCount(2);
     await page.reload();
+    // Sem integrantes, o grupo volta a abrir a edição sozinho.
     await expect(members.getByLabel("Marina Oliveira")).not.toBeChecked();
   } finally {
     await student.close();
