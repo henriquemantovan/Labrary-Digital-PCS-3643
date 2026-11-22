@@ -64,7 +64,7 @@ Observação para demonstrações: no seed local, o projeto 1 começa em `EM_AVA
 
 ## Adapter para a publicação (HU11)
 
-`services/submissionProvider.ts` exporta `createSubmissionProvider(repository)`, que implementa `PublicationProviders["submissions"]` ([HU11](../hu11.md#integração-de-domínio-para-enzo-e-kauê)). `latest(projectId)` devolve uma cópia da rodada de maior número persistida, ou `undefined` se o projeto não tiver rodadas. Não filtra por estado: rodada `DEVOLVIDA` é entregue como está e o serviço da HU11 recusa finalizá-la (`409 PUBLICATION_NOT_READY`).
+`services/submissionProvider.ts` exporta `createSubmissionProvider(repository)`, que implementa `PublicationProviders["submissions"]` ([HU11](../hu11.md)). `latest(projectId)` devolve uma cópia da rodada de maior número persistida, ou `undefined` se o projeto não tiver rodadas. Não filtra por estado: rodada `DEVOLVIDA` é entregue como está e o serviço da HU11 recusa finalizá-la (`409 PUBLICATION_NOT_READY`).
 
 O adapter ainda **não** é injetado em `server.ts`: a porta da HU11 exige também o provedor de completude das avaliações (Kauê, #41), e a composição no entrypoint é feita por Henrique (#42). `services/submissionProvider.test.ts` verifica o adapter e a finalização a partir de uma rodada real; nesse teste, só a completude C3 é dublê.
 

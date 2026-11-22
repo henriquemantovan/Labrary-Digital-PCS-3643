@@ -4,7 +4,9 @@ Autenticação e administração: [SSO Google, perfis, PostgreSQL e migrations](
 
 > Documento de definição do projeto e planejamento Scrum — PCS3643, Laboratório de Engenharia de Software I.
 > Plataforma voltada aos projetos de Laboratório de Projeto de Sistemas Digitais.
-> Versão inicial: 04/10/2026. Situação atual: base MVC/REST, HU01, HU02 (incremento S5) e HU04 implementadas localmente; revisão da equipe pendente.
+> Versão inicial: 04/10/2026. Atualização S7: entrega, avaliação, consolidação e publicação conectadas nesta branch; revisão da equipe e aceite acadêmico pendentes.
+
+**Documentação da entrega:** [manual do usuário](docs/manual-usuario.md), [arquitetura atual](docs/arquitetura.md), [validação da entrega](#validação-da-entrega), [slides da apresentação](docs/apresentacao-final.html), [roteiro dos cinco integrantes](docs/apresentacao-final.md) e [limitações](docs/limitacoes.md). Para iniciar um ambiente isolado: `pnpm demo`. Para gravar a demonstração automatizada de publicação com integrações reais: `pnpm demo:publicacao`.
 
 **Programando com IA:** veja o [guia de desenvolvimento com IA](docs/desenvolvimento-com-ia.md), o [AGENTS.md](AGENTS.md) e as [skills compartilhadas](.agents/skills/). O fluxo inclui gerar código com testes, a própria IA executá-los, corrigir falhas e relatar os resultados.
 
@@ -49,7 +51,7 @@ O tema é uma **adaptação proposta de plataforma de conteúdo digital**. O enu
 | Receita, custos de conteúdo e infraestrutura | Não incorporados como funcionalidade; validar dispensa ou criar histórias adicionais |
 | MVC, REST, testes, cobertura, CI e instalação | Mantidos no planejamento técnico |
 
-**Pendência acadêmica:** validar tema, substituições e dispensas com o professor antes de considerar o escopo aprovado. A [solicitação preparada para #20](docs/escopo-academico.md) registra o que precisa de decisão; envio e resposta permanecem pendentes. Não interpretar esta tabela como atendimento integral aos requisitos originais.
+**Pendência acadêmica:** validar tema, substituições e dispensas com o professor antes de considerar o escopo aprovado. Os requisitos que precisam de decisão estão na tabela acima; não há aprovação acadêmica registrada. Não interpretar esta tabela como atendimento integral aos requisitos originais.
 
 ## 2. Nome do sistema e do grupo
 
@@ -116,7 +118,7 @@ As funcionalidades foram registradas como issues no formato **Como [papel], eu g
 - [x] Aluno vê somente projetos do próprio grupo na área de entrega.
 - [x] Alterações de vínculos preservam o histórico.
 
-**Estado local:** incremento da S5 pronto para revisão, com grupos/vínculos persistentes no PostgreSQL (Google) e em arquivo privado (local), histórico, autorização e formulários. A extração do PR #26 conserva a autoria do trabalho de Yuhang; HU03 segue separada. Veja [HU02 e composição](docs/hu02.md), [arquitetura revisada](docs/arquitetura-semana-5.md), [contrato C4](docs/contratos/c4-publicacao.md) e [pendência acadêmica #20](docs/escopo-academico.md). Revisão da equipe, demonstração e aceite não são presumidos.
+**Estado local:** incremento da S5 pronto para revisão, com grupos/vínculos persistentes no PostgreSQL (Google) e em arquivo privado (local), histórico, autorização e formulários. A extração do PR #26 conserva a autoria do trabalho de Yuhang; HU03 segue separada. Veja [HU02 e composição](docs/hu02.md), [arquitetura revisada](docs/arquitetura.md), [contrato C4](docs/contratos/c4-publicacao.md) e [pendência acadêmica #20](README.md#alinhamento-com-o-enunciado-geral). Revisão da equipe, demonstração e aceite não são presumidos.
 
 ### [HU03 — Configurar requisitos e critérios de avaliação](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/3)
 
@@ -176,7 +178,7 @@ As funcionalidades foram registradas como issues no formato **Como [papel], eu g
 - [x] Projetos não atribuídos ficam inacessíveis ao avaliador.
 - [ ] Nenhuma nota ou comentário privado aparece na galeria pública.
 
-**Estado local:** acompanhamento de metadados implementado para revisão; filtros combináveis, pendências e histórico de versões disponíveis. O conteúdo dos arquivos abre pelo download protegido da HU04; o critério da galeria pública será validado com HU11/HU12. Regras, limites e roteiro em [docs/hu06.md](docs/hu06.md). Revisão por outro integrante, refinamento e demonstração permanecem pendentes; a issue não está Done.
+**Estado local:** acompanhamento de metadados implementado para revisão; filtros combináveis, pendências e histórico de versões disponíveis. O conteúdo dos arquivos abre pelo download protegido da HU04; o critério da galeria pública será validado com HU11/HU12. Regras, limites e roteiro em [contrato de acompanhamento](docs/api-inicial.md). Revisão por outro integrante, refinamento e demonstração permanecem pendentes; a issue não está Done.
 
 ### [HU07 — Trocar feedback no projeto](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/7)
 
@@ -249,17 +251,17 @@ As funcionalidades foram registradas como issues no formato **Como [papel], eu g
 
 **Critérios de aceitação:**
 
-- [ ] Finalização exige materiais completos e avaliações concluídas; registra responsável e data.
-- [ ] Publicação é ação explícita posterior à finalização; projeto finalizado não é automaticamente público.
-- [ ] Professor seleciona os materiais autorizados para divulgação e registra autorização do grupo.
-- [ ] Somente metadados e materiais autorizados tornam-se públicos; notas e feedback continuam privados.
-- [ ] Professor pode retirar publicação preservando conteúdo e histórico privados.
+- [x] Finalização exige materiais completos e avaliações concluídas; registra responsável e data.
+- [x] Publicação é ação explícita posterior à finalização; projeto finalizado não é automaticamente público.
+- [x] Professor seleciona os materiais autorizados para divulgação e registra autorização do grupo.
+- [x] Somente metadados e materiais autorizados tornam-se públicos; notas e feedback continuam privados.
+- [x] Professor pode retirar publicação preservando conteúdo e histórico privados.
 
-**Incremento S6 (#37):** serviço/API e controles docentes de finalização, registro da autorização do grupo, seleção de versões, publicação e retirada, com auditoria persistente e acesso público C4/Range. As ações de finalização/publicação permanecem desabilitadas no entrypoint até os adapters reais C1 (Enzo #38) e C3 (Kauê #41) estarem conectados. Os testes com doubles não representam aceite integrado. Veja [HU11, integração e evidências](docs/hu11.md).
+**Incremento S7 (#42):** os critérios técnicos acima são exercitados com submissões C1 persistidas, avaliações C2 de Yuhang e consolidação C3 de Kauê, no servidor normal. Publicação compartilha a fonte real da consolidação e não exige liberação de notas. A integração inclui reinício dos repositórios, isolamento, retirada de bytes e revalidação após leituras assíncronas. A entrega de avaliação `47fc731`, ainda fora da `main` analisada, foi incorporada nesta branch preservando sua autoria. Revisão cruzada, demonstração humana e decisão acadêmica continuam pendentes. Veja [HU11](docs/hu11.md) e [validação da entrega](#validação-da-entrega).
 
 ### [HU12 — Explorar projetos publicados](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/12)
 
-**Incremento S5 (#35):** catálogo/detalhe responsivos, busca e filtros combinados sobre C4, demonstráveis em `/demo/acervo` somente no servidor de desenvolvimento. Cliente HTTP separado, sem fallback de fixtures em produção. Publicação real e aceite permanecem na S6/S7. [Demonstração, regressão HU06 e evidências](docs/catalogo-semana-5.md).
+**Implementação:** catálogo/detalhe responsivos em `/acervo`, busca e filtros combinados sobre o C4 real, com vídeo e documentos autorizados. O cliente HTTP não usa fixtures como fallback em produção. A rota `/demo/acervo` permanece restrita à demonstração de componentes no desenvolvimento. Veja o [manual do acervo público](docs/manual-usuario.md#visitante-consultar-o-acervo).
 
 **Como visitante ou usuário, eu gostaria de buscar e visualizar projetos publicados, de forma que possa conhecer os trabalhos concluídos.**
 
@@ -318,10 +320,10 @@ As funcionalidades foram registradas como issues no formato **Como [papel], eu g
 
 | Integrante | Responsabilidade principal | Papel Scrum proposto | Itens sob responsabilidade |
 | --- | --- | --- | --- |
-| @henriquemantovan | Integração, arquitetura, acesso e publicação | Product Owner interno: ordenar backlog e levar dúvidas ao professor | HU01, HU11, HU13, TEC02, TEC06 |
+| @henriquemantovan | Integração, arquitetura, grupos, acesso e publicação | Product Owner interno: ordenar backlog e levar dúvidas ao professor | HU01, HU02, HU11, HU13, TEC02, TEC06 |
 | @enplo | Entrega de materiais e validação dos esboços | Developer | HU04, HU05, TEC03 |
 | @kiyochii | Interface do acervo, feedback e resultados | Developer | HU06, HU07, HU10, HU12 |
-| @yuhangf2333 | Regras de negócio, rubrica, API e CI | Developer | HU02, HU03, HU08, TEC04 |
+| @yuhangf2333 | Regras de negócio, rubrica, API e CI | Developer | HU03, HU08, TEC04 |
 | @kauebmr | Banco, consolidação e garantia da qualidade | Scrum Master interno e Developer | HU09, HU14, TEC01, TEC05 |
 
 O professor é stakeholder e valida os requisitos acadêmicos; o papel interno de Product Owner não substitui essa validação. Scrum Master facilita eventos e remoção de impedimentos; não distribui unilateralmente tarefas.
@@ -347,7 +349,7 @@ Prioridades: **P0** essencial ao MVP/entrega técnica; **P1** importante; **P2**
 | [TEC02](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/16) | Preparar ambiente MVC/REST e APIs iniciais | P0 | 5 | 2 | @henriquemantovan | TEC01 |
 | [TEC03](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/17) | Validar Crazy 8 e protótipos com o grupo | P0 | 3 | 2 | @enplo | — |
 | [TEC04](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/18) | Implementar testes e integração contínua | P0 | 5 | 2 | @yuhangf2333 | TEC02 |
-| [HU02](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/2) | Cadastrar grupos e projetos | P0 | 5 | 3 | @yuhangf2333 | HU01 |
+| [HU02](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/2) | Cadastrar grupos e projetos | P0 | 5 | 3 | @henriquemantovan | HU01 |
 | [HU03](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/3) | Configurar requisitos e critérios de avaliação | P0 | 5 | 3 | @yuhangf2333 | HU01 |
 | [HU04](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/4) | Enviar e substituir materiais | P0 | 8 | 3 | @enplo | HU02,HU03 |
 | [HU05](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/5) | Concluir a entrega do projeto | P0 | 5 | 4 | @enplo | HU04 |
@@ -406,7 +408,7 @@ Essa atualização documenta o estado no repositório e complementa a issue #21;
 
 ### Atualização local — HU06 (02/11/2026)
 
-Acompanhamento de metadados em revisão: filtros por grupo, estado e pendências, detalhe com histórico de versões e acesso restrito às atribuições. Pendências para concluir a história: conteúdo privado de arquivos (HU04), validação da futura galeria pública (HU11/HU12), revisão de outro integrante, refinamento com o grupo e demonstração. Detalhes em [docs/hu06.md](docs/hu06.md). Este registro não fecha a issue #6 nem altera o backlog remoto #21.
+Acompanhamento de metadados em revisão: filtros por grupo, estado e pendências, detalhe com histórico de versões e acesso restrito às atribuições. Pendências para concluir a história: conteúdo privado de arquivos (HU04), validação da futura galeria pública (HU11/HU12), revisão de outro integrante, refinamento com o grupo e demonstração. Detalhes em [contrato de acompanhamento](docs/api-inicial.md). Este registro não fecha a issue #6 nem altera o backlog remoto #21.
 
 ### Atualização local — HU07 (02/11/2026)
 
@@ -530,7 +532,7 @@ pnpm db:status
 
 As migrations criam os objetos dentro de transações. Em banco onde `schema.sql` já foi aplicado, registre primeiro a baseline conforme o [guia de implantação](docs/login-google.md). Não inclui seed nem armazena arquivos binários; os arquivos ficam em armazenamento privado e `storage_key` guarda sua referência. A HU01 impõe autorização por perfil e vínculo. A aplicação ainda deverá impor outras regras que dependem de múltiplas linhas, como soma dos pesos da rubrica igual a 100% e compatibilidade de papel.
 
-A [revisão da arquitetura na S5](docs/arquitetura-semana-5.md) distingue os adapters efetivos do modelo planejado. O model Prisma descreve as entidades do MVP. O modo Google consulta PostgreSQL para identidades, vínculos de autorização, sessões e tentativas OAuth; projetos, metadados e mensagens usam o adapter de arquivo privado da HU07. `pnpm db:test` verifica instalação limpa e adoção do schema existente em PostgreSQL real e descartável. A validação no Google real exige Client ID, Client Secret e URI de redirecionamento cadastrados no Google Cloud.
+A [arquitetura atual](docs/arquitetura.md) distingue os adapters efetivos do modelo planejado. O model Prisma descreve as entidades do MVP. O modo Google consulta PostgreSQL para identidades, vínculos de autorização, sessões e tentativas OAuth; projetos, metadados e mensagens usam o adapter de arquivo privado da HU07. `pnpm db:test` verifica instalação limpa e adoção do schema existente em PostgreSQL real e descartável. A validação no Google real exige Client ID, Client Secret e URI de redirecionamento cadastrados no Google Cloud.
 
 ### Visão dos componentes e separação MVC
 
@@ -604,6 +606,18 @@ A API inicial implementa health check, consulta/criação de projetos e registro
 | Arquitetura e banco | Seção 9; MVC/REST, [DER](docs/diagrama-er.md), [classes](docs/diagrama-classes.md), Prisma e [schema PostgreSQL](db/schema.sql) |
 | Compartilhamento com professor | Compartilhar link com higoramario conforme aula |
 
-## Incremento de Kauê — 12/11/2026
+## Validação da entrega
 
-Cálculo/CSV e contrato C3 da #36 implementados; API/tabela docente, liberação persistida e preparação de instalação da #41 disponíveis contra porta C2 injetável. A integração com avaliações reais, revisão e demonstração continuam pendentes. Consulte [C3 e limites da integração](docs/contratos/c3-consolidacao.md) e [instalação/seed e aceitação](docs/instalacao-e-aceitacao.md). `pnpm demo` inicia um ambiente local isolado com as contas de demonstração existentes. [Evidências e dependências da entrega](docs/entrega-kaue-2026-11-12.md). Esses incrementos não marcam HU09 ou a aceitação final como concluídas.
+Use as versões de `.nvmrc` e `package.json`. A validação técnica é reproduzível pelos comandos:
+
+```sh
+pnpm build
+pnpm test
+pnpm test:e2e
+```
+
+`pnpm test` exige pelo menos 85% de cobertura em linhas, statements, funções e branches, separadamente na API e na interface. `pnpm test:e2e` inclui os fluxos de submissão, avaliação, consolidação, publicação e retirada, com Chromium desktop e celular emulado. Os testes integrados usam os repositórios reais; testes isolados com provedores de exemplo não substituem esse fluxo.
+
+Para gerar a gravação de publicação com dados isolados, execute `pnpm demo:publicacao`. Capturas, vídeos e traces ficam em `test-results/`, ignorado pelo Git; os relatórios de cobertura ficam em `packages/api/coverage/` e `packages/web/coverage/`. Instalação do navegador, ambiente e restauração: [guia de instalação e aceitação](docs/instalacao-e-aceitacao.md).
+
+A aprovação técnica não substitui revisão cruzada, cinco vídeos finais, retrospectiva, evidências de Google real e instalação limpa, nem a decisão do professor sobre o escopo adaptado. Veja [limitações e pendências](docs/limitacoes.md) e [roteiro da apresentação](docs/apresentacao-final.md).

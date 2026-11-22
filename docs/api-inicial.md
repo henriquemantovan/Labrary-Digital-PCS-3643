@@ -1,4 +1,4 @@
-# API REST (TEC02 + HU01–HU09)
+# API REST (TEC02 + HU01–HU12)
 
 O [C0 — requisitos/rubricas](contratos/c0-requisitos-rubrica.md) define a configuração versionada. O [C2 — avaliação](contratos/c2-avaliacao.md) usa a rubrica da submissão C1 para registrar as avaliações que alimentam a consolidação C3.
 
@@ -60,7 +60,7 @@ Exemplo de erro:
 
 `ProjectMaterial` contém `id`, `projectId`, `kind`, `title`, `createdBy`, `createdAt`, `currentVersion` e `versions` (da mais recente para a mais antiga). Cada versão traz `versionNumber`, `originalFilename`, `mimeType`, `sizeBytes`, `checksumSha256`, `uploadedBy { id, fullName }`, `uploadedAt` e `downloadUrl`; a chave interna de armazenamento não é exposta. Criar um material com o mesmo tipo e título (sem diferenciar maiúsculas) responde `409 MATERIAL_ALREADY_EXISTS`: a substituição usa a rota de versões, que nunca apaga versões anteriores. Material inexistente ou de outro projeto responde `404 MATERIAL_NOT_FOUND`.
 
-`MaterialRules` contém `dueAt`, `lock` (`null`, `PROJECT_LOCKED` ou `DEADLINE_PASSED`), `canUpload` e `rules` (por tipo: `kind`, `defaultTitle`, `required`, `formats[{ label, mimeType, extensions }]`, `maxSizeBytes`). Enquanto a HU03 não existe, as regras padrão são: vídeo MP4/WebM até 500 MB; relatório e manual PDF até 20 MB; outros PDF/ZIP/PNG/JPEG até 50 MB. A entrega está aberta em Preparação antes de `dueAt` e em Ajustes (reabertura pelo professor, mesmo após o prazo). Envios recusados respondem `400 EMPTY_FILE`, `413 FILE_TOO_LARGE`, `415 UNSUPPORTED_FORMAT` (tipo ou extensão fora da regra) ou `409 DEADLINE_PASSED`.
+`MaterialRules` contém `dueAt`, `lock` (`null`, `PROJECT_LOCKED` ou `DEADLINE_PASSED`), `canUpload` e `rules` (por tipo: `kind`, `defaultTitle`, `required`, `formats[{ label, mimeType, extensions }]`, `maxSizeBytes`). A política usa os requisitos da rubrica vigente; sem configuração, aplica os padrões: vídeo MP4/WebM até 500 MB; relatório e manual PDF até 20 MB; outros PDF/ZIP/PNG/JPEG até 50 MB. A entrega está aberta em Preparação antes de `dueAt` e em Ajustes (reabertura pelo professor, mesmo após o prazo). Envios recusados respondem `400 EMPTY_FILE`, `413 FILE_TOO_LARGE`, `415 UNSUPPORTED_FORMAT` (tipo ou extensão fora da regra) ou `409 DEADLINE_PASSED`.
 
 **Envio de arquivos.** `POST …/materials` e `POST …/materials/:materialId/versions` recebem `multipart/form-data` com **um** arquivo no campo `file`. Na criação, o campo `kind` deve vir **antes** do arquivo (define o limite aplicado durante o envio); `title` é opcional (padrão: título sugerido do tipo). A substituição não aceita outros campos (`400 UNEXPECTED_FIELD`). O servidor:
 
@@ -74,7 +74,7 @@ Erros de formato do envio: `400 MULTIPART_REQUIRED`, `FILE_REQUIRED`, `UNEXPECTE
 
 Exemplo: `curl -b cookies.txt -H 'X-CSRF-Protection: 1' -F kind=RELATORIO -F 'file=@relatorio.pdf' http://localhost:3000/api/projects/2/materials`.
 
-**Download.** `GET …/versions/:versionId/file` exige sessão e acesso de leitura ao projeto (integrantes do grupo, avaliadores atribuídos e professor da turma). O arquivo vem com `Content-Disposition: attachment` (nome original em UTF-8), o `Content-Type` detectado no envio, `X-Content-Type-Options: nosniff`, `Content-Security-Policy: default-src 'none'; sandbox` e `Cache-Control: no-store`. Projeto fora do escopo → `404 PROJECT_NOT_FOUND`; material, versão ou arquivo ausente → `404 FILE_NOT_FOUND`. Não existe URL pública de material.
+**Download privado.** `GET …/versions/:versionId/file` exige sessão e acesso de leitura ao projeto (integrantes do grupo, avaliadores atribuídos e professor da turma). O arquivo vem com `Content-Disposition: attachment` (nome original em UTF-8), o `Content-Type` detectado no envio, `X-Content-Type-Options: nosniff`, `Content-Security-Policy: default-src 'none'; sandbox` e `Cache-Control: no-store`. Projeto fora do escopo → `404 PROJECT_NOT_FOUND`; material, versão ou arquivo ausente → `404 FILE_NOT_FOUND`. Essa rota permanece privada após publicação; bytes públicos autorizados usam a rota própria C4.
 
 A HU01 autentica e autoriza estas rotas. O entrypoint da API persiste projetos, materiais com suas versões e mensagens em arquivo privado desde a HU07; os bytes dos arquivos ficam em `UPLOAD_DIR`. Sem snapshot anterior, no modo local há seed; no modo Google iniciam vazios. Identidades, vínculos de autorização, sessões e tentativas OAuth usam PostgreSQL no modo Google; no modo local, sessões ficam em memória.
 
@@ -86,7 +86,7 @@ Lista, detalhe e criação retornam os campos de `Project`, mais `groupName` e `
 
 `GET /projects/:projectId/materials` permite ao avaliador atribuído consultar todas as versões registradas, inclusive em Preparação/Ajustes, sem permitir alterações. Acesso fora da atribuição recebe `404` tanto no detalhe quanto nos materiais. Revogar a atribuição bloqueia a próxima requisição. As respostas de projeto selecionam explicitamente os campos de acompanhamento; notas e comentários não fazem parte desse contrato.
 
-Não há rota de galeria pública neste incremento. Rotas privadas continuam exigindo sessão mesmo para projetos Finalizados. O conteúdo dos arquivos é aberto pela rota protegida de download da HU04; a projeção pública deverá ser implementada e validada na HU11/HU12. Veja [escopo e revisão da HU06](hu06.md).
+Rotas privadas continuam exigindo sessão mesmo para projetos Finalizados. A consulta pública usa o C4 em `/api/catalog`, com seleção explícita de versões; não reutiliza o download privado da HU04. Veja [escopo da HU06](api-inicial.md) e [integração da publicação](hu11.md).
 
 ## Feedback privado — HU07
 
@@ -135,14 +135,14 @@ IDs são inteiros positivos seguros; listas aceitam até 200 IDs únicos e podem
 
 Professor gerencia somente a própria turma; ADMIN sem prévia gerencia todas. Prévia acadêmica usa o perfil e vínculos efetivos. Papel inadequado recebe `403 FORBIDDEN`; turma/projeto fora do escopo recebem `404 CLASS_NOT_FOUND` / `PROJECT_NOT_FOUND`; grupo inexistente ou de outra turma no caminho recebe `404 GROUP_NOT_FOUND`. Dados inválidos recebem `400 VALIDATION_ERROR`; conta inexistente, inativa ou de perfil incompatível recebe `400 INVALID_LINK`; nome duplicado recebe `409 GROUP_EXISTS`. Sem sessão: 401; CSRF/origem inválidos: 403. Remoção revoga leitura na próxima requisição da mesma sessão.
 
-A resposta privada de projeto também informa `academicYear`, derivado da turma (nulo se o diretório não tiver a turma). Persistência e decisão transitória da FK de avaliadores estão em [HU02](hu02.md). O [contrato público C4](contratos/c4-publicacao.md) define as futuras rotas do catálogo/publicação; elas continuam sem implementação nesta semana.
+A resposta privada de projeto também informa `academicYear`, derivado da turma (nulo se o diretório não tiver a turma). Persistência e decisão transitória da FK de avaliadores estão em [HU02](hu02.md). O [contrato público C4](contratos/c4-publicacao.md) documenta as rotas implementadas do catálogo/publicação.
 
 
-## Finalização e publicação — HU11 / S6
+## Finalização e publicação — HU11 / S7
 
 Rotas implementadas: `GET /api/projects/:projectId/publication`, `POST /api/projects/:projectId/finalization`, `POST/DELETE /api/projects/:projectId/publication`; consulta anônima em `GET /api/catalog`, `GET /api/catalog/:projectId` e `GET/HEAD /api/catalog/:projectId/materials/:versionId/file`. Contratos, seleção, autorização do grupo e erros estão no [C4 atualizado](contratos/c4-publicacao.md).
 
-As rotas privadas exigem sessão, perfil docente/ADMIN, turma e CSRF nas mutações. Finalização e publicação verificam a última submissão e a completude das avaliações pela porta injetável; o entrypoint não injeta fixtures nem assume conclusão. Sem os adapters reais, novas decisões recebem 503 e os controles ficam indisponíveis. Retirada e leitura de publicações previamente registradas não dependem desses provedores.
+As rotas privadas exigem sessão, perfil docente/ADMIN, turma e CSRF nas mutações. A factory conecta `createSubmissionProvider(repository)` ao C1 persistido e `createPublicationEvaluationProvider(evaluations, resultReleases)` ao mesmo C2/C3 usado na consolidação. O entrypoint usa o repositório real de avaliações; não injeta fixtures nem assume conclusão. Prontidão incompleta recebe 409; na factory sem fonte de avaliações, ou diante de erro de leitura dos provedores, novas decisões recebem 503. Retirada e leitura de publicações previamente registradas não dependem desses provedores. C1/C3 são relidos depois das verificações assíncronas dos arquivos, recusando devolução, troca de rodada ou reabertura concorrente.
 
 Decisões, snapshot finalizado e projeção pública são preservados no arquivo privado dos projetos. Finalizado continua privado até publicar. Retirada conserva os dados privados e bloqueia listagem/detalhe/bytes de novas requisições. Vídeo suporta um Range e reprodução inline; documentos usam attachment; HEAD não envia corpo. Veja [persistência, interfaces C1/C3, limites e testes](hu11.md).
 

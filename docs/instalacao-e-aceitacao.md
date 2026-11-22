@@ -40,6 +40,8 @@ Abra <http://localhost:5173>; API em <http://localhost:3000>. Encerre com Ctrl+C
 
 No seed, a consolidação de um projeto começa em “Sem submissão”. O [roteiro HU08](hu08.md) prepara uma entrega, registra notas e valida a consolidação no servidor normal.
 
+Com a integração S7, a HU11 consome essa mesma fonte real. O [manual do usuário](manual-usuario.md) conduz até publicação e retirada; a [validação da entrega](../README.md#validação-da-entrega) distingue verificações automatizadas e aceite humano. `pnpm demo:publicacao` executa e grava o roteiro automatizado em desktop com dados novos e isolados, após instalar Chromium; não altera o ambiente aberto por `pnpm demo`.
+
 Para contas próprias, siga [HU01](hu01.md); para Google, [login e migrations](login-google.md). Não habilite demonstração em produção. Não sobrescreva `.env` nem copie credenciais para logs/relatórios.
 
 ## PostgreSQL e migrations
@@ -76,3 +78,9 @@ Pare o único processo escritor e copie conjuntamente o arquivo `PROJECT_DATA_FI
 | Publicação e catálogo | Henrique #42 + Dan #45 | Autorização explícita, bytes, filtros e despublicação |
 
 Fluxos integrados: alvo 23/11; cinco vídeos: alvo 24/11; relatório e entrega a Henrique: 25/11. Até haver revisão e evidência real, manter os critérios correspondentes pendentes. Não gravar vídeo de fixture como demonstração do fluxo integrado.
+
+## Execução adicional de publicação real — S7
+
+`pnpm test:e2e` inclui, ao final, `playwright.publication.config.ts`. Essa configuração usa o entrypoint normal e os mesmos adapters da aplicação, com dados separados por execução e perfil, nas portas 3008/3009 e 5184/5185. Roda depois da suíte de avaliação, que usa essas mesmas portas e encerra seus servidores antes da próxima etapa. As suítes isoladas de publicação com provedores de teste continuam nas portas 3006/3007 e 5182/5183; não confundir suas capturas com aceite da integração real.
+
+`pnpm demo:publicacao` conserva o vídeo do roteiro automatizado em `test-results/publication/`, com capturas de publicação, acervo e retirada. O comando usa as mesmas verificações do E2E normal, com movimentos mais lentos apenas para a gravação. Não substitui a revisão/narração dos responsáveis pelos cinco fluxos da apresentação.

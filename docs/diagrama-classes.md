@@ -110,4 +110,4 @@ classDiagram
     Project "1" --> "0..*" ProjectPublication : publica
 ```
 
-O diagrama mostra o domínio completo planejado. Na S5, identidades/sessões e grupos/vínculos Google usam PostgreSQL; projetos/metadados/mensagens usam arquivo privado e bytes ficam em disco privado. No modo local, grupos/vínculos usam arquivo separado. As factories de teste continuam injetáveis e em memória. A relação de projeto com avaliador é lógica: o projeto efetivo ainda é resolvido no snapshot, sem FK para a tabela legada. Veja [revisão da arquitetura](arquitetura-semana-5.md) e [decisão da HU02](hu02.md).
+O diagrama mostra o domínio completo planejado. Na S5, identidades/sessões e grupos/vínculos Google usam PostgreSQL; projetos/metadados/mensagens usam arquivo privado e bytes ficam em disco privado. No modo local, grupos/vínculos usam arquivo separado. As factories de teste continuam injetáveis e em memória. A relação de projeto com avaliador é lógica: o projeto efetivo ainda é resolvido no snapshot, sem FK para a tabela legada. Veja [revisão da arquitetura](arquitetura.md) e [decisão da HU02](hu02.md).

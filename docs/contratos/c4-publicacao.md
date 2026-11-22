@@ -1,6 +1,6 @@
 # C4 — Autorização e consulta de publicação
 
-Versão 1.1, atualizada por Henrique em 12/11/2026 para #37; consumidores Dan (#35/#40). O DTO C4 da S5 permanece compatível. A S6 implementa serviço, API, projeção, bytes e controles docentes; novas finalizações/publicações ficam desabilitadas no entrypoint até a conexão dos provedores reais C1/C3. Veja [estado da HU11 e pendências](../hu11.md). Confirmação conjunta e aceite integrado continuam pendentes.
+Versão 1.2, atualizada por Henrique em 22/11/2026 para #42; consumidor Dan (#35/#40/#45). O DTO público permanece compatível. A composição S7 liga a submissão persistida C1 e a consolidação C3 das avaliações reais ao serviço de finalização/publicação, sem fixtures no entrypoint. Veja [estado da HU11](../hu11.md) e [validação da entrega](../../README.md#validação-da-entrega). Confirmação conjunta e aceite humano continuam pendentes.
 
 O schema executável está em [`publication.ts`](../../packages/api/src/models/publication.ts). O [exemplo JSON](c4-exemplo.json) é compartilhável entre os testes do produtor e os testes do cliente de catálogo. Fixtures ficam restritas a desenvolvimento/testes; nunca devem ser fallback no servidor de produção.
 
@@ -23,11 +23,13 @@ O produtor deve construir a projeção por lista explícita de campos e incluir 
 
 A prévia de ADMIN segue o perfil acadêmico e vínculos efetivos. `resultadoLiberado` (C3), conclusão das avaliações e autorização de publicação são condições diferentes. Finalizado continua privado sem publicação. A liberação de notas ao grupo não publica notas, mensagens nem materiais. Retirada muda o registro interno para `RETIRADO`; registros retirados nunca aparecem como DTO público.
 
-## Portas e HTTP implementados na S6
+## Portas e HTTP
+
+A factory utiliza `createSubmissionProvider(repository)` e `createPublicationEvaluationProvider(evaluations, resultReleases)` quando há fonte de avaliações configurada. A projeção C3 reutiliza `consolidate` e o fingerprint de liberação, sem incluir notas. Antes de gravar decisões, a HU11 relê C1/C3 após conferir os bytes, recusando troca de rodada ou reabertura concorrente. A ausência de fonte na factory permanece conservadora (503); o servidor normal usa avaliações persistidas. Os formatos HTTP abaixo não mudaram na S7.
 
 `PublicPublicationProvider.list(filter)` recebe `q`, `academicYear`, `classId`, `category`; retorna `PublicProject[]`. Filtros se combinam por AND; `q` procura no título sem diferenciar maiúsculas/minúsculas, usando a mesma normalização no consumidor e produtor. Sem resultados: `[]`. `get(projectId)` retorna DTO ativo ou `undefined`; o adapter HTTP mapeia ausência para 404.
 
-O consumidor S5 reutiliza este schema e o exemplo JSON nos testes. A normalização adotada pelo consumidor é `trim()` no termo e `toLocaleLowerCase("pt-BR")` em termo/título, preservando acentos; confirmar com o produtor na integração. [Componentes, cliente HTTP e limites da demonstração](../catalogo-semana-5.md). A API S6 usa essa mesma normalização. O catálogo HTTP existente consome as rotas implementadas; isso não presume o aceite da integração com C1/C3 reais.
+O consumidor S5 reutiliza este schema e o exemplo JSON nos testes. A normalização adotada pelo consumidor é `trim()` no termo e `toLocaleLowerCase("pt-BR")` em termo/título, preservando acentos; confirmar com o produtor na integração. [Manual do acervo](../manual-usuario.md#visitante-consultar-o-acervo). A API S6 usa essa mesma normalização. O catálogo HTTP existente consome as rotas implementadas; isso não presume o aceite da integração com C1/C3 reais.
 
 | Método e rota | Resposta |
 | --- | --- |
@@ -49,4 +51,4 @@ Erros usam `{error:{code,message}}`: 400 `VALIDATION_ERROR`; 401 `UNAUTHENTICATE
 
 Listagem, detalhe e abertura de arquivo precisam consultar o estado ativo no momento da requisição. Retirada deve invalidar os três caminhos, inclusive URLs já copiadas e novas requisições Range. Respostas públicas e erros devem manter `Cache-Control: no-store`; não servir `UPLOAD_DIR` estaticamente nem emitir links duradouros que ignorem revogação. Bytes já recebidos não podem ser recolhidos. Streams iniciados antes da retirada podem terminar; requisições novas devem ser recusadas.
 
-Vídeo deve suportar GET/HEAD e um único intervalo `Range: bytes=inicio-fim`, aberto ou sufixo: 206, `Accept-Ranges: bytes`, `Content-Range` e comprimento do trecho; sem Range: 200. Intervalo inválido/múltiplo/insatisfatível: 416 e `Content-Range: bytes */tamanho`. Validar autorização antes de informar tamanho ou qualquer cabeçalho de arquivo, inclusive HEAD/Range. Documentos usam download com nome seguro; vídeo permite reprodução inline. Esses comportamentos estão implementados na S6 e cobertos por HTTP e navegador com provedores de completude de teste. HEAD ignora Range e retorna os cabeçalhos do arquivo inteiro sem corpo. A ligação final com submissão/consolidação reais permanece pendente conforme a HU11.
+Vídeo deve suportar GET/HEAD e um único intervalo `Range: bytes=inicio-fim`, aberto ou sufixo: 206, `Accept-Ranges: bytes`, `Content-Range` e comprimento do trecho; sem Range: 200. Intervalo inválido/múltiplo/insatisfatível: 416 e `Content-Range: bytes */tamanho`. Validar autorização antes de informar tamanho ou qualquer cabeçalho de arquivo, inclusive HEAD/Range. Documentos usam download com nome seguro; vídeo permite reprodução inline. HEAD ignora Range e retorna os cabeçalhos do arquivo inteiro sem corpo. Além dos testes isolados, a S7 inclui HTTP e navegador com submissão, avaliação e consolidação reais, cobrindo privacidade e retirada. Os cenários estão descritos na [HU11](../hu11.md) e os comandos na [validação da entrega](../../README.md#validação-da-entrega).
