@@ -1,6 +1,6 @@
-# C2 — proposta de contrato de avaliação (S5, #34)
+# C2 — avaliação por rubrica (HU08, #34/#39)
 
-Produtor: Yuhang. Consumidor previsto: Kauê, #36/#41. Interface para alinhamento com Enzo (#33/#38) e Kauê; confirmação por ambos e integração permanecem pendentes. Esta entrega da semana 05–11/11 contém **schema, tipos, exemplos e validador isolado**. Não implementa rotas, formulário, persistência, finalização ou reabertura de avaliações; esses serviços pertencem à S6/#39.
+O serviço de avaliação de Yuhang consome a rodada C1 de Enzo. O servidor entrega o contrato ao módulo de consolidação de Kauê pelo `EvaluationProvider`. A interface de avaliação usa as [rotas privadas da HU08](../api-inicial.md#avaliação--hu08--c2).
 
 ## Campos e origem
 
@@ -8,15 +8,15 @@ Produtor: Yuhang. Consumidor previsto: Kauê, #36/#41. Interface para alinhament
 
 | Campo | Formato e significado |
 | --- | --- |
-| `projectId`, `submissionId`, `round` | Inteiros positivos; projeto e rodada da futura submissão C1 |
+| `projectId`, `submissionId`, `round` | Inteiros positivos; identificadores da submissão C1 persistida |
 | `rubricVersionId` | ID da versão C0 fixada pela submissão |
 | `rubric` | Cópia completa de `RubricVersion` [C0](c0-requisitos-rubrica.md), incluindo critérios, escala e pesos |
-| `expectedEvaluatorIds` | IDs únicos dos avaliadores previstos |
-| `evaluations` | Registros propostos abaixo, no máximo um por avaliador previsto |
+| `expectedEvaluatorIds` | IDs únicos dos avaliadores atualmente atribuídos, em ordem crescente; pode ser vazio |
+| `evaluations` | Até um registro por avaliador previsto, em ordem crescente de ID |
 
 Cada registro contém `evaluatorId`, `status`, `revision`, `scores`, `finalizedAt` e `history`. Cada nota usa `{criterionId:string, score:number, comment:string}`; cada evento usa `{action, actorId, at, reason, revision, scores}`. O histórico preserva cópia das notas por revisão. Datas usam ISO UTC. Identidades e autorizações deverão vir do backend autenticado, nunca do cliente.
 
-| Estado proposto | Significado para o consumidor |
+| Estado | Significado para o consumidor |
 | --- | --- |
 | `PENDENTE` | Ainda sem notas: revisão 0, notas/histórico vazios, `finalizedAt: null` |
 | `RASCUNHO` | Notas parciais válidas; não conta como avaliação completa |
@@ -67,8 +67,14 @@ O envelope ilustrativo acima não representa uma resposta HTTP existente; omite 
 - Quando `finalizing` é true, exige todos os critérios daquela versão.
 - Usa a versão recebida; nunca consulta automaticamente a rubrica mais recente.
 
-Formato/escala inválidos geram `ZodError`; critério desconhecido gera `ApiError` com código `UNKNOWN_CRITERION`; incompletude gera `INCOMPLETE_EVALUATION` (ambos status 400 para futura composição HTTP). O schema C2 valida o formato e as referências; as notas devem passar também por esse validador, inclusive ao consumir exemplos de finalização. A validação não grava avaliações nem executa transições de estado.
+Formato/escala inválidos recebem `400 VALIDATION_ERROR`; critério desconhecido recebe `400 UNKNOWN_CRITERION`; finalização incompleta recebe `400 INCOMPLETE_EVALUATION`.
 
-## Próxima integração, fora da S5
+## Persistência e estados
 
-Enzo fornecerá C1 com IDs da submissão/rodada, snapshot imutável dos materiais e referência/cópia da rubrica. Os consumidores não devem reconstruir uma rodada usando materiais ou rubrica atuais. Na S6 serão implementados autorização de avaliador, serviço/API/formulário, persistência, auditoria e reabertura pelo professor. Na S7 serão validados reinício, rodada real e demonstração integrada. Nenhum desses itens é declarado concluído nesta entrega #34.
+Cada registro fica associado a projeto, submissão, versão da rubrica e avaliador. As notas usam a rubrica imutável da submissão, mesmo que o docente publique uma configuração mais nova. Devolver uma rodada para ajustes mantém seus registros consultáveis; a nova rodada começa com avaliações pendentes.
+
+Uma avaliação finalizada só volta à edição depois de uma reabertura justificada. A nova revisão preserva as notas anteriores e registra ação, conta autenticada, data e justificativa. Enviar a revisão antiga recebe `409 EVALUATION_VERSION_CONFLICT`. Rodada fora de avaliação recebe `409 EVALUATION_ROUND_LOCKED`. Editar um resultado finalizado recebe `409 EVALUATION_FINALIZED`; reabrir um registro ausente ou ainda não finalizado recebe `404 EVALUATION_NOT_FOUND` ou `409 EVALUATION_NOT_FINALIZED`. Projeto ou submissão fora do escopo retornam 404; papéis sem permissão recebem 403.
+
+O servidor grava `EVALUATION_DATA_FILE`, com padrão `${PROJECT_DATA_FILE}.evaluations.json`, por substituição atômica de arquivo privado para um único processo escritor. Copie-o junto com projetos, vínculos, rubricas, liberações e uploads. Em caso de falha de escrita, o estado em memória continua na última revisão gravada.
+
+O C3 considera a última submissão ainda submetida. Uma rodada devolvida deixa de alimentar a consolidação até a próxima submissão. Remover um vínculo exclui o avaliador da consolidação e revoga seu acesso, preservando seus registros na visão docente. Somente avaliações finalizadas participam da nota; reabrir ou refinalizar muda a revisão e exige nova liberação do resultado.

@@ -85,7 +85,8 @@ export function createGradeRouter(projects: ProjectRepository, auth: AuthReposit
       return;
     }
     response.json({ data: { ...result, rubric: round!.rubric,
-      evaluations: round!.evaluations.map(({ evaluatorId, scores }) => ({ evaluatorId, scores })) } });
+      evaluations: round!.evaluations.filter((item) => item.status === "FINALIZADA")
+        .map(({ evaluatorId, scores }) => ({ evaluatorId, scores })) } });
   });
   return router;
 }

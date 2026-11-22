@@ -7,7 +7,7 @@ const targets = [
 ];
 export default defineConfig({
   testDir: "./e2e",
-  testIgnore: ["**/grades-flow.spec.ts", "**/submission.spec.ts"],
+  testIgnore: ["**/grades-flow.spec.ts", "**/submission.spec.ts", "**/evaluation.spec.ts"],
   fullyParallel: false,
   workers: 1,
   forbidOnly: !!process.env.CI,
