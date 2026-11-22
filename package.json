@@ -12,12 +12,13 @@
     "build": "pnpm -r build",
     "test": "pnpm -r --workspace-concurrency=1 test",
     "db:generate": "pnpm --filter @labrary/api db:generate",
-    "test:e2e": "playwright test && playwright test --config playwright.submission.config.ts && playwright test --config playwright.grades.config.ts --project desktop && playwright test --config playwright.grades.config.ts --project mobile && playwright test --config playwright.evaluation.config.ts",
+    "test:e2e": "playwright test && playwright test --config playwright.submission.config.ts && playwright test --config playwright.grades.config.ts --project desktop && playwright test --config playwright.grades.config.ts --project mobile && playwright test --config playwright.evaluation.config.ts && playwright test --config playwright.publication.config.ts",
     "auth:hash": "pnpm --silent --filter @labrary/api exec tsx src/scripts/hashPassword.ts",
     "db:deploy": "pnpm --filter @labrary/api db:deploy",
     "db:baseline": "pnpm --filter @labrary/api db:baseline",
     "db:status": "pnpm --filter @labrary/api db:status",
-    "db:test": "pnpm --filter @labrary/api db:test"
+    "db:test": "pnpm --filter @labrary/api db:test",
+    "demo:publicacao": "RECORD_PUBLICATION_DEMO=1 playwright test --config playwright.publication.config.ts --project desktop"
   },
   "devDependencies": {
     "@playwright/test": "1.56.1",
