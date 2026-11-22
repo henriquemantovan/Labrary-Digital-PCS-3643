@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 import type { Page, Browser } from "@playwright/test";
+import { randomUUID } from "node:crypto";
+import { publicProjectSchema } from "../packages/api/src/models/publication";
 const fixtureOrigin = () =>
   `http://localhost:${test.info().project.name === "mobile" ? 5183 : 5182}`;
 const authorization = "Autorização do grupo registrada na ata da apresentação.";
@@ -95,7 +97,46 @@ test("HU11 visitante consulta C4, reproduz vídeo e baixa somente documentos aut
 }) => {
   const origin = fixtureOrigin();
   await ensurePublished(browser, origin);
+  // A private value must actually exist before proving its absence publicly.
+  const privateText = `Feedback privado S7 ${randomUUID()}`;
+  const teacher = await browser.newContext({ baseURL: origin });
+  try {
+    expect((await teacher.request.post("/api/auth/login", {
+      headers: { "X-CSRF-Protection": "1" },
+      data: { email: "professor@labrary.local", password: "Labrary@2026" },
+    })).status()).toBe(200);
+    expect((await teacher.request.post("/api/projects/1/messages", {
+      headers: { "X-CSRF-Protection": "1" },
+      data: { clientMessageId: randomUUID(), body: privateText, materialVersionId: 1 },
+    })).status()).toBe(201);
+    expect(await (await teacher.request.get("/api/projects/1/messages")).text()).toContain(privateText);
+  } finally {
+    await teacher.close();
+  }
+  for (const endpoint of ["/api/catalog", "/api/catalog/1"]) {
+    const response = await page.request.get(`${origin}${endpoint}`);
+    expect(response.status()).toBe(200);
+    expect(response.headers()["cache-control"]).toBe("no-store");
+    const payload = await response.json();
+    for (const project of Array.isArray(payload.data) ? payload.data : [payload.data]) {
+      expect(publicProjectSchema.safeParse(project).success).toBe(true);
+    }
+    expect(JSON.stringify(payload)).not.toContain(privateText);
+    expect(JSON.stringify(payload)).not.toMatch(/"(?:grade|evaluations|scores|messages|storageKey|checksumSha256)"/);
+  }
+  for (const resource of ["result", "messages", "materials"]) {
+    expect((await page.request.get(`${origin}/api/projects/1/${resource}`)).status()).toBe(401);
+  }
   await page.goto(`${origin}/acervo`);
+  await page.getByLabel("Buscar por título").fill("SEMÁFORO");
+  await page.getByRole("combobox", { name: "Ano", exact: true }).selectOption("2026");
+  await page.getByRole("combobox", { name: "Turma", exact: true }).selectOption("1");
+  await page.getByRole("combobox", { name: "Categoria", exact: true }).selectOption("Sistemas digitais");
+  await expect(page.getByRole("status")).toHaveText("1 projeto(s) encontrado(s)");
+  await page.getByLabel("Buscar por título").fill("projeto inexistente");
+  await expect(page.getByRole("heading", { name: "Nenhum resultado" })).toBeVisible();
+  await page.getByLabel("Buscar por título").fill("SEMÁFORO");
+  await expect(page.getByText(privateText)).toHaveCount(0);
   await page
     .getByRole("link", {
       name: "Controlador de semáforo inteligente",
@@ -121,6 +162,11 @@ test("HU11 visitante consulta C4, reproduz vídeo e baixa somente documentos aut
     page.getByRole("link", { name: "Baixar Relatório do projeto" }),
   ).toBeVisible();
   await expect(page.getByText("Manual de uso", { exact: true })).toHaveCount(0);
+  await expect(page.getByText(privateText)).toHaveCount(0);
+  const document = await page.request.get(`${origin}/api/catalog/1/materials/2/file`);
+  expect(document.status()).toBe(200);
+  expect(document.headers()["content-type"]).toContain("application/pdf");
+  expect((await document.body()).subarray(0, 5).toString()).toBe("%PDF-");
   expect(
     (
       await page.request.get(`${origin}/api/catalog/1/materials/3/file`)
