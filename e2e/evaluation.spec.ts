@@ -122,6 +122,14 @@ test("HU08 integra entrega, rascunho, finalização, consolidação e reabertura
   await expect(draft).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 
+  // S7/HU10: finalização da avaliação não libera o resultado automaticamente.
+  await login(page, "aluno");
+  await expect(page.getByRole("region", { name: "Resultado do grupo" })).toContainText("Resultado bloqueado");
+  expect(await (await page.request.get(`${projectApi}/result`)).json()).toEqual({
+    data: { projectId: 2, resultReleased: false },
+  });
+  expect((await page.request.get("/api/projects/1/result")).status()).toBe(404);
+
   await login(page, "professor");
   await page.getByRole("button", { name: "Consolidação de notas" }).click();
   const group = page.getByRole("row").filter({ hasText: "Grupo 02" });
@@ -140,6 +148,11 @@ test("HU08 integra entrega, rascunho, finalização, consolidação e reabertura
   const result = page.getByRole("region", { name: "Resultado do grupo" });
   await expect(result).toContainText("Nota: 8.40");
   await expect(result).toContainText(comment);
+  await expect(result).toContainText("Peso: 60% · Nota: 8.00");
+  await expect(result).toContainText("Peso: 40% · Nota: 9.00");
+  expect((await page.request.get("/api/projects/1/result")).status()).toBe(404);
+  expect((await page.request.get("/api/classes/1/grades")).status()).toBe(403);
+  await result.screenshot({ path: info.outputPath("resultado-real.png") });
 
   await login(page, "professor");
   await openEvaluations(page);
@@ -155,6 +168,10 @@ test("HU08 integra entrega, rascunho, finalização, consolidação e reabertura
 
   await login(page, "aluno");
   await expect(result).toContainText("Resultado bloqueado. Aguardando liberação pelo professor.");
+  expect(await (await page.request.get(`${projectApi}/result`)).json()).toEqual({
+    data: { projectId: 2, resultReleased: false },
+  });
+  await expect(result.getByText(comment)).toHaveCount(0);
 
   await login(page, "avaliador");
   await openEvaluations(page);
