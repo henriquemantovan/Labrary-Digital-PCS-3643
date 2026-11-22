@@ -913,6 +913,7 @@ function Dashboard({
         <ProjectAssessment
           key={`assessment-${detail.id}-${user.role}`}
           projectId={detail.id}
+          projectStatus={detail.status}
           user={user}
           expired={expired}
           onConfigurationSaved={refreshMaterialRules}

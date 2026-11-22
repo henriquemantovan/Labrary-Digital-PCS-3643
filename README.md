@@ -209,6 +209,8 @@ As funcionalidades foram registradas como issues no formato **Como [papel], eu g
 - [ ] Finalização exige todos os critérios; registra autor, data e rodada.
 - [ ] Professor pode reabrir avaliação com justificativa; o histórico permanece auditável.
 
+**Implementação para revisão (#39/#44):** [fluxo de avaliação e consolidação](docs/hu08.md) sobre submissão real, com avaliações persistidas, reabertura auditável e consulta à rubrica de rodadas anteriores.
+
 ### [HU09 — Consolidar notas dos grupos](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/9)
 
 **Como professor, eu gostaria de consultar a consolidação das avaliações, de forma que possa acompanhar os resultados e identificar pendências.**

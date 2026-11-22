@@ -20,14 +20,17 @@ describe("consolidação C3", () => {
     expect(result).toMatchObject({ status: "FINAL", pendingEvaluatorIds: [], allEvaluationsCompleted: true, resultReleased: false });
     expect(result.grade).toBe(result.finalGrade);
   });
-  it("distingue sem submissão, todos pendentes e reabertura e rejeita ausência de avaliadores previstos", () => {
+  it("distingue sem submissão de avaliações pendentes, mesmo sem avaliadores atribuídos", () => {
     expect(consolidate(1)).toMatchObject({ status: "NO_SUBMISSION", grade: null, round: null });
     const input = exampleRound();
     reopenFirst(input);
     expect(consolidate(1, input)).toMatchObject({ status: "PENDING", grade: null, receivedEvaluatorIds: [], pendingEvaluatorIds: [2, 5] });
     input.expectedEvaluatorIds = [];
     input.evaluations = [];
-    expect(() => consolidate(1, input)).toThrow();
+    expect(consolidate(1, input)).toMatchObject({
+      status: "PENDING", submissionId: input.submissionId, grade: null,
+      expectedEvaluatorIds: [], allEvaluationsCompleted: false,
+    });
     expect(displayGrade(null)).toBe("—");
   });
   it("inclui somente critérios previstos e exige entrada válida do adapter", () => {
