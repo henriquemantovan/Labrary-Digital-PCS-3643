@@ -16,7 +16,11 @@ export default defineConfig({
   workers: 1,
   forbidOnly: !!process.env.CI,
   reporter: "list",
-  use: { trace: "retain-on-failure", screenshot: "only-on-failure" },
+  use: {
+    trace: "retain-on-failure",
+    screenshot: "only-on-failure",
+    video: process.env.RECORD_EVIDENCE === "true" ? "on" : "off",
+  },
   projects: targets.map(({ name, webPort }) => ({
     name,
     use: {
