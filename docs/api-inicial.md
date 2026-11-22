@@ -1,6 +1,6 @@
-# API REST (TEC02 + HU01–HU07 + HU09)
+# API REST (TEC02 + HU01–HU09)
 
-Incremento S5 de Yuhang (#34, 05–11/11): [C0 — requisitos/rubricas](contratos/c0-requisitos-rubrica.md) tem rotas privadas implementadas. [C2 — avaliação](contratos/c2-avaliacao.md) contém a proposta de contrato, exemplos e validação isolada de notas/completude, sem rotas ou persistência de avaliação nesta semana. O [relatório S5](entrega-yuhang.md) registra escopo e verificações.
+O [C0 — requisitos/rubricas](contratos/c0-requisitos-rubrica.md) define a configuração versionada. O [C2 — avaliação](contratos/c2-avaliacao.md) usa a rubrica da submissão C1 para registrar as avaliações que alimentam a consolidação C3.
 
 Rotas REST usam JSON, exceto o envio de arquivos de materiais (`multipart/form-data`); início e retorno de OAuth fazem redirecionamentos HTTP. Listas e respostas individuais bem-sucedidas vêm no envelope `{ "data": ... }`; erros usam `{ "error": { "code", "message", "details?" } }`. O servidor responde `401` para ausência de sessão, `403` para operação não permitida/origem inválida, `429` para excesso de tentativas de login, `400` para validação, `404` para recurso/rota ausente, `409` para conflito de grupo e `500` para falhas inesperadas.
 
@@ -150,7 +150,7 @@ Decisões, snapshot finalizado e projeção pública são preservados no arquivo
 
 `GET /api/classes/:classId/grades` retorna a tabela privada docente; `?format=csv` exporta a mesma projeção. `GET /api/projects/:projectId/results/consolidation` fornece resultado e token de confirmação docente; `POST /api/projects/:projectId/results/release` libera explicitamente a revisão confirmada. `GET /api/projects/:projectId/result` restringe o resultado liberado aos integrantes do grupo e omite notas enquanto bloqueado. Sessão, escopo da turma, CSRF e `no-store` são obrigatórios. Contratos, erros, tipos e exemplos em [C3](contratos/c3-consolidacao.md).
 
-O entrypoint ainda não conecta o provedor de avaliações persistidas da HU08: responde 503 `EVALUATIONS_UNAVAILABLE`; a factory aceita `EvaluationProvider` injetado para integração. Testes com C2 injetado não demonstram a entrega real. Liberações usam arquivo privado `RESULT_RELEASE_DATA_FILE`, separado dos snapshots existentes.
+O servidor conecta o provedor de avaliações persistidas da HU08. A reabertura de uma avaliação, a alteração da lista de avaliadores previstos e uma nova rodada invalidam a liberação anterior. Liberações usam arquivo privado `RESULT_RELEASE_DATA_FILE`, separado de `EVALUATION_DATA_FILE`.
 
 ## Submissão — HU05 / S6
 
@@ -168,6 +168,19 @@ Contrato completo, regras e exemplos em [C1 — submissão e rodada](contratos/c
 `SubmissionChecklist` contém `projectStatus`, `rubricVersionId` (`null` sem C0), `items` (`kind`, `label`, `materialId`, `versionId`, `ok`), `blockedBy` (código do erro que o POST devolveria, ou `null`), `canSubmit`, `canReopen` e `lastReopening` (última reabertura ou `null`). Erros: `403 FORBIDDEN` (papel), `400 VALIDATION_ERROR`, `404 SUBMISSION_NOT_FOUND` e `409` com `RUBRIC_NOT_CONFIGURED`, `SUBMISSION_LOCKED`, `DEADLINE_PASSED`, `INCOMPLETE_SUBMISSION`, `SUBMISSION_NOT_RETURNABLE` ou `REOPEN_NOT_ALLOWED`.
 
 Submeter muda o projeto para `EM_AVALIACAO`, o que bloqueia uploads (`409 PROJECT_LOCKED`). Devolver muda a rodada para `DEVOLVIDA` e o projeto para `AJUSTES`; o próximo envio cria a rodada seguinte. Reabrir vale só em `PREPARACAO` com prazo vencido: registra quem, quando e a justificativa e muda o projeto para `AJUSTES`, onde os prazos originais não se aplicam. As rodadas ficam no mesmo arquivo privado dos projetos (`PROJECT_DATA_FILE`), gravadas junto com o estado do projeto.
+
+## Avaliação — HU08 / C2
+
+As rotas abaixo usam o prefixo `/api/projects/:projectId/submissions/:submissionId/evaluations`. Todas exigem sessão; as mutações exigem também CSRF e origem válida.
+
+| Método e sufixo | Quem | Entrada e resposta `data` |
+| --- | --- | --- |
+| `GET` | Avaliador atribuído, professor da turma ou ADMIN | `{submission, evaluations, canEdit, canReopen, evaluatorNames?}` |
+| `PUT /me` | Avaliador atribuído | `{scores, expectedRevision}` → rascunho |
+| `POST /me/finalize` | Avaliador atribuído | `{scores, expectedRevision}` → avaliação finalizada |
+| `POST /:evaluatorId/reopen` | Professor da turma ou ADMIN | `{reason, expectedRevision}` → avaliação reaberta |
+
+O avaliador recebe somente o próprio registro. Docentes podem consultar a turma, inclusive registros históricos de avaliadores removidos. Uma avaliação pendente tem revisão 0 e lista de notas vazia. As mutações incrementam a revisão e retornam a avaliação atualizada. A justificativa tem de 1 a 2000 caracteres após trim. Somente a última submissão em avaliação aceita alterações. O [contrato C2](contratos/c2-avaliacao.md) detalha estados, falhas, persistência e integração.
 
 ## Leitura do grupo — integração do PR #54
 

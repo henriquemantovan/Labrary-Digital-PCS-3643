@@ -2111,6 +2111,16 @@ input[type="file"]::file-selector-button {
 .rubric-form { margin-top: 24px; }
 .rubric-form fieldset { min-width: 0; }
 
+.evaluation-panel { margin-top: 18px; }
+.evaluation-panel a { color: var(--purple); }
+.evaluation-criteria { display: grid; gap: 14px; margin: 14px 0; }
+.evaluation-criteria fieldset {
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 12px 16px;
+}
+.evaluation-criteria legend { padding: 0 6px; }
+
 .publication-panel { margin-top: 24px; }
 .publication-panel h2 { margin-bottom: 12px; }
 .publication-panel form, .publication-panel details { margin-top: 18px; }

@@ -28,7 +28,7 @@ Depois de instalar as dependências:
 pnpm demo
 ```
 
-O [script](../scripts/demo.sh) confere as versões e cria um diretório privado temporário novo com caminhos separados para projetos, grupos, rubricas, liberações e arquivos. Usa o seed existente `AUTH_DEMO=true`, com os projetos e vínculos da demonstração e estas contas (senha `Labrary@2026`):
+O [script](../scripts/demo.sh) confere as versões e cria um diretório privado temporário novo com caminhos separados para projetos, grupos, rubricas, avaliações, liberações e arquivos. Usa o seed existente `AUTH_DEMO=true`, com os projetos e vínculos da demonstração e estas contas (senha `Labrary@2026`):
 
 | E-mail | Papel |
 | --- | --- |
@@ -38,7 +38,7 @@ O [script](../scripts/demo.sh) confere as versões e cria um diretório privado 
 
 Abra <http://localhost:5173>; API em <http://localhost:3000>. Encerre com Ctrl+C. O script informa o caminho de `environment.sh`; `source /caminho/informado/environment.sh && pnpm dev` reutiliza os mesmos dados para verificar reinício. Esse arquivo contém somente configuração local de demonstração. `pnpm demo --prepare-only` prepara e informa o comando sem iniciar servidores. Cada nova execução cria outro ambiente; não apaga o anterior nem altera `.env` existente. O diretório temporário pode ser limpo pelo sistema, portanto não o use para dados que precisem ser preservados.
 
-O seed não cria avaliações/submissões fictícias no entrypoint: a consolidação normal mostra a integração C2 indisponível (503). O Playwright injeta C2 em servidores exclusivos de teste para validar tabela, CSV e liberação; isso não substitui o adapter real da HU08.
+No seed, a consolidação de um projeto começa em “Sem submissão”. O [roteiro HU08](hu08.md) prepara uma entrega, registra notas e valida a consolidação no servidor normal.
 
 Para contas próprias, siga [HU01](hu01.md); para Google, [login e migrations](login-google.md). Não habilite demonstração em produção. Não sobrescreva `.env` nem copie credenciais para logs/relatórios.
 
@@ -63,7 +63,7 @@ O teste cria e remove bancos próprios para instalação limpa e adoção da bas
 
 ## Backup e restauração de teste
 
-Pare o único processo escritor e copie conjuntamente o arquivo `PROJECT_DATA_FILE`, `GROUP_DATA_FILE` (no modo local), `RUBRIC_DATA_FILE`, `RESULT_RELEASE_DATA_FILE` e a pasta `UPLOAD_DIR`, conservando permissões privadas. No Google, inclua backup PostgreSQL de identidades, vínculos e sessões. Não publique essas pastas. Restaure em outro diretório de teste, configure os caminhos e verifique arquivos, versões, feedback e decisões após reinício. O [procedimento HU04](hu04.md) trata snapshots antigos e materiais sem bytes; não remova snapshots como migração. A restauração de projetos, rubricas e uploads a partir de outro diretório tem teste automatizado em `packages/api/src/repositories/backupRestore.test.ts` ([C1](contratos/c1-submissao.md#persistência)); ele não substitui o ensaio manual com o entrypoint.
+Pare o único processo escritor e copie conjuntamente o arquivo `PROJECT_DATA_FILE`, `GROUP_DATA_FILE` (no modo local), `RUBRIC_DATA_FILE`, `EVALUATION_DATA_FILE`, `RESULT_RELEASE_DATA_FILE` e a pasta `UPLOAD_DIR`, conservando permissões privadas. No Google, inclua backup PostgreSQL de identidades, vínculos e sessões. Não publique essas pastas. Restaure em outro diretório de teste, configure os caminhos e verifique arquivos, versões, feedback, avaliações e decisões após reinício. O [procedimento HU04](hu04.md) trata snapshots antigos e materiais sem bytes; não remova snapshots como migração. Há testes de restauração conjunta em `backupRestore.test.ts` (C1) e `evaluationRoutes.test.ts` (C1, C2 e liberação C3).
 
 ## Roteiro e divisão de evidências
 

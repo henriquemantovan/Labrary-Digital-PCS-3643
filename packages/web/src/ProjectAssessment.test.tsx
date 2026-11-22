@@ -21,4 +21,5 @@ it("abre rubricas sob demanda e permite apenas leitura para aluno", async () => 
   await userEvent.click(rubricButton);
   expect(await screen.findByText(/Nenhuma rubrica configurada/)).toBeDefined();
   expect(screen.queryByRole("button", { name: "Criar nova versão da rubrica" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Avaliações por rubrica" })).toBeNull();
 });

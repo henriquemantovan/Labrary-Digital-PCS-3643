@@ -1,10 +1,10 @@
 # C3 — Consolidação e liberação de resultados
 
-Versão 1, Kauê, 12/11/2026, tarefas #36/#41 e HU09/#9. Consumidores: Dan (#40, resultado do grupo) e Henrique (#37, completude para finalização). Implementado contra o [C2 de Yuhang](c2-avaliacao.md), inclusive seus exemplos executáveis. Alinhamento/revisão conjunta e adapter de avaliações persistidas continuam pendentes; não há confirmação presumida dos demais integrantes.
+Versão 1, Kauê, 12/11/2026, tarefas #36/#41 e HU09/#9. Consumidores: Dan (#40, resultado do grupo) e Henrique (#37, completude para finalização). O servidor usa o [C2 de Yuhang](c2-avaliacao.md) sobre avaliações persistidas (#39).
 
 ## Porta de entrada e cálculo
 
-[`EvaluationProvider`](../../packages/api/src/models/consolidation.ts) oferece `getCurrentRound(projectId): Promise<EvaluationContract | undefined>`. Retorna um snapshot coerente da rodada atual com rubrica histórica, avaliadores previstos e avaliações. `undefined` significa **sem submissão**, não indisponibilidade. Erros do provedor devem ser lançados. O serviço não reconstrói snapshots a partir da rubrica ou dos materiais atuais, nem toma IDs enviados pelo navegador como fonte de autorização.
+[`EvaluationProvider`](../../packages/api/src/models/consolidation.ts) oferece `getCurrentRound(projectId): Promise<EvaluationContract | undefined>`. Retorna um snapshot coerente da rodada atual com rubrica histórica, avaliadores previstos e avaliações. `undefined` indica que não há rodada submetida ativa, por exemplo antes do primeiro envio ou após devolução para ajustes. Erros do provedor devem ser lançados. O serviço usa os materiais e a rubrica congelados na submissão, e obtém as permissões na sessão autenticada.
 
 [`consolidate(projectId, input?)`](../../packages/api/src/services/consolidation.ts) valida o schema C2 e usa `validateEvaluationScores` do produtor, exigindo todos os critérios nas avaliações `FINALIZADA`. Rejeita pesos inválidos, escala fora de 0–10, notas não finitas, IDs repetidos/desconhecidos, avaliadores não previstos e associação a outro projeto. Rubricas e avaliações não são modificadas.
 
@@ -25,7 +25,7 @@ Schemas executáveis: `consolidatedResultSchema` e `gradeRowSchema`, no [módulo
 | `allEvaluationsCompleted` | Sinal de todas as avaliações concluídas, separado da liberação |
 | `resultReleased` | Decisão explícita válida para o snapshot exato atual |
 
-`GradeRow` acrescenta `groupId`, `groupName` e `title`. Sem submissão, não existe lista de avaliadores da rodada e as listas são vazias. C2 exige pelo menos um avaliador previsto; não há aprovação automática por lista vazia.
+`GradeRow` acrescenta `groupId`, `groupName` e `title`. Sem submissão, as listas da rodada são vazias. Uma submissão sem avaliadores previstos permanece pendente.
 
 `allEvaluationsCompleted` corresponde a “todasAvaliacoesConcluidas” do plano; `resultReleased`, a “resultadoLiberado”. São nomes definitivos desta proposta de DTO. Nenhum desses campos autoriza publicação de materiais. Finalização ainda precisa verificar a entrega C1 e publicação exige autorização própria C4.
 
@@ -49,10 +49,10 @@ Erros: 400 `VALIDATION_ERROR`; 401 `UNAUTHENTICATED`; 403 `FORBIDDEN`/`INVALID_O
 
 O repositório [de liberações](../../packages/api/src/repositories/resultReleaseRepository.ts) conserva projeto, submissão, rodada, fingerprint SHA-256 do C2 validado, autor e data. É idempotente para o mesmo conteúdo e preserva decisões anteriores. Cada requisição compara o snapshot atual com a decisão persistida; reabertura, nova revisão, mudança de avaliadores, rubrica ou rodada oculta o resultado até nova liberação. O produtor deve incrementar `evaluation.revision` em toda alteração, inclusive refinalização com notas iguais. A ordem do DTO integra o fingerprint: mantenha ordenação estável no adapter; uma reordenação conservadoramente exige nova liberação.
 
-O entrypoint conecta arquivo privado `RESULT_RELEASE_DATA_FILE`, padrão `${PROJECT_DATA_FILE}.results.json`. Diretório novo recebe 0700 e arquivo novo 0600, com escrita temporária e rename; um processo escritor, como HU07. Falha de leitura/escrita não apaga dados nem publica decisão só em memória. Backup/restauração deve incluir esse arquivo com projetos, grupos, rubricas e bytes privados. Não há migration nem alteração dos snapshots existentes.
+O entrypoint conecta arquivo privado `RESULT_RELEASE_DATA_FILE`, padrão `${PROJECT_DATA_FILE}.results.json`. Diretório novo recebe 0700 e arquivo novo 0600, com escrita temporária e rename; um processo escritor, como HU07. Falha de leitura/escrita não apaga dados nem publica decisão só em memória. Backup/restauração deve incluir esse arquivo com avaliações, projetos, grupos, rubricas e bytes privados. Não há migration nem alteração dos snapshots existentes.
 
-## Limite da integração em 12/11
+## Integração com a avaliação real
 
-`server.ts` conecta a persistência de liberações, mas ainda não recebe `EvaluationProvider` real: a API responde 503 e a interface explica a indisponibilidade. A factory `createApp({evaluations,resultReleases})` permite ligar o adapter C2 quando Yuhang entregar avaliações persistidas na #39 (alvo 17/11). Enzo entrega a rodada C1 na #38 (alvo 16/11). Grupos e autorização de Henrique já foram integrados; a composição com os snapshots reais ainda precisa de teste.
+`server.ts` usa a última rodada C1 submetida e as avaliações gravadas em `EVALUATION_DATA_FILE`. A factory aceita `evaluationRepository` para habilitar o mesmo fluxo, ou `evaluations` para injetar um provedor de teste.
 
-O servidor `integration/gradesFixture.ts` existe exclusivamente para Playwright, em portas isoladas; não é importado pelo entrypoint, não é fallback de produção e não demonstra persistência de avaliações reais. Os E2E comprovam o fluxo HTTP/UI da consolidação com C2 injetado, além do estado indisponível do entrypoint normal. HU09/#9 e o aceite integrado da #41 permanecem pendentes até o adapter real, revisão e demonstração.
+`integration/gradesFixture.ts` continua atendendo aos testes isolados da consolidação. O fluxo `e2e/evaluation.spec.ts` usa o servidor normal com submissão, avaliação e liberação reais.

@@ -12,7 +12,7 @@ export const scoresSchema = z.array(criterionScoreSchema).max(100)
     "Critérios duplicados.");
 export type CriterionScore = z.infer<typeof criterionScoreSchema>;
 
-/** Proposta C2 da S5: formatos para combinar com consumidores, sem serviço/rotas. */
+/** Avaliação privada e histórico de revisões da rodada C2. */
 export const evaluationSchema = z.object({
   evaluatorId: id,
   status: z.enum(["PENDENTE", "RASCUNHO", "FINALIZADA", "REABERTA"]),
@@ -44,7 +44,7 @@ export const evaluationContractSchema = z.object({
   round: id,
   rubricVersionId: id,
   rubric: rubricVersionSchema,
-  expectedEvaluatorIds: z.array(id).min(1)
+  expectedEvaluatorIds: z.array(id)
     .refine((values) => new Set(values).size === values.length),
   evaluations: z.array(evaluationSchema),
 }).strict().superRefine((value, ctx) => {
