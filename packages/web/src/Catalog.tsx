@@ -5,12 +5,16 @@ import type {
   PublicProject,
   PublicPublicationProvider,
 } from "./catalogClient";
-import { Download } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, Download, FileText, Info, Search } from "lucide-react";
 import { Brand } from "./components/Brand";
-import { Loading, Notice } from "./components/Feedback";
+import { Empty, Loading, Notice } from "./components/Feedback";
 import { PageHeader } from "./components/PageHeader";
+import { Badge } from "./components/ui/badge";
 import { Button, buttonVariants } from "./components/ui/button";
-import { fieldLabel, Input, NativeSelect } from "./components/ui/input";
+import { Card, CardHeader, CardPanel, CardTitle } from "./components/ui/card";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "./components/ui/input-group";
+import { Label } from "./components/ui/label";
+import { NativeSelect } from "./components/ui/native-select";
 
 export function Catalog({
   provider,
@@ -77,7 +81,7 @@ export function Catalog({
   return (
     <div className="min-h-dvh bg-background">
       <a
-        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-full focus:bg-card focus:px-4 focus:py-2 focus:text-sm"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-lg focus:bg-background focus:px-4 focus:py-2 focus:text-sm"
         href="#catalog-main"
       >
         Pular para o conteúdo
@@ -106,9 +110,10 @@ export function Catalog({
       >
         {demo && (
           <aside
-            className="mb-6 rounded-xl border border-info/25 bg-info/5 px-4 py-3 text-sm text-foreground"
+            className="mb-6 flex items-start gap-2 rounded-xl border border-info/32 bg-info/4 px-3.5 py-3 text-sm text-foreground [&>svg]:mt-0.5 [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-info"
             aria-label="Demonstração"
           >
+            <Info />
             Demonstração — dados fictícios. Os materiais são exemplos, sem
             arquivos disponíveis. A publicação real ainda não está integrada.
           </aside>
@@ -117,10 +122,11 @@ export function Catalog({
           <Button
             variant="ghost"
             size="sm"
-            className="mb-4 -ml-3 text-muted-foreground"
+            className="mb-4 -ml-2 text-muted-foreground"
             onClick={() => navigate(basePath)}
           >
-            ← Voltar ao acervo
+            <ArrowLeft />
+            Voltar ao acervo
           </Button>
         )}
         {!isDetail && (
@@ -134,9 +140,13 @@ export function Catalog({
         {error && (
           <Notice>
             <p>{error}</p>
-            <button onClick={() => setAttempt((value) => value + 1)}>
+            <Button
+              variant="outline"
+              size="xs"
+              onClick={() => setAttempt((value) => value + 1)}
+            >
               Tentar novamente
-            </button>
+            </Button>
           </Notice>
         )}
         {!loading &&
@@ -145,14 +155,10 @@ export function Catalog({
             detail ? (
               <CatalogDetail key={detail.id} project={detail} demo={demo} />
             ) : (
-              <div className="rounded-xl border border-dashed bg-card px-6 py-16 text-center">
-                <h1 className="text-xl font-semibold tracking-tight">
-                  Publicação não encontrada
-                </h1>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  O projeto não está disponível no acervo.
-                </p>
-              </div>
+              <Empty
+                title="Publicação não encontrada"
+                text="O projeto não está disponível no acervo."
+              />
             )
           ) : (
             <>
@@ -160,19 +166,27 @@ export function Catalog({
                 className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1.4fr_1.4fr_auto]"
                 aria-label="Filtros do acervo"
               >
-                <label className={fieldLabel}>
-                  Buscar por título
-                  <Input
-                    type="search"
-                    value={filter.q ?? ""}
-                    onChange={(e) =>
-                      setFilter({ ...filter, q: e.target.value })
-                    }
-                  />
-                </label>
-                <label className={fieldLabel}>
-                  Ano
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="catalog-q">Buscar por título</Label>
+                  <InputGroup>
+                    <InputGroupInput
+                      id="catalog-q"
+                      type="search"
+                      placeholder="Ex.: semáforo, energia…"
+                      value={filter.q ?? ""}
+                      onChange={(e) =>
+                        setFilter({ ...filter, q: e.target.value })
+                      }
+                    />
+                    <InputGroupAddon>
+                      <Search />
+                    </InputGroupAddon>
+                  </InputGroup>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="catalog-year">Ano</Label>
                   <NativeSelect
+                    id="catalog-year"
                     value={filter.academicYear ?? ""}
                     onChange={(e) =>
                       setFilter({
@@ -192,10 +206,11 @@ export function Catalog({
                         </option>
                       ))}
                   </NativeSelect>
-                </label>
-                <label className={fieldLabel}>
-                  Turma
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="catalog-class">Turma</Label>
                   <NativeSelect
+                    id="catalog-class"
                     value={filter.classId ?? ""}
                     onChange={(e) =>
                       setFilter({
@@ -217,10 +232,11 @@ export function Catalog({
                       </option>
                     ))}
                   </NativeSelect>
-                </label>
-                <label className={fieldLabel}>
-                  Categoria
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="catalog-category">Categoria</Label>
                   <NativeSelect
+                    id="catalog-category"
                     value={filter.category ?? ""}
                     onChange={(e) =>
                       setFilter({
@@ -236,12 +252,8 @@ export function Catalog({
                         <option key={category}>{category}</option>
                       ))}
                   </NativeSelect>
-                </label>
-                <Button
-                  variant="ghost"
-                  className="h-10"
-                  onClick={() => setFilter({})}
-                >
+                </div>
+                <Button variant="ghost" onClick={() => setFilter({})}>
                   Limpar filtros
                 </Button>
               </section>
@@ -249,31 +261,34 @@ export function Catalog({
                 {filtered.length} projeto(s) encontrado(s)
               </p>
               {!filtered.length && (
-                <div className="rounded-xl border border-dashed bg-card px-6 py-14 text-center">
-                  <h2 className="text-base font-medium">
-                    {projects.length
-                      ? "Nenhum resultado"
-                      : "Nenhum projeto publicado"}
-                  </h2>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {projects.length
+                <Empty
+                  title={projects.length ? "Nenhum resultado" : "Nenhum projeto publicado"}
+                  text={
+                    projects.length
                       ? "Ajuste a busca ou limpe os filtros."
-                      : "Novas publicações aparecerão aqui."}
-                  </p>
-                </div>
+                      : "Novas publicações aparecerão aqui."
+                  }
+                />
               )}
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {filtered.map((project) => (
-                  <article
-                    className="flex flex-col rounded-xl border bg-card p-5 transition-colors hover:border-input"
+                  <Card
+                    render={<article />}
+                    className="group p-5 transition-shadow hover:shadow-md/5 has-[a:focus-visible]:ring-2 has-[a:focus-visible]:ring-ring"
                     key={project.id}
                   >
-                    <p className="mb-3 text-xs text-muted-foreground">
-                      {project.category} · {project.academicYear}
-                    </p>
-                    <h2 className="text-base leading-snug font-medium">
+                    <div className="mb-3 flex items-center justify-between gap-2">
+                      <Badge variant="outline" className="truncate">
+                        {project.category}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground tabular-nums">
+                        {project.academicYear}
+                      </span>
+                    </div>
+                    <h2 className="flex items-start justify-between gap-2 text-base leading-snug font-semibold">
+                      {/* O título cobre o cartão: clicar em qualquer ponto abre a publicação. */}
                       <a
-                        className="text-foreground no-underline hover:underline"
+                        className="text-foreground no-underline outline-none after:absolute after:inset-0 after:rounded-2xl"
                         href={`${basePath}/${project.id}`}
                         onClick={(event) => {
                           event.preventDefault();
@@ -282,14 +297,18 @@ export function Catalog({
                       >
                         {project.title}
                       </a>
+                      <ArrowUpRight
+                        aria-hidden="true"
+                        className="mt-0.5 size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground"
+                      />
                     </h2>
                     <p className="mt-1.5 line-clamp-3 flex-1 text-sm text-muted-foreground">
                       {project.description}
                     </p>
-                    <p className="mt-4 border-t pt-3 text-xs text-subtle-foreground">
+                    <p className="mt-4 border-t pt-3 text-xs text-muted-foreground">
                       {project.class.name}
                     </p>
-                  </article>
+                  </Card>
                 ))}
               </div>
             </>
@@ -319,22 +338,25 @@ function CatalogDetail({
         intro={project.class.name}
       />
       <div className="grid gap-6">
-        <section className="rounded-xl border bg-card p-5 md:p-6">
-          <h2 className="mb-3 text-base font-semibold tracking-tight">Sobre o projeto</h2>
-          <p className="text-sm leading-relaxed whitespace-pre-wrap text-muted-foreground">
-            {project.description}
-          </p>
-        </section>
-        <section
-          className="rounded-xl border bg-card p-5 md:p-6"
-          aria-labelledby="public-materials"
-        >
-          <h2
-            id="public-materials"
-            className="mb-4 text-base font-semibold tracking-tight"
-          >
-            Materiais autorizados
-          </h2>
+        <Card render={<section aria-labelledby="public-about" />}>
+          <CardHeader>
+            <CardTitle render={<h2 id="public-about" />} className="text-base">
+              Sobre o projeto
+            </CardTitle>
+          </CardHeader>
+          <CardPanel>
+            <p className="text-sm leading-relaxed whitespace-pre-wrap text-muted-foreground">
+              {project.description}
+            </p>
+          </CardPanel>
+        </Card>
+        <Card render={<section aria-labelledby="public-materials" />}>
+          <CardHeader>
+            <CardTitle render={<h2 id="public-materials" />} className="text-base">
+              Materiais autorizados
+            </CardTitle>
+          </CardHeader>
+          <CardPanel>
           {!project.materials.length && (
             <p className="text-sm text-muted-foreground">
               Nenhum material autorizado para consulta pública.
@@ -344,9 +366,12 @@ function CatalogDetail({
             {project.materials.map((material) => (
               <section
                 key={material.versionId}
-                className="grid content-start gap-3 rounded-lg border p-4"
+                className="grid content-start gap-3 rounded-xl border bg-muted/30 p-4"
               >
-                <h3 className="text-sm font-medium">{material.title}</h3>
+                <h3 className="flex items-center gap-2 text-sm font-medium">
+                  <FileText aria-hidden="true" className="size-4 text-muted-foreground" />
+                  {material.title}
+                </h3>
                 {demo ? (
                   <p className="text-sm text-muted-foreground">
                     Exemplo de {material.kind.toLocaleLowerCase("pt-BR")}{" "}
@@ -355,7 +380,7 @@ function CatalogDetail({
                 ) : material.kind === "VIDEO" ? (
                   <>
                     {failedVideos.includes(material.versionId) ? (
-                      <p role="alert" className="text-sm text-destructive">
+                      <p role="alert" className="text-sm text-destructive-foreground">
                         Não foi possível reproduzir o vídeo. A publicação pode ter
                         sido retirada. Recarregue a página para consultar a
                         disponibilidade.
@@ -392,7 +417,8 @@ function CatalogDetail({
               </section>
             ))}
           </div>
-        </section>
+          </CardPanel>
+        </Card>
       </div>
     </article>
   );

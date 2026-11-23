@@ -1,33 +1,48 @@
 import type { ReactNode } from "react";
-import { Folder } from "lucide-react";
+import { CircleAlert, CircleCheck, Folder } from "lucide-react";
+import { Alert, AlertDescription } from "./ui/alert";
+import {
+  Empty as EmptyState,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "./ui/empty";
+import { Spinner } from "./ui/spinner";
 
+/** Classes do Alert de erro do coss, para avisos montados direto no markup. */
 export const noticeClass =
-  "flex flex-wrap items-center gap-3 rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive [&_button]:h-auto [&_button]:rounded-full [&_button]:border [&_button]:border-destructive/30 [&_button]:bg-card [&_button]:px-3 [&_button]:py-1 [&_button]:text-[13px] [&_button]:font-medium [&_button]:text-destructive";
+  "flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-destructive/32 bg-destructive/4 px-3.5 py-3 text-sm text-destructive-foreground";
 
 export function Notice({ children }: { children: ReactNode }) {
   return (
-    <div className={noticeClass} role="alert">
-      {children}
-    </div>
+    <Alert variant="error">
+      <CircleAlert />
+      <AlertDescription className="flex-row flex-wrap items-center gap-x-3 gap-y-2 text-destructive-foreground">
+        {children}
+      </AlertDescription>
+    </Alert>
   );
 }
 
-export function Spinner() {
+/** Confirmação de uma ação: Alert de sucesso do coss, anunciado como status. */
+export function Success({ children }: { children: ReactNode }) {
   return (
-    <span
-      aria-hidden="true"
-      className="inline-block size-4 animate-spin rounded-full border-2 border-current/20 border-t-current"
-    />
+    <Alert variant="success" role="status">
+      <CircleCheck />
+      <AlertDescription className="text-success-foreground">{children}</AlertDescription>
+    </Alert>
   );
 }
 
 export function Loading({ label = "Carregando seu espaço…" }: { label?: string }) {
   return (
     <div
-      className="flex items-center gap-3 py-10 text-sm text-muted-foreground"
+      className="flex items-center gap-2.5 py-10 text-sm text-muted-foreground"
       role="status"
     >
-      <Spinner />
+      {/* O texto já anuncia o carregamento; o ícone é decorativo. */}
+      <Spinner aria-hidden="true" aria-label={undefined} role="presentation" className="size-4" />
       {label}
     </div>
   );
@@ -35,12 +50,16 @@ export function Loading({ label = "Carregando seu espaço…" }: { label?: strin
 
 export function Empty({ title, text }: { title: string; text: string }) {
   return (
-    <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed bg-card px-6 py-12 text-center">
-      <span className="mb-1 grid size-11 place-items-center rounded-full bg-muted text-muted-foreground">
-        <Folder className="size-5" />
-      </span>
-      <h2 className="text-base font-medium">{title}</h2>
-      <p className="max-w-sm text-sm text-muted-foreground">{text}</p>
-    </div>
+    <EmptyState className="rounded-2xl border border-dashed md:py-14">
+      <EmptyHeader>
+        <EmptyMedia variant="icon">
+          <Folder />
+        </EmptyMedia>
+        <EmptyTitle role="heading" aria-level={2} className="text-base font-semibold">
+          {title}
+        </EmptyTitle>
+        <EmptyDescription>{text}</EmptyDescription>
+      </EmptyHeader>
+    </EmptyState>
   );
 }

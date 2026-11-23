@@ -5,7 +5,12 @@ import type { Project, Scope } from "../api";
 import { ArrowRight } from "lucide-react";
 import { Notice } from "../components/Feedback";
 import { Button } from "../components/ui/button";
-import { fieldLabel, Input, NativeSelect, Textarea } from "../components/ui/input";
+import { Card, CardHeader, CardPanel, CardTitle } from "../components/ui/card";
+import { Field, FieldLabel } from "../components/ui/field";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { NativeSelect } from "../components/ui/native-select";
+import { Textarea } from "../components/ui/textarea";
 
 export function CreateProject({
   scope,
@@ -53,56 +58,58 @@ export function CreateProject({
     }
   }
   return (
-    <section className="mb-8 rounded-xl border bg-card p-5 md:p-6">
-      <h2 className="mb-4 text-base font-semibold tracking-tight">Novo projeto</h2>
-      {error && (
-        <div className="mb-4">
-          <Notice>{error}</Notice>
-        </div>
-      )}
-      {!groups.length ? (
-        <p className="text-sm text-muted-foreground">
-          Todos os grupos vinculados já têm projeto. Cadastre outro grupo em
-          Minhas turmas.
-        </p>
-      ) : (
-        <form onSubmit={submit}>
-          <fieldset disabled={busy} className="m-0 grid gap-5 border-0 p-0">
-            <div className="grid gap-4 md:grid-cols-2">
-              <label className={fieldLabel}>
-                Título
-                <Input name="title" required maxLength={200} />
-              </label>
-              <label className={fieldLabel}>
-                Grupo
-                <NativeSelect name="groupId">
-                  {groups.map((group) => (
-                    <option key={group.id} value={group.id}>
-                      {group.name} ·{" "}
-                      {
-                        scope.classes.find((item) => item.id === group.classId)
-                          ?.name
-                      }
-                    </option>
-                  ))}
-                </NativeSelect>
-              </label>
-              <label className={fieldLabel}>
-                Categoria
-                <Input name="category" required maxLength={100} />
-              </label>
-              <label className={fieldLabel}>
-                Descrição
-                <Textarea name="description" maxLength={10000} rows={2} />
-              </label>
-            </div>
-            <Button type="submit" className="justify-self-start">
-              {busy ? "Criando…" : "Criar projeto"}
-              <ArrowRight />
-            </Button>
-          </fieldset>
-        </form>
-      )}
-    </section>
+    <Card render={<section aria-labelledby="create-project-title" />} className="mb-8">
+      <CardHeader>
+        <CardTitle render={<h2 id="create-project-title" />} className="text-base">
+          Novo projeto
+        </CardTitle>
+      </CardHeader>
+      <CardPanel className="grid gap-4">
+        {error && <Notice>{error}</Notice>}
+        {!groups.length ? (
+          <p className="text-sm text-muted-foreground">
+            Todos os grupos vinculados já têm projeto. Cadastre outro grupo em
+            Minhas turmas.
+          </p>
+        ) : (
+          <form onSubmit={submit}>
+            <fieldset disabled={busy} className="m-0 grid gap-5 border-0 p-0">
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field>
+                  <FieldLabel>Título</FieldLabel>
+                  <Input name="title" required maxLength={200} />
+                </Field>
+                <div className="flex flex-col items-start gap-2">
+                  <Label htmlFor="create-project-group">Grupo</Label>
+                  <NativeSelect id="create-project-group" name="groupId">
+                    {groups.map((group) => (
+                      <option key={group.id} value={group.id}>
+                        {group.name} ·{" "}
+                        {
+                          scope.classes.find((item) => item.id === group.classId)
+                            ?.name
+                        }
+                      </option>
+                    ))}
+                  </NativeSelect>
+                </div>
+                <Field>
+                  <FieldLabel>Categoria</FieldLabel>
+                  <Input name="category" required maxLength={100} />
+                </Field>
+                <Field>
+                  <FieldLabel>Descrição</FieldLabel>
+                  <Textarea name="description" maxLength={10000} rows={2} />
+                </Field>
+              </div>
+              <Button type="submit" className="justify-self-start">
+                {busy ? "Criando…" : "Criar projeto"}
+                <ArrowRight />
+              </Button>
+            </fieldset>
+          </form>
+        )}
+      </CardPanel>
+    </Card>
   );
 }

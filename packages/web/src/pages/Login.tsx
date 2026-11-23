@@ -4,9 +4,23 @@ import { api } from "../api";
 import type { User } from "../api";
 import { ArrowRight, Eye, EyeOff, Lock } from "lucide-react";
 import { Brand } from "../components/Brand";
-import { Notice, Spinner } from "../components/Feedback";
+import { Notice } from "../components/Feedback";
 import { Button, buttonVariants } from "../components/ui/button";
-import { Input, Label } from "../components/ui/input";
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardPanel,
+  CardTitle,
+} from "../components/ui/card";
+import { Field, FieldLabel } from "../components/ui/field";
+import { Input } from "../components/ui/input";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "../components/ui/input-group";
+import { Spinner } from "../components/ui/spinner";
 
 export function Login({
   onLogin,
@@ -67,7 +81,7 @@ export function Login({
     }
   }
   return (
-    <main className="grid min-h-dvh place-items-center bg-background px-4 py-10">
+    <main className="grid min-h-dvh place-items-center bg-sidebar px-4 py-10">
       <div className="w-full max-w-[400px]">
         <div className="mb-6 flex items-center justify-between">
           <Brand />
@@ -78,37 +92,37 @@ export function Login({
             Explorar acervo público
           </a>
         </div>
-        <section
-          className="rounded-xl border bg-card p-8 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
-          aria-labelledby="login-title"
-        >
-          <p className="text-xs font-medium tracking-wide text-subtle-foreground uppercase">
-            Bem-vindo de volta
-          </p>
-          <h1
-            id="login-title"
-            className="mt-2 text-2xl leading-tight font-semibold tracking-tight"
-          >
-            Seu próximo projeto <br />
-            começa aqui.
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Entre com sua conta para acessar seu espaço.
-          </p>
-          <div className="mt-6 grid gap-4">
+        <Card render={<section aria-labelledby="login-title" />}>
+          <CardHeader>
+            <p className="text-xs font-medium text-muted-foreground">
+              Bem-vindo de volta
+            </p>
+            <CardTitle
+              render={<h1 id="login-title" />}
+              className="text-2xl leading-tight tracking-tight"
+            >
+              Seu próximo projeto <br />
+              começa aqui.
+            </CardTitle>
+            <CardDescription>
+              Entre com sua conta para acessar seu espaço.
+            </CardDescription>
+          </CardHeader>
+          <CardPanel className="grid gap-4">
             {(error || message || googleError) && (
               <Notice>{error || message || googleError}</Notice>
             )}
             {providerError && (
               <Notice>
                 {providerError}
-                <button onClick={() => void loadProviders()}>
+                <Button variant="outline" size="xs" onClick={() => void loadProviders()}>
                   Tentar novamente
-                </button>
+                </Button>
               </Notice>
             )}
             {!providers && !providerError && (
-              <p role="status" className="text-sm text-muted-foreground">
+              <p role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Spinner aria-hidden="true" aria-label={undefined} role="presentation" className="size-4" />
                 Carregando opções de acesso…
               </p>
             )}
@@ -142,10 +156,9 @@ export function Login({
                 aria-label="Entrar na conta"
                 className="grid gap-4"
               >
-                <div className="grid gap-1.5">
-                  <Label htmlFor="email">E-mail institucional</Label>
+                <Field>
+                  <FieldLabel>E-mail institucional</FieldLabel>
                   <Input
-                    id="email"
                     type="email"
                     autoComplete="username"
                     placeholder="seu.nome@instituicao.br"
@@ -155,12 +168,11 @@ export function Login({
                     onChange={(event) => setEmail(event.target.value)}
                     disabled={busy}
                   />
-                </div>
-                <div className="grid gap-1.5">
-                  <Label htmlFor="password">Senha</Label>
-                  <div className="relative">
-                    <Input
-                      id="password"
+                </Field>
+                <Field>
+                  <FieldLabel>Senha</FieldLabel>
+                  <InputGroup>
+                    <InputGroupInput
                       type={visible ? "text" : "password"}
                       autoComplete="current-password"
                       placeholder="Digite sua senha"
@@ -169,20 +181,20 @@ export function Login({
                       value={password}
                       onChange={(event) => setPassword(event.target.value)}
                       disabled={busy}
-                      className="pr-11"
                     />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="absolute top-0.5 right-0.5 text-muted-foreground"
-                      aria-label={visible ? "Ocultar senha" : "Mostrar senha"}
-                      aria-pressed={visible}
-                      onClick={() => setVisible(!visible)}
-                    >
-                      {visible ? <EyeOff /> : <Eye />}
-                    </Button>
-                  </div>
-                </div>
+                    <InputGroupAddon align="inline-end">
+                      <Button
+                        variant="ghost"
+                        size="icon-xs"
+                        aria-label={visible ? "Ocultar senha" : "Mostrar senha"}
+                        aria-pressed={visible}
+                        onClick={() => setVisible(!visible)}
+                      >
+                        {visible ? <EyeOff /> : <Eye />}
+                      </Button>
+                    </InputGroupAddon>
+                  </InputGroup>
+                </Field>
                 <Button
                   type="submit"
                   size="lg"
@@ -190,12 +202,16 @@ export function Login({
                   disabled={busy}
                 >
                   <span>{busy ? "Entrando…" : "Entrar no meu espaço"}</span>
-                  {busy ? <Spinner /> : <ArrowRight />}
+                  {busy ? (
+                    <Spinner aria-hidden="true" aria-label={undefined} role="presentation" />
+                  ) : (
+                    <ArrowRight />
+                  )}
                 </Button>
               </form>
             )}
-          </div>
-        </section>
+          </CardPanel>
+        </Card>
         <div className="mt-6 grid gap-3 text-center text-xs text-muted-foreground">
           <p className="[&_a]:text-foreground [&_a]:underline [&_a]:underline-offset-2">
             Precisa de acesso ou esqueceu sua senha?
@@ -210,7 +226,7 @@ export function Login({
               <span>Entre em contato com o professor da sua turma.</span>
             )}
           </p>
-          <p className="inline-flex items-center justify-center gap-1.5 text-subtle-foreground">
+          <p className="inline-flex items-center justify-center gap-1.5">
             <Lock className="size-3.5" />
             Acesso de acordo com o seu perfil acadêmico.
           </p>

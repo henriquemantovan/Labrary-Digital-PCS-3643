@@ -6,7 +6,8 @@ import { PageHeader } from "../components/PageHeader";
 import { ProjectBoard } from "../components/ProjectBoard";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
-import { Input, NativeSelect } from "../components/ui/input";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "../components/ui/input-group";
+import { NativeSelect } from "../components/ui/native-select";
 import { Empty, Loading, Notice } from "../components/Feedback";
 import { roleDescriptions, statusLabels } from "../labels";
 import { Classes } from "./Classes";
@@ -188,7 +189,7 @@ export function Dashboard({
       )}
       <section
         aria-labelledby="projects-title"
-        className="overflow-hidden rounded-xl border bg-card"
+        className="overflow-hidden rounded-2xl border bg-card shadow-xs/5"
       >
         <div className="flex flex-wrap items-center gap-x-4 gap-y-3 border-b px-4 py-3">
           <h2
@@ -202,22 +203,23 @@ export function Dashboard({
                 : user.role === "ADMIN"
                   ? "Projetos de todas as turmas"
                   : "Projetos da minha turma"}
-            <Badge className="tabular-nums">{projects.length}</Badge>
+            <Badge variant="secondary" className="tabular-nums">{projects.length}</Badge>
           </h2>
           <div className="grid w-full gap-2 sm:grid-cols-3 lg:ml-auto lg:flex lg:w-auto lg:flex-wrap lg:justify-end">
-            <div className="relative sm:col-span-3 lg:w-72">
-              <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-subtle-foreground" />
-              <Input
+            <InputGroup className="sm:col-span-3 lg:w-72">
+              <InputGroupInput
                 aria-label="Buscar projetos"
                 placeholder="Buscar por projeto, categoria ou grupo…"
-                className="h-9 pl-9 text-[13px]"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
               />
-            </div>
+              <InputGroupAddon>
+                <Search />
+              </InputGroupAddon>
+            </InputGroup>
             <NativeSelect
               aria-label="Filtrar por estado"
-              className="h-9 text-[13px] lg:w-auto"
+              className="lg:w-auto"
               value={status}
               onChange={(event) => setStatus(event.target.value)}
             >
@@ -230,7 +232,7 @@ export function Dashboard({
             </NativeSelect>
             <NativeSelect
               aria-label="Filtrar por grupo"
-              className="h-9 text-[13px] lg:w-auto"
+              className="lg:w-auto"
               value={group}
               onChange={(event) => setGroup(event.target.value)}
             >
@@ -248,7 +250,7 @@ export function Dashboard({
             </NativeSelect>
             <NativeSelect
               aria-label="Filtrar por pendências"
-              className="h-9 text-[13px] lg:w-auto"
+              className="lg:w-auto"
               value={pending}
               onChange={(event) => setPending(event.target.value)}
             >

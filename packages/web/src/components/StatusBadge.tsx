@@ -1,19 +1,18 @@
-import { Badge } from "./ui/badge";
+import { Badge, type BadgeProps } from "./ui/badge";
 import { statusLabels } from "../labels";
-import { cn } from "../lib/utils";
 
-const dots: Record<string, string> = {
-  PREPARACAO: "bg-info",
-  EM_AVALIACAO: "bg-warning",
-  AJUSTES: "bg-destructive",
-  FINALIZADO: "bg-success",
+const variants: Record<string, BadgeProps["variant"]> = {
+  PREPARACAO: "info",
+  EM_AVALIACAO: "warning",
+  AJUSTES: "error",
+  FINALIZADO: "success",
 };
 
 export function StatusBadge({ status }: { status: string }) {
   return (
     // "status-pill" é gancho dos testes (unitários e E2E), sem estilo próprio.
-    <Badge className="status-pill">
-      <span className={cn("size-1.5 rounded-full", dots[status] ?? "bg-subtle-foreground")} />
+    <Badge variant={variants[status] ?? "secondary"} className="status-pill">
+      <span aria-hidden="true" className="size-1.5 rounded-full bg-current" />
       {statusLabels[status]}
     </Badge>
   );

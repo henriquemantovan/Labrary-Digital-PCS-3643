@@ -4,8 +4,11 @@ import { ApiError, uploadFile } from "./api";
 import type { Material, MaterialRule, MaterialRules } from "./api";
 import { BookOpen, Check, File, FileText, Lock, Video } from "lucide-react";
 import { Notice } from "./components/Feedback";
+import { Badge } from "./components/ui/badge";
 import { Button, buttonVariants } from "./components/ui/button";
-import { fieldLabel, Input } from "./components/ui/input";
+import { Field, FieldLabel } from "./components/ui/field";
+import { Input } from "./components/ui/input";
+import { Label } from "./components/ui/label";
 import {
   fileInput,
   hintText,
@@ -137,9 +140,9 @@ function UploadFeedback({ upload, label }: { upload: Upload; label: string }) {
           <Notice>
             <span>{upload.error}</span>
             {upload.retry && (
-              <button type="button" onClick={() => void upload.retry?.()}>
+              <Button variant="outline" size="xs" onClick={() => void upload.retry?.()}>
                 Tentar novamente
-              </button>
+              </Button>
             )}
           </Notice>
         </div>
@@ -227,8 +230,10 @@ function MaterialCard({
       <div className="flex flex-wrap items-start gap-3">
       <span
         className={cn(
-          "relative grid size-9 shrink-0 place-items-center rounded-lg [&>svg]:size-4",
-          current ? "bg-success/10 text-success" : "bg-muted text-muted-foreground",
+          "relative grid size-9 shrink-0 place-items-center rounded-lg border [&>svg]:size-4",
+          current
+            ? "border-success/24 bg-success/8 text-success-foreground"
+            : "bg-background text-muted-foreground",
         )}
       >
         <KindIcon kind={rule.kind} />
@@ -255,14 +260,9 @@ function MaterialCard({
       </div>
       <div className="flex flex-wrap items-center gap-2">
         {!current && (
-          <span
-            className={cn(
-              "rounded-full px-2.5 py-0.5 text-xs font-medium",
-              rule.required ? "bg-warning/10 text-warning" : "bg-muted text-muted-foreground",
-            )}
-          >
+          <Badge variant={rule.required ? "warning" : "secondary"}>
             {rule.required ? "Pendente" : "Opcional"}
-          </span>
+          </Badge>
         )}
         {current && (
           <a
@@ -300,7 +300,7 @@ function MaterialCard({
       <UploadFeedback upload={upload} label={title} />
       {material && history && (
         <ol
-          className="mt-3 grid gap-1 rounded-lg bg-muted p-2 text-xs"
+          className="mt-3 grid gap-1 rounded-xl border bg-muted/40 p-2 text-xs"
           aria-label={`Versões de ${title}`}
         >
           {material.versions.map((version) => (
@@ -308,9 +308,7 @@ function MaterialCard({
               key={version.id}
               className="flex flex-wrap items-center gap-2 rounded-md px-2 py-1.5"
             >
-              <span className="rounded-full bg-card px-2 py-0.5 font-medium">
-                v{version.versionNumber}
-              </span>
+              <Badge variant="outline">v{version.versionNumber}</Badge>
               <span className="min-w-0 flex-1 text-muted-foreground [overflow-wrap:anywhere]">
                 {version.originalFilename} · {formatBytes(version.sizeBytes)} ·{" "}
                 {author(version)} · {formatDate(version.uploadedAt)}
@@ -366,27 +364,28 @@ function SupplementForm({
         className="m-0 grid items-end gap-3 border-0 p-0 md:grid-cols-[1fr_1fr_auto]"
         disabled={upload.progress !== null}
       >
-        <label className={fieldLabel}>
-          Título
+        <Field>
+          <FieldLabel>Título</FieldLabel>
           <Input
             value={title}
             onChange={(event) => setTitle(event.target.value)}
             maxLength={200}
             placeholder={rule.defaultTitle}
           />
-        </label>
-        <label className={fieldLabel}>
-          Arquivo
+        </Field>
+        <div className="flex flex-col items-start gap-2">
+          <Label htmlFor={`supplement-file-${projectId}`}>Arquivo</Label>
           <input
-            className={cn(fileInput, "h-10 content-center")}
+            id={`supplement-file-${projectId}`}
+            className={cn(fileInput, "h-9 content-center")}
             ref={file}
             type="file"
             accept={rule.formats
               .flatMap((format) => [...format.extensions, format.mimeType])
               .join(",")}
           />
-        </label>
-        <Button variant="outline" className="h-10" type="submit">
+        </div>
+        <Button variant="outline" type="submit">
           Enviar complementar
         </Button>
       </fieldset>
@@ -458,7 +457,7 @@ export function MaterialsPanel({
         </p>
       )}
       {required.length > 0 && (
-        <div aria-hidden="true" className="-mt-1 mb-4 h-1 overflow-hidden rounded-full bg-muted">
+        <div aria-hidden="true" className="-mt-1 mb-4 h-1.5 overflow-hidden rounded-full bg-muted">
           <div
             className="h-full rounded-full bg-success transition-[width]"
             style={{
@@ -467,7 +466,7 @@ export function MaterialsPanel({
           />
         </div>
       )}
-      <ul className="m-0 list-none divide-y rounded-lg border p-0">
+      <ul className="m-0 list-none divide-y rounded-xl border p-0">
         {cards.map(({ rule, material }) => (
           <MaterialCard
             key={material ? `m${material.id}` : `k${rule.kind}`}

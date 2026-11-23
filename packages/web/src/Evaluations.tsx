@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Success } from "./components/Feedback";
 import type { FormEvent } from "react";
 import type { CriterionScore, Evaluation } from "../../api/src/models/evaluation";
 import { api, ApiError } from "./api";
@@ -92,7 +93,7 @@ export function Evaluations({ projectId, projectStatus, user, expired }: {
   const evaluatorView = user.role === "AVALIADOR";
   return <section className={panelClass} aria-label="Avaliações por rubrica">
     <h2>Avaliações por rubrica</h2>
-    {success && <p role="status">{success}</p>}
+    {success && <Success>{success}</Success>}
     {error && <p role="alert">{error}</p>}
     <button type="button" className={buttonVariants({ variant: "ghost", size: "sm" })} disabled={busy} onClick={() => {
       setError("");

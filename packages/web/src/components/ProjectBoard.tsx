@@ -47,7 +47,7 @@ function DuePill({ project }: { project: Project }) {
   if (!project.dueAt) return null;
   const due = new Date(project.dueAt);
   if (project.status !== "FINALIZADO" && due.getTime() < Date.now())
-    return <span className={cn(pill, "text-destructive")}>Prazo vencido</span>;
+    return <span className={cn(pill, "text-destructive-foreground")}>Prazo vencido</span>;
   return (
     <span className={pill}>
       <CalendarDays className="text-muted-foreground" />
@@ -100,7 +100,7 @@ function ProjectCard({
           <span className="truncate">{project.category}</span>
           {project.academicYear && (
             <>
-              <span aria-hidden="true" className="text-input">
+              <span aria-hidden="true" className="text-subtle-foreground">
                 •
               </span>
               <span className="tabular-nums">{project.academicYear}</span>
@@ -114,7 +114,7 @@ function ProjectCard({
           <p
             className={cn(
               "mt-2.5 flex items-start gap-1.5 text-xs leading-4",
-              missing.length ? "text-warning" : "text-success",
+              missing.length ? "text-warning-foreground" : "text-success-foreground",
             )}
           >
             {missing.length ? (

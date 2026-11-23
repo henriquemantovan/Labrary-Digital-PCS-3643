@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Success } from "./components/Feedback";
 import type { FormEvent } from "react";
 import { api, ApiError } from "./api";
 import type { PublicationManagement } from "../../api/src/models/publicationDecision";
@@ -126,7 +127,7 @@ export function PublicationPanel({
           </button>
         </>
       )}
-      {success && <p role="status">{success}</p>}
+      {success && <Success>{success}</Success>}
       {!data && !error && <p role="status">Carregando publicação…</p>}
       {data && (
         <>

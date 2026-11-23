@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Success } from "./components/Feedback";
 import type { FormEvent } from "react";
 import { api, ApiError } from "./api";
 import type { Requirement, RubricCriterion, RubricVersion } from "./assessmentTypes";
@@ -42,7 +43,7 @@ export function Rubrics({ projectId, canEdit, expired, onConfigurationSaved }: {
   return <section className={panelClass} aria-label="Requisitos e rubrica">
     <h2>Requisitos e rubrica</h2>
     <p className={mutedText}>Cada versão preserva os requisitos e os critérios usados nas entregas anteriores.</p>
-    {success && <p role="status">{success}</p>}
+    {success && <Success>{success}</Success>}
     {error && <div role="alert">{error} <button type="button" className={buttonVariants({ variant: "ghost", size: "sm" })} onClick={() => {
       setError(""); setEditing(false); setRevision((value) => value + 1);
       void onConfigurationSaved?.().catch(fail);

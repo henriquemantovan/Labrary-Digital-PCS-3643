@@ -1,7 +1,9 @@
 import type { Project, Scope } from "../api";
 import { ArrowRight, BookOpen } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
+import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
+import { Card } from "../components/ui/card";
 import { Empty } from "../components/Feedback";
 import { GroupManager } from "../Groups";
 
@@ -27,15 +29,19 @@ export function Classes({
         />
         <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
           {scope.classes.map((item) => (
-            <article className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-5 rounded-xl border bg-card p-5 md:p-6" key={item.id}>
+            <Card
+              render={<article />}
+              className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-5 p-5 md:p-6"
+              key={item.id}
+            >
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
+                  <span className="grid size-10 shrink-0 place-items-center rounded-lg border bg-background text-muted-foreground shadow-xs/5">
                     <BookOpen className="size-5" />
                   </span>
-                  <div className="grid min-w-0 gap-0.5">
-                    <span className="text-xs text-subtle-foreground">{item.academicYear}</span>
-                    <h2 className="text-base font-semibold tracking-tight">{item.name}</h2>
+                  <div className="grid min-w-0 gap-1">
+                    <h2 className="font-heading text-base font-semibold">{item.name}</h2>
+                    <Badge variant="outline" className="justify-self-start tabular-nums">{item.academicYear}</Badge>
                   </div>
                 </div>
                 <Button variant="ghost" size="sm" onClick={() => navigate("/projetos")}>
@@ -49,7 +55,7 @@ export function Classes({
                 onChanged={onChanged}
                 expired={expired}
               />
-            </article>
+            </Card>
           ))}
         </div>
         {!scope.classes.length && (

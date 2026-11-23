@@ -2,52 +2,78 @@
 @import "tailwindcss";
 @import "@fontsource-variable/inter";
 
+/* Tokens do tema neutro do coss ui (https://coss.com/ui), versão clara.
+   Os componentes em components/ui vêm do registro do coss e dependem deles. */
 @theme inline {
   --font-sans: "Inter Variable", -apple-system, "SF Pro Text", "PingFang SC",
     "Noto Sans SC", system-ui, sans-serif;
+  --font-heading: var(--font-sans);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
-  --color-card-foreground: var(--foreground);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-subtle-foreground: var(--subtle-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-accent: var(--accent);
-  --color-destructive: var(--destructive);
-  --color-success: var(--success);
-  --color-warning: var(--warning);
-  --color-info: var(--info);
-  --radius-sm: 8px;
-  --radius-md: 10px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
+  --color-sidebar: var(--sidebar);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
   /* Cartões do quadro de projetos: repouso e hover. */
   --shadow-card: 0 1px 2px rgb(0 0 0 / 0.04), 0 2px 6px -2px rgb(0 0 0 / 0.05);
   --shadow-raised: 0 2px 4px rgb(0 0 0 / 0.04), 0 8px 20px -8px rgb(0 0 0 / 0.12);
 }
 
 :root {
-  --background: #f5f5f7;
-  --foreground: #1d1d1f;
-  --card: #ffffff;
-  --muted: #f5f5f7;
-  --muted-foreground: #6e6e73;
-  --subtle-foreground: #86868b;
-  --border: #ebebeb;
-  --input: #e3e3e6;
-  --ring: #1d1d1f;
-  --primary: #1d1d1f;
-  --primary-foreground: #ffffff;
-  --accent: #efeff1;
-  --destructive: #c4372b;
-  --success: #2f9e5b;
-  --warning: #c98a1a;
-  --info: #3a6fd8;
+  --radius: 0.625rem;
+  --background: #fff;
+  --foreground: oklch(26.9% 0 0);
+  --card: #fff;
+  --card-foreground: oklch(26.9% 0 0);
+  --popover: #fff;
+  --popover-foreground: oklch(26.9% 0 0);
+  --primary: oklch(26.9% 0 0);
+  --primary-foreground: oklch(98.5% 0 0);
+  --secondary: rgb(0 0 0 / 4%);
+  --secondary-foreground: oklch(26.9% 0 0);
+  --muted: rgb(0 0 0 / 4%);
+  --muted-foreground: color-mix(in srgb, oklch(55.6% 0 0) 90%, #000);
+  --subtle-foreground: oklch(65% 0 0);
+  --accent: rgb(0 0 0 / 4%);
+  --accent-foreground: oklch(26.9% 0 0);
+  --destructive: oklch(63.7% 0.237 25.331);
+  --destructive-foreground: oklch(50.5% 0.213 27.518);
+  --info: oklch(62.3% 0.214 259.815);
+  --info-foreground: oklch(48.8% 0.243 264.376);
+  --success: oklch(69.6% 0.17 162.48);
+  --success-foreground: oklch(50.8% 0.118 165.612);
+  --warning: oklch(76.9% 0.188 70.08);
+  --warning-foreground: oklch(55.5% 0.163 48.998);
+  --border: rgb(0 0 0 / 8%);
+  --input: rgb(0 0 0 / 10%);
+  --ring: oklch(70.8% 0 0);
+  --sidebar: oklch(98.5% 0 0);
   color-scheme: light;
   background: var(--background);
   color: var(--foreground);
@@ -55,12 +81,13 @@
 }
 
 @utility select-chevron {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%236e6e73' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23737373' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 6 3-3 3 3M5 10l3 3 3-3'/%3E%3C/svg%3E");
 }
 
 @layer base {
   * {
     border-color: var(--color-border);
+    outline-color: color-mix(in srgb, var(--color-ring) 50%, transparent);
   }
   html {
     -webkit-font-smoothing: antialiased;
@@ -72,13 +99,13 @@
     background: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
-    font-size: 15px;
+    font-size: 14px;
   }
-  :focus-visible {
-    outline: 2px solid var(--color-ring);
-    outline-offset: 2px;
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
   }
-  /* Elementos nativos sem classe recebem o estilo padrão do sistema visual. */
+  /* Elementos nativos sem classe seguem a aparência dos componentes do coss. */
   :where(h2):not([class]) {
     font-size: 1rem;
     font-weight: 600;
@@ -94,23 +121,24 @@
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    border-radius: 9999px;
+    border: 1px solid var(--color-primary);
+    border-radius: var(--radius-lg);
     background: var(--color-primary);
-    padding-inline: 0.875rem;
-    font-size: 0.8125rem;
+    padding-inline: 0.6875rem;
+    font-size: 0.875rem;
     font-weight: 500;
     color: var(--color-primary-foreground);
     white-space: nowrap;
-    cursor: pointer;
     justify-self: start;
-    transition: opacity 0.15s;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 5%), inset 0 1px rgb(255 255 255 / 16%);
+    transition: background-color 0.15s;
   }
   :where(button):not([class]):hover {
-    opacity: 0.85;
+    background: color-mix(in srgb, var(--color-primary) 90%, transparent);
   }
   :where(button):disabled {
     cursor: not-allowed;
-    opacity: 0.5;
+    opacity: 0.64;
   }
   :where(label):not([class]) {
     display: grid;
@@ -128,31 +156,34 @@
     width: 100%;
     min-width: 0;
     border: 1px solid var(--color-input);
-    border-radius: 0.5rem;
-    background-color: var(--color-card);
-    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-lg);
+    background-color: var(--color-background);
+    padding: 0.375rem 0.6875rem;
     font-size: 0.875rem;
     font-weight: 400;
     color: var(--color-foreground);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 5%);
+    transition: box-shadow 0.15s, border-color 0.15s;
   }
   :where(input, select):not([class]):not([type="checkbox"], [type="radio"], [type="file"]) {
-    height: 2.5rem;
+    height: 2.25rem;
     padding-block: 0;
   }
   :where(select):not([class]) {
     appearance: none;
     padding-right: 2.25rem;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%236e6e73' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
-    background-position: right 0.75rem center;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23737373' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 6 3-3 3 3M5 10l3 3 3-3'/%3E%3C/svg%3E");
+    background-position: right 0.625rem center;
     background-repeat: no-repeat;
     background-size: 16px;
   }
   :where(input, select, textarea):not([class]):focus-visible {
-    border-color: var(--color-foreground);
+    border-color: var(--color-ring);
     outline: none;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-ring) 24%, transparent);
   }
   :where(input, textarea):not([class])::placeholder {
-    color: var(--color-subtle-foreground);
+    color: color-mix(in srgb, var(--color-muted-foreground) 72%, transparent);
   }
   :where(input[type="file"]):not([class]) {
     font-size: 0.875rem;
@@ -160,10 +191,10 @@
   }
   :where(input[type="file"]):not([class])::file-selector-button {
     margin-right: 0.75rem;
-    border: 0;
-    border-radius: 9999px;
-    background: var(--color-muted);
-    padding: 0.375rem 0.75rem;
+    border: 1px solid var(--color-input);
+    border-radius: var(--radius-md);
+    background: var(--color-background);
+    padding: 0.25rem 0.625rem;
     font-weight: 500;
     color: var(--color-foreground);
     cursor: pointer;
@@ -184,12 +215,12 @@
   }
   :where(details):not([class]) {
     border: 1px solid var(--color-border);
-    border-radius: 0.75rem;
+    border-radius: var(--radius-xl);
     background: var(--color-card);
   }
   :where(details):not([class]) > summary {
     cursor: pointer;
-    padding: 0.75rem 1rem;
+    padding: 0.625rem 1rem;
     font-size: 0.875rem;
     font-weight: 500;
   }

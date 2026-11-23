@@ -4,7 +4,7 @@ import type { Material, Project, User } from "./api";
 import { Lock } from "lucide-react";
 import type { Reopening, Submission, SubmissionBlock, SubmissionChecklist } from "./submissionTypes";
 import { buttonVariants } from "./components/ui/button";
-import { noticeClass } from "./components/Feedback";
+import { noticeClass, Success } from "./components/Feedback";
 import { buttonRow, lockNote, mutedText, panelClass, sectionHeading } from "./components/Panel";
 
 const formatDate = (value: string) =>
@@ -158,7 +158,7 @@ export function SubmissionPanel({ project, user, materials, refreshKey, expired,
           <span>{ready} de {checklist.items.length} obrigatórios prontos</span>
         )}
       </div>
-      {success && <p role="status" className="rounded-lg bg-success/10 px-3.5 py-2.5 text-sm text-success">{success}</p>}
+      {success && <Success>{success}</Success>}
       {error && (
         <div role="alert" className={noticeClass}>
           {error}{" "}

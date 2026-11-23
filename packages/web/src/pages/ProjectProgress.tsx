@@ -1,7 +1,10 @@
-import { ArrowRight, Check, Lock } from "lucide-react";
+import { ArrowRight, Check, Lock, Sparkles } from "lucide-react";
 import type { Project, User } from "../api";
 import type { SubmissionChecklist } from "../submissionTypes";
 import { StatusBadge } from "../components/StatusBadge";
+import { Alert, AlertAction, AlertDescription } from "../components/ui/alert";
+import { Button } from "../components/ui/button";
+import { Card } from "../components/ui/card";
 import { materialLabels } from "../labels";
 import { cn } from "../lib/utils";
 
@@ -141,9 +144,9 @@ export function ProjectProgress({
   const steps = projectSteps(project.status, missing, checklist);
   const next = nextStep(role, project.status, missing, checklist);
   return (
-    <section
-      aria-label="Andamento do projeto"
-      className="mb-6 rounded-xl border bg-card p-5 md:p-6"
+    <Card
+      render={<section aria-label="Andamento do projeto" />}
+      className="mb-6 p-5 md:p-6"
     >
       <div className="mb-4 flex items-center justify-between gap-3">
         <h2 className="text-sm font-semibold">Andamento</h2>
@@ -179,42 +182,39 @@ export function ProjectProgress({
         ))}
       </ol>
       {next && (
-        <div
-          className={cn(
-            "mt-5 flex flex-wrap items-center justify-between gap-3 rounded-lg px-4 py-3",
-            next.target ? "bg-warning/10" : "bg-muted",
-          )}
-        >
-          <p className={cn("text-sm", next.target ? "text-foreground" : "text-muted-foreground")}>
+        // Orientação fixa da página, não um aviso: sem role="alert".
+        <Alert role={undefined} variant={next.target ? "warning" : "default"} className="mt-5">
+          <Sparkles />
+          <AlertDescription className={next.target ? "text-foreground" : undefined}>
             {next.text}
-          </p>
+          </AlertDescription>
           {next.target && (
-            <button
-              type="button"
-              className="inline-flex h-8 items-center gap-1.5 rounded-full bg-primary px-3.5 text-[13px] font-medium text-primary-foreground hover:bg-primary/85 [&_svg]:size-3.5"
-              onClick={() => scrollToSection(next.target!.id)}
-            >
-              {next.target.label}
-              <ArrowRight aria-hidden="true" />
-            </button>
+            <AlertAction>
+              <Button size="sm" onClick={() => scrollToSection(next.target!.id)}>
+                {next.target.label}
+                <ArrowRight aria-hidden="true" />
+              </Button>
+            </AlertAction>
           )}
-        </div>
+        </Alert>
       )}
-    </section>
+    </Card>
   );
 }
 
 export function SectionNav({ items }: { items: { id: string; label: string }[] }) {
   return (
+    // Mesma aparência da lista de abas do coss (Tabs), mas como âncoras da página.
     <nav
       aria-label="Seções do projeto"
-      className="z-10 -mx-1 mb-6 flex gap-1 overflow-x-auto bg-card/90 px-1 py-2 backdrop-blur [scrollbar-width:none] lg:sticky lg:top-0"
+      className="z-10 -mx-2 mb-6 bg-background/90 px-2 py-2 backdrop-blur lg:sticky lg:top-0"
     >
+      <div className="flex w-fit max-w-full gap-0.5 overflow-x-auto rounded-lg bg-muted p-0.5 [scrollbar-width:none]">
       {items.map((item) => (
         <a
           key={item.id}
           href={`#${item.id}`}
-          className="shrink-0 rounded-full px-3 py-1.5 text-[13px] text-muted-foreground no-underline transition-colors hover:bg-muted hover:text-foreground"
+          className="shrink-0 rounded-md px-3 py-1 text-sm font-medium text-muted-foreground no-underline transition-colors hover:bg-background hover:text-foreground hover:shadow-xs/5"
           onClick={(event) => {
             event.preventDefault();
             scrollToSection(item.id);
@@ -223,6 +223,7 @@ export function SectionNav({ items }: { items: { id: string; label: string }[] }
           {item.label}
         </a>
       ))}
+      </div>
     </nav>
   );
 }

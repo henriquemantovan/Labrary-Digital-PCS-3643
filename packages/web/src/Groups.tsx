@@ -3,10 +3,11 @@ import type { FormEvent } from "react";
 import { api, ApiError } from "./api";
 import type { Administration, LinkChange, Person, Evaluators, Project } from "./api";
 import { buttonVariants } from "./components/ui/button";
-import { noticeClass } from "./components/Feedback";
-import { mutedText, panelClass } from "./components/Panel";
+import { Notice, noticeClass, Success } from "./components/Feedback";
+import { mutedText, panelClass, panelTitle } from "./components/Panel";
 import { StatusBadge } from "./components/StatusBadge";
 import { Badge } from "./components/ui/badge";
+import { Button } from "./components/ui/button";
 import { Input } from "./components/ui/input";
 import { cn } from "./lib/utils";
 
@@ -80,9 +81,14 @@ function People({
 }
 function Stat({ label, value, warn }: { label: string; value: string; warn?: boolean }) {
   return (
-    <div className={cn("rounded-lg px-3.5 py-2.5", warn ? "bg-warning/10" : "bg-muted")}>
-      <dt className={cn("text-xs", warn ? "text-warning" : "text-muted-foreground")}>{label}</dt>
-      <dd className={cn("text-lg font-semibold tabular-nums", warn && "text-warning")}>{value}</dd>
+    <div
+      className={cn(
+        "rounded-xl border px-4 py-3",
+        warn ? "border-warning/32 bg-warning/4" : "bg-background",
+      )}
+    >
+      <dt className={cn("text-xs", warn ? "text-warning-foreground" : "text-muted-foreground")}>{label}</dt>
+      <dd className={cn("mt-0.5 text-xl font-semibold tabular-nums", warn && "text-warning-foreground")}>{value}</dd>
     </div>
   );
 }
@@ -179,21 +185,21 @@ export function GroupManager({
     <section className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4" aria-label="Gestão de grupos">
       <h3 className="sr-only">Grupos e integrantes</h3>
       {success && (
-        <p role="status" className="rounded-lg bg-success/10 px-3.5 py-2.5 text-sm text-success">
-          {success}
-        </p>
+        <Success>{success}</Success>
       )}
       {error && (
         <div className={noticeClass}>
           <p role="alert">{error}</p>
-          <button
+          <Button
+            variant="outline"
+            size="xs"
             onClick={() => {
               setError("");
               setRevision((value) => value + 1);
             }}
           >
             Recarregar grupos
-          </button>
+          </Button>
         </div>
       )}
       {!data ? (
@@ -220,7 +226,7 @@ export function GroupManager({
             </p>
           )}
           {!data.groups.length && <p className={mutedText}>Nenhum grupo cadastrado.</p>}
-          <ul className="m-0 list-none divide-y rounded-lg border p-0 empty:hidden">
+          <ul className="m-0 list-none divide-y rounded-xl border bg-background p-0 empty:hidden">
             {data.groups.map((group) => {
               const project = projectOf(group.id);
               const editing = isEditing(group);
@@ -237,12 +243,12 @@ export function GroupManager({
                       <div className="order-3 flex min-w-0 basis-full flex-wrap gap-1.5 sm:order-none sm:flex-1 sm:basis-auto">
                         {group.memberIds.length ? (
                           group.memberIds.map((id) => (
-                            <Badge key={id} className="bg-card ring-1 ring-border">
+                            <Badge key={id} variant="outline">
                               {personName(data.people, id)}
                             </Badge>
                           ))
                         ) : (
-                          <span className="text-xs text-subtle-foreground">Sem integrantes</span>
+                          <span className="text-xs text-muted-foreground">Sem integrantes</span>
                         )}
                       </div>
                       <div className="order-4 flex min-w-0 basis-full items-center gap-2 text-xs text-muted-foreground empty:hidden sm:order-none sm:w-64 sm:basis-auto">
@@ -282,7 +288,7 @@ export function GroupManager({
                       </button>
                     </div>
                     {editing && (
-                      <div className="grid gap-3 rounded-lg bg-muted/60 p-4">
+                      <div className="grid gap-3 rounded-xl border bg-muted/40 p-4">
                         <form onSubmit={(event) => void submit(event, group.id)}>
                           <fieldset disabled={busy}>
                             <legend>Integrantes de {group.name}</legend>
@@ -319,7 +325,7 @@ export function GroupManager({
               maxLength={120}
               disabled={busy}
               placeholder="Nome do novo grupo"
-              className="h-9 min-w-40 flex-1 sm:max-w-xs"
+              className="min-w-40 flex-1 sm:max-w-xs"
             />
             <button
               className={buttonVariants({ variant: "outline", size: "sm" })}
@@ -393,21 +399,25 @@ export function EvaluatorManager({
   }
   return (
     <section className={panelClass} aria-label="Gestão de avaliadores">
-      <h3>Avaliadores do projeto</h3>
+      <h3 className={panelTitle}>Avaliadores do projeto</h3>
       {error && (
-        <>
-          <p role="alert">{error}</p>
-          <button
+        <Notice>
+          {error}
+          <Button
+            variant="outline"
+            size="xs"
             onClick={() => {
               setError("");
               setRevision((value) => value + 1);
             }}
           >
             Recarregar avaliadores
-          </button>
-        </>
+          </Button>
+        </Notice>
       )}
-      {success && <p role="status">{success}</p>}
+      {success && (
+        <Success>{success}</Success>
+      )}
       {!data ? (
         <p role="status">Carregando avaliadores…</p>
       ) : (

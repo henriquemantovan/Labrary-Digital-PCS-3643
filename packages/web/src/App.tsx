@@ -8,7 +8,8 @@ import { Gradebook } from "./Gradebook";
 import { Brand } from "./components/Brand";
 import { Loading, Notice } from "./components/Feedback";
 import { Button } from "./components/ui/button";
-import { Label, NativeSelect } from "./components/ui/input";
+import { Label } from "./components/ui/label";
+import { NativeSelect } from "./components/ui/native-select";
 import { roleLabels } from "./labels";
 import { AppShell } from "./layout/AppShell";
 import { Dashboard } from "./pages/Dashboard";
@@ -123,14 +124,14 @@ function PrivateApp() {
   }
   if (initializing)
     return (
-      <main className="grid min-h-dvh place-content-center justify-items-center gap-2 bg-background p-6">
+      <main className="grid min-h-dvh place-content-center justify-items-center gap-2 bg-sidebar p-6">
         <Brand />
         <Loading />
       </main>
     );
   if (startupError)
     return (
-      <main className="grid min-h-dvh place-content-center justify-items-center gap-4 bg-background p-6">
+      <main className="grid min-h-dvh place-content-center justify-items-center gap-4 bg-sidebar p-6">
         <Brand />
         <Notice>{startupError}</Notice>
         <Button onClick={() => void bootstrap()}>Tentar novamente</Button>
@@ -165,13 +166,13 @@ function PrivateApp() {
         {logoutError && <Notice>{logoutError}</Notice>}
         {user.role === "ADMIN" && (
           <section
-            className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl bg-muted px-4 py-3"
+            className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border bg-muted/50 px-4 py-3"
             aria-label="Visualização de perfis"
           >
             <Label htmlFor="view-role">Visualizar como</Label>
             <NativeSelect
               id="view-role"
-              className="h-9 w-auto min-w-44"
+              className="w-auto min-w-44"
               value={user.viewRole ?? "ADMIN"}
               disabled={viewBusy}
               onChange={(event) => void changeView(event.target.value)}

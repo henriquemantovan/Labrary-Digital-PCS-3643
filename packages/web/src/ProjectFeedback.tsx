@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Success } from "./components/Feedback";
 import type { FormEvent } from "react";
 import { api, ApiError } from "./api";
 import type { Material, ProjectMessage } from "./api";
@@ -181,7 +182,7 @@ export function ProjectFeedback({
           {sendError} Seu texto foi mantido para tentar novamente.
         </p>
       )}
-      {success && <p role="status">{success}</p>}
+      {success && <Success>{success}</Success>}
     </section>
   );
 }
