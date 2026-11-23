@@ -85,10 +85,12 @@ Para executar a demonstração automatizada com gravação do fluxo real de publ
 
 ## Onde ficam vídeos e imagens
 
-O servidor é o computador que executa a API. Se você iniciou o Labrary no seu computador, os arquivos enviados ficam no seu próprio disco, na pasta `.uploads` da raiz do projeto. Quando um aluno envia um vídeo pelo navegador, a API recebe os bytes e cria um arquivo nessa pasta. Fechar o navegador não apaga esse arquivo.
+O servidor é o computador que executa a API. No modo padrão com disco, se você iniciou o Labrary no seu computador, os arquivos enviados ficam no seu próprio disco, na pasta `.uploads` da raiz do projeto. Quando um aluno envia um vídeo pelo navegador, a API recebe os bytes e cria um arquivo nessa pasta. Fechar o navegador não apaga esse arquivo.
 
 O comando `pnpm demo` usa uma pasta temporária isolada em `/tmp`, em vez da `.uploads` padrão. Os arquivos dessa demonstração não devem ser usados para guardar a entrega definitiva.
 
-Se a API estiver hospedada em outra máquina, os arquivos ficam no armazenamento dessa máquina, configurado por `UPLOAD_DIR`; esse armazenamento precisa ser persistente. Não há envio automático para Google Drive nem armazenamento do vídeo dentro do PostgreSQL. Os metadados do projeto, em `PROJECT_DATA_FILE`, guardam a referência para localizar o arquivo. Por isso, o backup deve conservar tanto os metadados quanto a pasta dos arquivos. O acesso aos arquivos passa pela API, que verifica as permissões.
+Se a API estiver hospedada em outra máquina e usar disco, os arquivos ficam no armazenamento dessa máquina, configurado por `UPLOAD_DIR`; esse armazenamento precisa ser persistente. Com o modo R2 configurado, os arquivos ficam no bucket privado da Cloudflare, separado da máquina. Não há envio automático para Google Drive nem armazenamento do vídeo dentro do PostgreSQL. Os metadados do projeto, em `PROJECT_DATA_FILE`, guardam a referência para localizar o arquivo. Por isso, o backup deve conservar tanto os metadados quanto os arquivos correspondentes. O acesso aos arquivos passa pela API, que verifica as permissões.
+
+Se o limite de espaço ou de operações dos arquivos for atingido, o sistema informa o bloqueio. O administrador deve verificar a capacidade e a franquia; apagar os contadores ou trocar de bucket não é uma forma de renovar a franquia gratuita da conta.
 
 As opções para melhorar esse armazenamento estão na [análise de persistência de vídeos e imagens](arquitetura.md#evolução-da-persistência-de-vídeos-e-imagens).

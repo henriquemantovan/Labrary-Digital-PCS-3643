@@ -7,6 +7,7 @@
     "node": ">=22.12.0"
   },
   "scripts": {
+    "storage:init": "pnpm --filter @labrary/api storage:init",
     "demo": "bash scripts/demo.sh",
     "dev": "concurrently --names api,web --prefix-colors blue,green \"pnpm --filter @labrary/api dev\" \"pnpm --filter @labrary/web dev\"",
     "build": "pnpm -r build",

@@ -73,7 +73,7 @@ Exemplo de erro:
 **Envio de arquivos.** `POST …/materials` e `POST …/materials/:materialId/versions` recebem `multipart/form-data` com **um** arquivo no campo `file`. Na criação, o campo `kind` deve vir **antes** do arquivo (define o limite aplicado durante o envio); `title` é opcional (padrão: título sugerido do tipo). A substituição não aceita outros campos (`400 UNEXPECTED_FIELD`). O servidor:
 
 - recusa antes de ler o corpo se o `Content-Length` já excede o limite do tipo (`413`);
-- grava em streaming numa pasta privada (`UPLOAD_DIR`), interrompendo ao passar do limite (`413 FILE_TOO_LARGE`);
+- grava em streaming no armazenamento privado configurado (disco ou R2, com temporário local limitado), interrompendo ao passar do limite (`413 FILE_TOO_LARGE`);
 - identifica o formato pelos bytes iniciais (PDF, MP4, WebM, ZIP, PNG, JPEG), ignorando o `Content-Type` do navegador; formato ou extensão fora da regra → `415 UNSUPPORTED_FORMAT`; arquivo vazio → `400 EMPTY_FILE`;
 - registra tamanho real e SHA-256 da versão;
 - apaga o arquivo recebido em qualquer recusa, inclusive se a entrega fechar durante o envio.
@@ -84,7 +84,9 @@ Exemplo: `curl -b cookies.txt -H 'X-CSRF-Protection: 1' -F kind=RELATORIO -F 'fi
 
 **Download privado.** `GET …/versions/:versionId/file` exige sessão e acesso de leitura ao projeto (integrantes do grupo, avaliadores atribuídos e professor da turma). O arquivo vem com `Content-Disposition: attachment` (nome original em UTF-8), o `Content-Type` detectado no envio, `X-Content-Type-Options: nosniff`, `Content-Security-Policy: default-src 'none'; sandbox` e `Cache-Control: no-store`. Projeto fora do escopo → `404 PROJECT_NOT_FOUND`; material, versão ou arquivo ausente → `404 FILE_NOT_FOUND`. Essa rota permanece privada após publicação; bytes públicos autorizados usam a rota própria C4.
 
-A HU01 autentica e autoriza estas rotas. O entrypoint da API persiste projetos, materiais com suas versões e mensagens em arquivo privado desde a HU07; os bytes dos arquivos ficam em `UPLOAD_DIR`. Sem snapshot anterior, no modo local há seed; no modo Google iniciam vazios. Identidades, vínculos de autorização, sessões e tentativas OAuth usam PostgreSQL no modo Google; no modo local, sessões ficam em memória.
+A HU01 autentica e autoriza estas rotas. O entrypoint da API persiste projetos, materiais com suas versões e mensagens em arquivo privado desde a HU07; os bytes dos arquivos ficam em `UPLOAD_DIR` ou no bucket privado R2, conforme `STORAGE_PROVIDER`. Sem snapshot anterior, no modo local há seed; no modo Google iniciam vazios. Identidades, vínculos de autorização, sessões e tentativas OAuth usam PostgreSQL no modo Google; no modo local, sessões ficam em memória.
+
+No modo R2, uploads também podem responder `507 STORAGE_CAPACITY_LIMIT` ao atingir o limite total do bucket. Operações de arquivo e verificações de publicação podem responder `503 STORAGE_OPERATION_LIMIT` ao esgotar o orçamento mensal local ou `503 STORAGE_UNAVAILABLE` quando o provedor falha. Não são devolvidos endpoint, credenciais ou links diretos para o bucket; URLs e permissões dos materiais continuam iguais. Os limites locais não equivalem a um bloqueio de cobrança da Cloudflare. Veja [configuração R2 e franquia](arquitetura.md#cloudflare-r2-e-controle-da-franquia-gratuita).
 
 ## Acompanhamento — HU06
 

@@ -7,8 +7,8 @@ import { createMemoryProjectRepository } from "./repositories/projectRepository.
 import { createFileProjectStorage } from "./repositories/fileProjectStorage.js";
 import { createResultReleaseRepository } from "./repositories/resultReleaseRepository.js";
 import { createEvaluationRepository } from "./repositories/evaluationRepository.js";
-import { loadDirectory, resolveUploadDir } from "./services/configuration.js";
-import { createDiskStorage } from "./services/fileStorage.js";
+import { loadDirectory } from "./services/configuration.js";
+import { createConfiguredStorage } from "./services/storageConfiguration.js";
 import { createPostgresAdminRepository } from "./repositories/postgresAdminRepository.js";
 import { Pool } from "pg";
 import { createPostgresAcademicAccessRepository } from "./repositories/postgresAcademicAccessRepository.js";
@@ -99,7 +99,7 @@ createApp({
   localLogin: !google,
   origin,
   secureCookies: process.env.NODE_ENV === "production",
-  storage: createDiskStorage(resolveUploadDir(process.env, repositoryRoot)),
+  storage: createConfiguredStorage(process.env, repositoryRoot, dataFile),
 }).listen(port, () => {
   console.log(`Labrary API listening on http://localhost:${port}`);
 });

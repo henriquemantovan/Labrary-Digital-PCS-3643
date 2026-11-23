@@ -38,7 +38,8 @@ Controllers validam schemas, sessão e CSRF; serviços aplicam regras; repositó
 | Requisitos e rubricas históricas | `RUBRIC_DATA_FILE`, padrão `${PROJECT_DATA_FILE}.rubrics.json` |
 | Avaliações e histórico de revisões C2 | `EVALUATION_DATA_FILE`, padrão `${PROJECT_DATA_FILE}.evaluations.json` |
 | Decisões de liberação C3 | `RESULT_RELEASE_DATA_FILE`, padrão `${PROJECT_DATA_FILE}.results.json` |
-| Conteúdo dos materiais | Disco privado `UPLOAD_DIR`; nunca servido estaticamente |
+| Conteúdo dos materiais | `STORAGE_PROVIDER=disk` usa `UPLOAD_DIR`; `r2` usa bucket privado Cloudflare R2. Bytes passam pela API |
+| Contadores de operações R2 | Arquivo privado `R2_USAGE_FILE`, padrão `${PROJECT_DATA_FILE}.r2-usage.json`; preservar entre reinícios |
 | Contas locais | Diretório JSON provisionado ou contas optativas de demonstração |
 | Vínculos e auditoria locais | `GROUP_DATA_FILE`, padrão `${PROJECT_DATA_FILE}.groups.json` |
 | Identidades, vínculos, auditoria, sessões e tentativas OAuth no modo Google | PostgreSQL; migrations anteriores preservadas |
@@ -49,7 +50,7 @@ Os arquivos privados exigem um único escritor e disco persistente. O snapshot d
 
 ## Evolução da persistência de vídeos e imagens
 
-Hoje os arquivos enviados ficam em `UPLOAD_DIR` (padrão `.uploads`), na máquina que executa a API. O PostgreSQL guarda identidades e vínculos; os snapshots privados guardam os metadados dos materiais. Fazer backup apenas do banco não preserva os vídeos, imagens, projetos e avaliações. Os bytes são gravados por streaming, com limite de tamanho, SHA-256 e arquivo temporário antes da conclusão; não há conversão automática de qualidade de vídeo. Reiniciar a API com o mesmo disco conserva os arquivos, mas recriar uma hospedagem sem volume persistente pode perdê-los.
+Por padrão, os arquivos enviados ficam em `UPLOAD_DIR` (padrão `.uploads`), na máquina que executa a API. O armazenamento R2 é optativo e exige configuração explícita. O PostgreSQL guarda identidades e vínculos; os snapshots privados guardam os metadados dos materiais. Fazer backup apenas do banco não preserva os vídeos, imagens, projetos e avaliações. Os bytes são gravados por streaming, com limite de tamanho, SHA-256 e arquivo temporário antes da conclusão; não há conversão automática de qualidade de vídeo. Reiniciar a API com o mesmo disco conserva os arquivos, mas recriar uma hospedagem sem volume persistente pode perdê-los.
 
 | Alternativa | Benefício e compromisso | Adequação ao projeto |
 | --- | --- | --- |
@@ -59,11 +60,45 @@ Hoje os arquivos enviados ficam em `UPLOAD_DIR` (padrão `.uploads`), na máquin
 
 A recomendação acima é uma avaliação da arquitetura atual. O [R2 oferece API compatível com S3 e armazenamento replicado](https://developers.cloudflare.com/r2/how-r2-works/). O [Stream oferece armazenamento, codificação e reprodução adaptativa](https://developers.cloudflare.com/stream/); são serviços diferentes. Durabilidade do provedor não substitui proteção contra exclusão acidental nem uma política de backup e restauração. Nenhum serviço externo foi provisionado nesta alteração.
 
-Para adotar armazenamento de objetos, implementar um adapter da porta `FileStorage` (`save`, `open` e `remove`), preservando as chaves atuais, limites, validação da assinatura do arquivo, SHA-256 e leitura parcial `Range`. O bucket deve ser privado e a API deve continuar autorizando GET, HEAD e Range. Essa recomendação preserva a retirada de publicação: uma [URL pré-assinada do S3 pode ser reutilizada até expirar](https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-presigned-url.html), portanto retirar uma publicação na aplicação não invalida automaticamente um link já emitido. Um serviço de vídeo também exigiria configurar [acesso por tokens assinados](https://developers.cloudflare.com/stream/viewing-videos/securing-your-stream/) e definir explicitamente sua expiração e revogação.
+O adapter `r2Storage` implementa a porta `FileStorage` (`save`, `open` e `remove`), com as mesmas chaves UUID, limites, validação da assinatura do arquivo, SHA-256 e leitura parcial `Range`. O bucket deve ser privado e a API continua autorizando GET, HEAD e Range. Essa escolha preserva a retirada de publicação: uma [URL pré-assinada do S3 pode ser reutilizada até expirar](https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-presigned-url.html), portanto retirar uma publicação na aplicação não invalida automaticamente um link já emitido. Um serviço de vídeo também exigiria configurar [acesso por tokens assinados](https://developers.cloudflare.com/stream/viewing-videos/securing-your-stream/) e definir explicitamente sua expiração e revogação.
 
 Uma migração dos arquivos deve inventariar as chaves referenciadas, copiar os bytes, verificar tamanho e SHA-256 de cada objeto e testar upload, reprodução parcial, download privado e retirada pública. A troca final deve ocorrer com o escritor parado ou com uma estratégia explícita para os uploads concorrentes. Conservar a cópia anterior para retorno até validar a restauração. Uploads interrompidos e objetos sem metadados precisam de limpeza controlada; os metadados só devem confirmar um arquivo após sua gravação completa.
 
-Mover os arquivos não elimina a exigência de um único escritor dos snapshots JSON. Para executar várias instâncias da API, seria necessário migrar também projetos, avaliações, rubricas e liberações para um armazenamento transacional compartilhado. A primeira decisão para os vídeos é escolher volume persistente ou armazenamento de objetos, conforme a hospedagem, o volume esperado e o orçamento; não é necessário contratar processamento de vídeo para resolver apenas a persistência.
+Mover os arquivos não elimina a exigência de um único escritor dos snapshots JSON. Para executar várias instâncias da API, seria necessário migrar também projetos, avaliações, rubricas e liberações para um armazenamento transacional compartilhado. Foi escolhido o armazenamento de objetos R2, sujeito à configuração privada e aos limites de orçamento descritos abaixo; não é necessário contratar processamento de vídeo para resolver apenas a persistência.
+
+## Cloudflare R2 e controle da franquia gratuita
+
+A opção escolhida é **Cloudflare R2 Standard**, com bucket privado. A [franquia publicada pela Cloudflare](https://developers.cloudflare.com/r2/pricing/) inclui 10 GB-mês, 1 milhão de operações A e 10 milhões B por mês; transferência de saída é gratuita. A franquia é da conta, compartilhada entre buckets, e não se aplica à classe Infrequent Access. Uso excedente é cobrado. **R2 não fornece, nessa configuração, uma garantia absoluta de custo zero: os limites abaixo pertencem à aplicação e não bloqueiam a cobrança da Cloudflare.** O [controle de gastos da Cloudflare](https://developers.cloudflare.com/billing/manage/spend-management/) oferece bloqueios para Workers e Durable Objects, que não incluem R2; alertas de orçamento apenas notificam e não interrompem o uso.
+
+Para reduzir o risco, a integração limita este Labrary a **9.000.000.000 bytes no bucket**, **100.000 reservas A** e **1.000.000 reservas B por mês UTC**. Os valores têm margem abaixo da franquia. A capacidade é recalculada pela listagem paginada de todos os objetos antes de cada upload; uploads e remoções são serializados no único processo escritor. Isso inclui objetos sem metadados deixados por falhas, mas não mede outros buckets, uploads parciais criados por outras ferramentas ou alterações externas concorrentes.
+
+Cada operação paga é reservada no disco antes da chamada remota, inclusive tentativas que falham. O SDK não repete operações automaticamente. Os contadores sobrevivem ao reinício e só são renovados no mês UTC seguinte; HEAD e verificações que não leem bytes podem reservar mais que o uso real. Uploads acima da capacidade recebem `507 STORAGE_CAPACITY_LIMIT`; esgotamento das operações recebe `503 STORAGE_OPERATION_LIMIT`. Falha remota recebe `503 STORAGE_UNAVAILABLE`. O acervo continua sujeito a esses limites, mesmo para visitantes.
+
+O arquivo de uso ausente ou corrompido impede iniciar o modo R2. Não apague, recrie ou restaure uma cópia antiga desse arquivo para liberar cota: isso não reinicia o uso faturado pela Cloudflare. Não compartilhe bucket, credenciais ou franquia com outros sistemas. Não habilite acesso público, regras de migração para Infrequent Access, outros escritores ou serviços pagos; uso externo não é contabilizado pela aplicação. Se custo zero precisar de garantia contratual mesmo diante desses fatores, mantenha `STORAGE_PROVIDER=disk` até escolher um serviço com bloqueio de cobrança no provedor.
+
+### Configurar uma conta e bucket novos
+
+1. No painel **R2 Object Storage**, crie um bucket, por exemplo `labrary-materiais`, na classe **Standard**, sem jurisdição especial. Mantenha **Public Development URL (`r2.dev`) desabilitada** e não conecte domínio público. Os [buckets são privados por padrão](https://developers.cloudflare.com/r2/buckets/public-buckets/).
+2. Em **Manage R2 API Tokens**, gere credenciais **Object Read & Write**, restritas apenas a esse bucket. Guarde **Access Key ID** e **Secret Access Key** no `.env` privado da API; não use variáveis `VITE_`, não envie pelo chat e não versione. O [guia de autenticação R2](https://developers.cloudflare.com/r2/api/tokens/) mostra onde obter esses valores e o Account ID.
+3. Preencha a configuração abaixo. O endpoint S3 é derivado do Account ID; não é necessário contratar AWS ou criar um bucket público.
+
+```dotenv
+STORAGE_PROVIDER=r2
+R2_ACCOUNT_ID=identificador_de_32_caracteres_hexadecimais
+R2_BUCKET=labrary-materiais
+R2_ACCESS_KEY_ID=preencher_no_ambiente_privado
+R2_SECRET_ACCESS_KEY=preencher_no_ambiente_privado
+# Opcional: caminho privado persistente; padrão junto do PROJECT_DATA_FILE.
+# R2_USAGE_FILE=/caminho/privado/r2-usage.json
+```
+
+4. **Somente na primeira configuração de uma conta sem uso anterior no mês**, com a API parada, execute `pnpm storage:init`. O comando cria o controle local sem fazer chamadas à Cloudflare e recusa sobrescrever arquivo existente. Se a conta já teve uso, primeiro é necessário conciliar os contadores com o painel; não inicialize valores zerados como se a franquia estivesse intacta.
+5. Antes de mudar uma instalação com arquivos antigos, copie-os preservando as chaves e verifique SHA-256 conforme o plano de migração acima. A troca de variável não copia `.uploads` nem altera referências dos materiais existentes. Não apague a cópia antiga antes do aceite e teste de restauração.
+6. Inicie `pnpm dev` e valide upload, download privado, reprodução e retirada. Confira o painel de uso e mantenha os snapshots, o arquivo de uso e o PostgreSQL nos backups. `pnpm demo` e o E2E do entrypoint forçam disco e não usam o bucket real.
+
+No modo R2, cada envio usa um arquivo temporário privado limitado ao tamanho da regra (e ao teto de 5 GB do upload simples) para calcular assinatura, tamanho e SHA-256 antes de transmitir. O temporário é removido no sucesso e nas falhas tratadas; a máquina da API ainda precisa de espaço temporário. Não há upload multipart remoto nem conversão de vídeo. Os metadados só confirmam a versão depois do envio completo. Leituras usam HEAD para o tamanho e GET sob demanda, com `If-Match` e Range; verificações de existência não baixam o vídeo inteiro.
+
+Os testes do adapter exercitam bytes reais pelo SDK S3 contra um servidor HTTP local, além de cotas, reinício do contador, concorrência, isolamento e retirada pública. Isso não comprova a configuração de privacidade, credenciais, cobrança ou disponibilidade de uma conta Cloudflare real.
 
 ## Exposição pública
 

@@ -32,7 +32,7 @@ Arquivos, comentários e avaliações dispersos dificultam acompanhar pendência
 - Finalização e publicação explícita de materiais autorizados.
 - Galeria pública de projetos concluídos, com busca e filtros.
 
-Histórico, favoritos, estatísticas e sugestões (HU13–HU14) ficam fora do escopo desta entrega. Chat em tempo real e pagamentos não fazem parte do MVP. O SSO Google foi adicionado ao escopo: [configuração de login e migrations](docs/login-google.md).
+Histórico, favoritos, estatísticas e sugestões (HU13–HU14) ficam fora do escopo desta entrega. Chat em tempo real e pagamentos não fazem parte do MVP. O SSO Google foi adicionado ao escopo: [configuração de login e migrations](docs/login-google.md). Os materiais podem usar disco privado ou [Cloudflare R2 privado, com limites conservadores de uso](docs/arquitetura.md#cloudflare-r2-e-controle-da-franquia-gratuita); a franquia gratuita do provedor não é um bloqueio de cobrança de excedentes.
 
 ### Alinhamento com o enunciado geral
 

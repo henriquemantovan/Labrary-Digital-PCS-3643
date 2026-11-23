@@ -6,7 +6,8 @@ Limites operacionais e pendências acadêmicas da aplicação. Os comandos estã
 | --- | --- |
 | Um processo escritor nos arquivos privados | Não executar várias APIs sobre os mesmos snapshots. Escala horizontal requer armazenamento e coordenação próprios |
 | Avaliações/liberações/rubricas/vínculos em arquivos distintos | Backup consistente exige parar o escritor e copiar o conjunto com projetos e bytes; não há transação distribuída |
-| Conteúdo depende de disco privado persistente | Registrar metadados não garante existência dos arquivos. Restaurar snapshots sem `UPLOAD_DIR` impede abrir materiais e novas publicações |
+| Conteúdo em disco privado ou R2 optativo | Registrar metadados não garante existência dos arquivos. Restaurar snapshots exige conservar `UPLOAD_DIR` ou os objetos R2 correspondentes; trocar o provedor não migra os bytes |
+| R2 tem franquia gratuita e cobrança de excedentes | A API limita capacidade e operações com contador persistente, mas não controla uso externo ou cobranças da conta Cloudflare. Não garante custo zero absoluto; [configuração e limites](arquitetura.md#cloudflare-r2-e-controle-da-franquia-gratuita) |
 | Sessões locais em memória | Reinício exige novo login; sessões Google usam PostgreSQL |
 | Consentimento registrado pelo docente | Há referência privada de autorização; não há assinatura eletrônica ou coleta automática da manifestação dos integrantes |
 | Retirada vale para novas requisições | `no-store` e revalidação bloqueiam URLs copiadas, HEAD e Range. Bytes já recebidos e streams iniciados podem permanecer com o visitante |

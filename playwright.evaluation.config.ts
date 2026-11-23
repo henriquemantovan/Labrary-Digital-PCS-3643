@@ -52,6 +52,7 @@ export default defineConfig({
           EVALUATION_DATA_FILE: `${data}/evaluations.json`,
           RESULT_RELEASE_DATA_FILE: `${data}/results.json`,
           UPLOAD_DIR: `test-results/evaluation-${runId}-${name}/uploads`,
+          STORAGE_PROVIDER: "disk",
         },
       },
       {

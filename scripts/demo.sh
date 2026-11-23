@@ -27,6 +27,7 @@ chmod 700 "$demo_dir"
   printf 'export EVALUATION_DATA_FILE=%q\n' "$demo_dir/evaluations.json"
   printf 'export RESULT_RELEASE_DATA_FILE=%q\n' "$demo_dir/results.json"
   printf 'export UPLOAD_DIR=%q\n' "$demo_dir/uploads"
+  printf 'export STORAGE_PROVIDER=disk\n'
 } > "$demo_dir/environment.sh"
 chmod 600 "$demo_dir/environment.sh"
 printf 'Ambiente de demonstração preparado em %s\n' "$demo_dir"

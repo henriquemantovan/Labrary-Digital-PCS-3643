@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "storage:init": "tsx src/scripts/initializeR2Usage.ts",
     "dev": "tsx watch src/server.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
@@ -15,6 +16,7 @@
     "db:test": "tsx integration/database.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "3.1175.0",
     "@prisma/client": "7.10.0",
     "busboy": "1.6.0",
     "dotenv": "17.2.3",

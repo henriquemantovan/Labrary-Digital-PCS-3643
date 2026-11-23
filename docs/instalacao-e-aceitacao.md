@@ -85,6 +85,10 @@ Fluxos integrados: alvo 23/11; cinco vídeos: alvo 24/11; relatório e entrega a
 
 `pnpm demo:publicacao` conserva o vídeo do roteiro automatizado em `test-results/publication/`, com capturas de publicação, acervo e retirada. O comando usa as mesmas verificações do E2E normal, com movimentos mais lentos apenas para a gravação. Não substitui a revisão/narração dos responsáveis pelos cinco fluxos da apresentação.
 
+## Armazenamento privado no Cloudflare R2
+
+Com `STORAGE_PROVIDER=r2`, os bytes ficam no bucket privado, e não na `.uploads`. Conserve os objetos e inclua `R2_USAGE_FILE` no backup. Restaurar contadores antigos não desfaz operações já faturadas; concilie com o uso do provedor antes de reativar. Instalação, limites e ativação estão em [Cloudflare R2](arquitetura.md#cloudflare-r2-e-controle-da-franquia-gratuita).
+
 ## Cadastro USP e convidados
 
 Após atualizar o código no modo Google, execute `pnpm db:deploy` e `pnpm db:status` para aplicar a migration de cadastro/convites. Alunos USP ainda sem cadastro completo precisam confirmar nome, NUSP e ano de ingresso. Contas externas exigem autorização explícita; nenhuma conta antiga recebe essa exceção automaticamente. Configuração e administração estão no [guia Google](login-google.md#cadastro-acadêmico-e-convidados).
