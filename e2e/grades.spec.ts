@@ -6,7 +6,7 @@ async function login(page: Page, role: string) {
   await expect(page.getByRole("button", { name: "Sair da conta" })).toBeVisible();
 }
 test("consolidação indica projetos sem submissão e restringe aluno", async ({ page, context }) => {
-  await page.goto("/"); await login(page, "professor");
+  await page.goto("/login"); await login(page, "professor");
   await page.getByRole("button", { name: "Consolidação de notas" }).click();
   await expect(page.getByRole("heading", { name: "Consolidação de notas" })).toBeVisible();
   const group = page.getByRole("row").filter({ hasText: "Grupo 02" });

@@ -84,7 +84,9 @@ export function Login({
     <main className="grid min-h-dvh place-items-center bg-sidebar px-4 py-10">
       <div className="w-full max-w-[400px]">
         <div className="mb-6 flex items-center justify-between">
-          <Brand />
+          <a href="/" className="no-underline" aria-label="labrary digital — início">
+            <Brand />
+          </a>
           <a
             className={buttonVariants({ variant: "ghost", size: "sm" })}
             href="/acervo"

@@ -6,8 +6,12 @@ import { buttonVariants } from "./components/ui/button";
 import { Notice, noticeClass, Success } from "./components/Feedback";
 import { mutedText, panelClass, panelTitle } from "./components/Panel";
 import { StatusBadge } from "./components/StatusBadge";
-import { Badge } from "./components/ui/badge";
+import type { LucideIcon } from "lucide-react";
+import { FolderKanban, Pencil, Plus, UserPlus, Users, UserX, X } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "./components/ui/alert";
+import { Avatar, AvatarFallback } from "./components/ui/avatar";
 import { Button } from "./components/ui/button";
+import { Card } from "./components/ui/card";
 import { Input } from "./components/ui/input";
 import { cn } from "./lib/utils";
 
@@ -26,6 +30,12 @@ function usePlanningError(expired: () => void) {
 function personName(people: Person[], id: number) {
   return people.find((person) => person.id === id)?.fullName ?? `Conta ${id}`;
 }
+const initials = (name: string) =>
+  name
+    .split(" ")
+    .map((part) => part[0])
+    .slice(0, 2)
+    .join("");
 /** Descreve uma alteração de vínculos com nomes, em vez de listas de identificadores. */
 export function describeChange(item: LinkChange, people: Person[]) {
   const names = (ids: number[]) => ids.map((id) => personName(people, id)).join(", ");
@@ -63,10 +73,13 @@ function People({
   name: string;
 }) {
   return (
-    <div className="flex flex-wrap gap-x-4 gap-y-2">
+    <div className="flex flex-wrap gap-2">
       {!people.length && <p className={mutedText}>Nenhuma conta ativa disponível.</p>}
       {people.map((person) => (
-        <label key={person.id}>
+        <label
+          key={person.id}
+          className="flex cursor-pointer items-center gap-2 rounded-lg border bg-background px-2.5 py-1.5 text-sm shadow-xs/5 transition-colors hover:bg-accent/50 has-checked:border-primary/40 has-checked:bg-accent"
+        >
           <input
             type="checkbox"
             name={name}
@@ -79,16 +92,27 @@ function People({
     </div>
   );
 }
-function Stat({ label, value, warn }: { label: string; value: string; warn?: boolean }) {
+function Stat({
+  icon: Icon,
+  label,
+  value,
+  warn,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+  warn?: boolean;
+}) {
   return (
     <div
       className={cn(
-        "rounded-xl border px-4 py-3",
-        warn ? "border-warning/32 bg-warning/4" : "bg-background",
+        "flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm shadow-xs/5",
+        warn ? "border-warning/32 bg-warning/4 text-warning-foreground" : "bg-background",
       )}
     >
-      <dt className={cn("text-xs", warn ? "text-warning-foreground" : "text-muted-foreground")}>{label}</dt>
-      <dd className={cn("mt-0.5 text-xl font-semibold tabular-nums", warn && "text-warning-foreground")}>{value}</dd>
+      <Icon aria-hidden="true" className={cn("size-4", !warn && "text-muted-foreground")} />
+      <dt className={warn ? undefined : "text-muted-foreground"}>{label}</dt>
+      <dd className="font-semibold tabular-nums">{value}</dd>
     </div>
   );
 }
@@ -206,56 +230,116 @@ export function GroupManager({
         <p role="status" className={mutedText}>Carregando grupos…</p>
       ) : (
         <>
-          <dl className="m-0 grid grid-cols-2 gap-2 sm:grid-cols-3">
-            <Stat label="Grupos" value={String(data.groups.length)} />
+          <dl className="m-0 flex flex-wrap gap-2">
+            <Stat icon={Users} label="Grupos" value={String(data.groups.length)} />
             {projects && (
               <Stat
+                icon={FolderKanban}
                 label="Com projeto"
                 value={`${data.groups.filter((group) => projectOf(group.id)).length} / ${data.groups.length}`}
               />
             )}
             <Stat
+              icon={UserX}
               label="Alunos sem grupo"
               value={String(unassigned.length)}
               warn={unassigned.length > 0}
             />
           </dl>
           {unassigned.length > 0 && (
-            <p className="-mt-1 text-xs text-muted-foreground">
-              Sem grupo: {unassigned.map((person) => person.fullName).join(", ")}
-            </p>
+            // Informação fixa da turma, não um aviso de erro: sem role="alert".
+            <Alert role={undefined} variant="warning">
+              <UserX />
+              <AlertTitle>Alunos ainda sem grupo</AlertTitle>
+              <AlertDescription>
+                Sem grupo: {unassigned.map((person) => person.fullName).join(", ")}
+              </AlertDescription>
+            </Alert>
           )}
           {!data.groups.length && <p className={mutedText}>Nenhum grupo cadastrado.</p>}
-          <ul className="m-0 list-none divide-y rounded-xl border bg-background p-0 empty:hidden">
+          <ul className="m-0 grid list-none items-start gap-3 p-0 md:grid-cols-2 2xl:grid-cols-3">
             {data.groups.map((group) => {
               const project = projectOf(group.id);
               const editing = isEditing(group);
+              const members = group.memberIds.length;
               return (
-                <li key={group.id}>
-                  <section
-                    aria-labelledby={`group-${group.id}`}
-                    className="grid grid-cols-[minmax(0,1fr)] gap-3 px-4 py-3"
+                <li key={group.id} className="min-w-0">
+                  <Card
+                    render={<section aria-labelledby={`group-${group.id}`} />}
+                    className={cn("min-w-0", editing && "ring-2 ring-ring/24")}
                   >
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                      <h4 id={`group-${group.id}`} className="min-w-0 flex-1 text-sm font-medium sm:w-28 sm:flex-none">
-                        {group.name}
-                      </h4>
-                      <div className="order-3 flex min-w-0 basis-full flex-wrap gap-1.5 sm:order-none sm:flex-1 sm:basis-auto">
-                        {group.memberIds.length ? (
-                          group.memberIds.map((id) => (
-                            <Badge key={id} variant="outline">
-                              {personName(data.people, id)}
-                            </Badge>
-                          ))
-                        ) : (
-                          <span className="text-xs text-muted-foreground">Sem integrantes</span>
-                        )}
+                    <div className="flex items-start justify-between gap-3 px-4 pt-4">
+                      <div className="grid min-w-0 gap-0.5">
+                        <h4 id={`group-${group.id}`} className="truncate font-heading text-sm font-semibold">
+                          {group.name}
+                        </h4>
+                        <span className="text-xs text-muted-foreground tabular-nums">
+                          {members} {members === 1 ? "integrante" : "integrantes"}
+                        </span>
                       </div>
-                      <div className="order-4 flex min-w-0 basis-full items-center gap-2 text-xs text-muted-foreground empty:hidden sm:order-none sm:w-64 sm:basis-auto">
+                      <Button
+                        variant={editing ? "secondary" : "outline"}
+                        size="sm"
+                        aria-expanded={editing}
+                        aria-label={`Editar integrantes de ${group.name}`}
+                        onClick={() =>
+                          setToggled((current) => ({ ...current, [group.id]: !editing }))
+                        }
+                      >
+                        {editing ? <X /> : <Pencil />}
+                        {editing ? "Fechar" : "Editar"}
+                      </Button>
+                    </div>
+                    <div className="px-4 pt-3 pb-4">
+                      {members ? (
+                        <ul className="m-0 flex list-none flex-wrap gap-1.5 p-0">
+                          {group.memberIds.map((id) => (
+                            <li
+                              key={id}
+                              className="inline-flex max-w-full items-center gap-1.5 rounded-full border bg-background py-0.5 ps-0.5 pe-2.5 text-xs"
+                            >
+                              <Avatar className="size-5 bg-muted">
+                                <AvatarFallback className="bg-muted text-[9px] font-semibold">
+                                  {initials(personName(data.people, id))}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="truncate">{personName(data.people, id)}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="flex items-center gap-1.5 text-xs text-warning-foreground">
+                          <UserPlus aria-hidden="true" className="size-3.5" />
+                          Sem integrantes
+                        </p>
+                      )}
+                    </div>
+                    {editing && (
+                      <div className="mx-4 mb-4 grid gap-3 rounded-xl border bg-muted/40 p-3">
+                        <form onSubmit={(event) => void submit(event, group.id)}>
+                          <fieldset disabled={busy}>
+                            <legend>Integrantes de {group.name}</legend>
+                            <People
+                              key={JSON.stringify(group.memberIds)}
+                              people={students}
+                              selected={group.memberIds}
+                              name="memberIds"
+                            />
+                            <Button type="submit" size="sm">
+                              Salvar integrantes de {group.name}
+                            </Button>
+                          </fieldset>
+                        </form>
+                        <History items={group.history} people={data.people} />
+                      </div>
+                    )}
+                    {projects && (
+                      <div className="flex min-h-11 items-center gap-2 border-t px-4 py-2.5 text-xs text-muted-foreground">
+                        <FolderKanban aria-hidden="true" className="size-3.5 shrink-0" />
                         {project ? (
                           <>
                             <a
-                              className="min-w-0 truncate font-medium text-foreground no-underline hover:underline"
+                              className="min-w-0 flex-1 truncate font-medium text-foreground no-underline hover:underline"
                               href={`/projetos/${project.id}`}
                               title={project.title}
                               onClick={(event) => {
@@ -269,71 +353,43 @@ export function GroupManager({
                             <StatusBadge status={project.status} />
                           </>
                         ) : (
-                          projects && <span>Sem projeto</span>
+                          <span>Sem projeto</span>
                         )}
                       </div>
-                      <button
-                        type="button"
-                        className={buttonVariants({
-                          variant: editing ? "default" : "outline",
-                          size: "sm",
-                        })}
-                        aria-expanded={editing}
-                        aria-label={`Editar integrantes de ${group.name}`}
-                        onClick={() =>
-                          setToggled((current) => ({ ...current, [group.id]: !editing }))
-                        }
-                      >
-                        {editing ? "Fechar" : "Editar"}
-                      </button>
-                    </div>
-                    {editing && (
-                      <div className="grid gap-3 rounded-xl border bg-muted/40 p-4">
-                        <form onSubmit={(event) => void submit(event, group.id)}>
-                          <fieldset disabled={busy}>
-                            <legend>Integrantes de {group.name}</legend>
-                            <People
-                              key={JSON.stringify(group.memberIds)}
-                              people={students}
-                              selected={group.memberIds}
-                              name="memberIds"
-                            />
-                            <button className={buttonVariants({ size: "sm" })}>
-                              Salvar integrantes de {group.name}
-                            </button>
-                          </fieldset>
-                        </form>
-                        <History items={group.history} people={data.people} />
-                      </div>
                     )}
-                  </section>
+                  </Card>
                 </li>
               );
             })}
+            <li className="min-w-0">
+              <form
+                onSubmit={(event) => void submit(event)}
+                className="grid gap-3 rounded-2xl border border-dashed border-input bg-muted/30 p-4"
+              >
+                <label
+                  htmlFor={`new-group-${classId}`}
+                  className="flex items-center gap-2 text-sm font-medium"
+                >
+                  <Plus aria-hidden="true" className="size-4 text-muted-foreground" />
+                  Nome do novo grupo
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  <Input
+                    id={`new-group-${classId}`}
+                    name="name"
+                    required
+                    maxLength={120}
+                    disabled={busy}
+                    placeholder="Ex.: Grupo 04"
+                    className="min-w-40 flex-1"
+                  />
+                  <Button type="submit" variant="outline" disabled={busy}>
+                    Cadastrar grupo
+                  </Button>
+                </div>
+              </form>
+            </li>
           </ul>
-          <form
-            onSubmit={(event) => void submit(event)}
-            className="flex flex-wrap items-center gap-2"
-          >
-            <label htmlFor={`new-group-${classId}`} className="sr-only">
-              Nome do novo grupo
-            </label>
-            <Input
-              id={`new-group-${classId}`}
-              name="name"
-              required
-              maxLength={120}
-              disabled={busy}
-              placeholder="Nome do novo grupo"
-              className="min-w-40 flex-1 sm:max-w-xs"
-            />
-            <button
-              className={buttonVariants({ variant: "outline", size: "sm" })}
-              disabled={busy}
-            >
-              Cadastrar grupo
-            </button>
-          </form>
         </>
       )}
     </section>

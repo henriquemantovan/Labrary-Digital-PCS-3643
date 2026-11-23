@@ -3,7 +3,7 @@ import { test, expect, Page } from "@playwright/test";
 test.use({ video: "on" });
 
 async function login(page: Page, role: string) {
-  await page.goto("/");
+  await page.goto("/login");
   await page.getByLabel("E-mail institucional").fill(`${role}@labrary.local`);
   await page.getByLabel("Senha", { exact: true }).fill("Labrary@2026");
   await page.getByRole("button", { name: "Entrar no meu espaço" }).click();

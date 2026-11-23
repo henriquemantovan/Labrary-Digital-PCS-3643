@@ -87,7 +87,7 @@ export function Catalog({
         Pular para o conteúdo
       </a>
       <header className="sticky top-0 z-10 border-b bg-background/85 backdrop-blur">
-        <div className="mx-auto flex max-w-[1120px] items-center justify-between gap-4 px-5 py-3 md:px-8">
+        <div className="flex items-center justify-between gap-4 px-5 py-3 md:px-10">
           <a
             href={basePath}
             aria-label="labrary digital"
@@ -106,7 +106,7 @@ export function Catalog({
       </header>
       <main
         id="catalog-main"
-        className="mx-auto max-w-[1120px] px-5 py-10 md:px-8 [overflow-wrap:anywhere]"
+        className="px-5 py-10 md:px-10 [overflow-wrap:anywhere]"
       >
         {demo && (
           <aside
@@ -270,7 +270,7 @@ export function Catalog({
                   }
                 />
               )}
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                 {filtered.map((project) => (
                   <Card
                     render={<article />}

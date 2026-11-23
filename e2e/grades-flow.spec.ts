@@ -8,7 +8,7 @@ async function login(page: Page, role: string) {
 }
 test("tabela, CSV e confirmação de liberação com C2 injetado somente no servidor de testes", async ({ page, context }, info) => {
   const origin = "http://localhost:5182";
-  await page.goto(`${origin}/`); await login(page, "aluno");
+  await page.goto(`${origin}/login`); await login(page, "aluno");
   await page.goto(`${origin}/projetos/1`);
   await expect(page.getByRole("region", { name: "Resultado do grupo" })).toContainText("Resultado bloqueado");
   const before = await context.request.get(`${origin}/api/projects/1/result`);

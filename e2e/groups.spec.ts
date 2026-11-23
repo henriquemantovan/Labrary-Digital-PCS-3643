@@ -5,7 +5,7 @@ test("HU02 cadastra grupo e projeto e altera acesso de integrantes e avaliadores
   browser,
   baseURL,
 }) => {
-  await page.goto("/");
+  await page.goto("/login");
   await page.getByLabel("E-mail institucional").fill("professor@labrary.local");
   await page.getByLabel("Senha", { exact: true }).fill("Labrary@2026");
   await page.getByRole("button", { name: "Entrar no meu espaço" }).click();

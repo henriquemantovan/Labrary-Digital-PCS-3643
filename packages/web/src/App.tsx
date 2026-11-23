@@ -13,6 +13,7 @@ import { NativeSelect } from "./components/ui/native-select";
 import { roleLabels } from "./labels";
 import { AppShell } from "./layout/AppShell";
 import { Dashboard } from "./pages/Dashboard";
+import { Landing } from "./pages/Landing";
 import { Login } from "./pages/Login";
 
 const CatalogDemo = import.meta.env.DEV
@@ -30,6 +31,8 @@ export function App() {
         <CatalogDemo />
       </Suspense>
     );
+  // Página inicial pública; o login fica em /login.
+  if (path === "/") return <Landing />;
   if (path === "/acervo" || path.startsWith("/acervo/"))
     return <Catalog provider={httpCatalog} />;
   return <PrivateApp />;
@@ -71,6 +74,10 @@ function PrivateApp() {
     window.addEventListener("popstate", pop);
     return () => window.removeEventListener("popstate", pop);
   }, [bootstrap]);
+  // Sessão já ativa ao abrir /login: segue direto para os projetos.
+  useEffect(() => {
+    if (user && path === "/login") navigate("/projetos");
+  }, [user, path, navigate]);
   useEffect(() => {
     if (!user) return;
     let active = true;
@@ -98,7 +105,7 @@ function PrivateApp() {
       await api<void>("/auth/logout", { method: "POST" });
       setUser(null);
       setMessage("");
-      navigate("/");
+      navigate("/login");
     } catch (error) {
       setLogoutError((error as Error).message);
     } finally {
@@ -149,6 +156,8 @@ function PrivateApp() {
         }}
       />
     );
+  // Evita piscar "Página indisponível" enquanto o efeito redireciona de /login.
+  if (path === "/login") return null;
   const visibleUser: User =
     user.role === "ADMIN" && user.viewRole
       ? { ...user, role: user.viewRole }

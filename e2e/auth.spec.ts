@@ -15,11 +15,30 @@ async function noHorizontalOverflow(page: Page) {
   ).toBe(true);
 }
 
+test("página inicial apresenta a plataforma e leva ao login", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(
+    page.getByRole("heading", {
+      level: 1,
+      name: "Do primeiro circuito à última entrega.",
+    }),
+  ).toBeVisible();
+  await noHorizontalOverflow(page);
+  await page.screenshot({
+    path: `test-results/inicio-${test.info().project.name}.png`,
+    fullPage: true,
+  });
+  await page.getByRole("link", { name: "Entrar no meu espaço" }).click();
+  await expect(page.getByLabel("E-mail institucional")).toBeVisible();
+});
+
 test("login, erro genérico, isolamento do aluno, recarga e logout", async ({
   page,
   context,
 }) => {
-  await page.goto("/");
+  await page.goto("/login");
   await expect(
     page.getByRole("heading", { name: "Seu próximo projeto começa aqui." }),
   ).toBeVisible();
@@ -87,7 +106,7 @@ test("avaliador acessa somente projeto atribuído", async ({
   page,
   context,
 }) => {
-  await page.goto("/");
+  await page.goto("/login");
   await login(page, "avaliador");
   await expect(
     page.getByRole("heading", { name: "Olá, Rafael." }),
@@ -142,7 +161,7 @@ test("avaliador acessa somente projeto atribuído", async ({
 test("professor consulta turma, filtra e cria projeto no grupo disponível", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/login");
   await login(page, "professor");
   await expect(
     page.getByRole("heading", { name: "Olá, Helena." }),
@@ -174,7 +193,7 @@ test("HU07 conserva feedback privado e versão após recarga e falha de resposta
   page,
   context,
 }) => {
-  await page.goto("/");
+  await page.goto("/login");
   await login(page, "aluno");
   const file = {
     name: "feedback.pdf",
