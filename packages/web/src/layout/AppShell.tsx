@@ -135,7 +135,11 @@ export function AppShell({
           </header>
           <main
             id="main"
-            className="mx-auto w-full max-w-[1120px] flex-1 px-5 py-8 md:px-10 md:py-10"
+            className={cn(
+              "mx-auto w-full flex-1 px-5 py-8 md:px-10 md:py-10",
+              // O quadro de projetos usa a largura disponível para as quatro colunas.
+              path === "/" || path === "/projetos" ? "max-w-[1440px]" : "max-w-[1120px]",
+            )}
           >
             {children}
           </main>
