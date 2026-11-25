@@ -1,302 +1,20 @@
-import { GroupResult } from "./GroupResult";
-import { PublicationPanel } from "./PublicationPanel";
-import { GroupManager, EvaluatorManager } from "./Groups";
-import { AdminUsers } from "./AdminUsers";
-import { ProjectFeedback } from "./ProjectFeedback";
-import {
-  lazy,
-  Suspense,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { Catalog } from "./Catalog";
 import { httpCatalog } from "./catalogClient";
-import type { FormEvent } from "react";
 import { api, ApiError } from "./api";
-import type { Material, MaterialRules, Project, Scope, User } from "./api";
-import { Icon } from "./Icons";
-import { MaterialsPanel } from "./Materials";
+import type { User } from "./api";
+import { AdminUsers } from "./AdminUsers";
 import { Gradebook } from "./Gradebook";
-import { ProjectAssessment } from "./ProjectAssessment";
-import { SubmissionPanel } from "./Submission";
-
-const roleLabels = {
-  ADMIN: "Administrador",
-  ALUNO: "Aluno",
-  AVALIADOR: "Avaliador",
-  PROFESSOR: "Professor",
-};
-const statusLabels: Record<string, string> = {
-  PREPARACAO: "Em preparação",
-  EM_AVALIACAO: "Em avaliação",
-  AJUSTES: "Em ajustes",
-  FINALIZADO: "Finalizado",
-};
-const materialLabels: Record<string, string> = {
-  VIDEO: "Vídeo",
-  RELATORIO: "Relatório",
-  MANUAL: "Manual",
-};
-const roleDescriptions = {
-  ADMIN: "Administre contas e acompanhe os projetos de todas as turmas.",
-  ALUNO: "Seu grupo, suas ideias e os próximos passos do seu projeto.",
-  AVALIADOR: "Um olhar atento para os projetos que você acompanha.",
-  PROFESSOR: "Uma visão dos projetos e grupos da sua turma.",
-};
-function Brand() {
-  return (
-    <span className="brand">
-      <span className="brand-mark">
-        <Icon name="book" size={23} />
-      </span>
-      <span>
-        labrary<span className="brand-sub">DIGITAL</span>
-      </span>
-    </span>
-  );
-}
-function Notice({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="notice" role="alert">
-      {children}
-    </div>
-  );
-}
-function Loading() {
-  return (
-    <div className="loading" role="status">
-      <span className="spinner" />
-      Carregando seu espaço…
-    </div>
-  );
-}
-
-function Login({
-  onLogin,
-  message,
-}: {
-  onLogin: (user: User) => void;
-  message: string;
-}) {
-  const [providers, setProviders] = useState<{
-    google: boolean;
-    local: boolean;
-  } | null>(null);
-  const [providerError, setProviderError] = useState("");
-  async function loadProviders() {
-    setProviderError("");
-    try {
-      setProviders(
-        await api<{ google: boolean; local: boolean }>("/auth/providers"),
-      );
-    } catch (error) {
-      setProviderError((error as Error).message);
-    }
-  }
-  useEffect(() => {
-    void loadProviders();
-  }, []);
-  const authError = new URLSearchParams(window.location.search).get(
-    "authError",
-  );
-  const googleError =
-    authError === "account_conflict"
-      ? "Já existe uma conta com esse e-mail. Solicite ao responsável a vinculação da conta Google."
-      : authError === "inactive"
-        ? "Sua conta está desativada. Contate o responsável."
-        : authError
-          ? "Não foi possível entrar com o Google. Tente novamente; se persistir, contate o responsável."
-          : "";
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [visible, setVisible] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  async function submit(event: FormEvent) {
-    event.preventDefault();
-    setBusy(true);
-    setError("");
-    try {
-      onLogin(
-        await api<User>("/auth/login", {
-          method: "POST",
-          body: JSON.stringify({ email: email.trim(), password }),
-        }),
-      );
-    } catch (failure) {
-      setError((failure as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  }
-  return (
-    <main className="login-layout">
-      <section className="login-story" aria-labelledby="story-title">
-        <Brand />
-        <div className="story-copy">
-          <p className="eyebrow">
-            <span className="live-dot" /> UM ESPAÇO PARA CONSTRUIR
-          </p>
-          <h1 id="story-title">
-            Grandes ideias.
-            <br />
-            Conexões <em>reais.</em>
-          </h1>
-          <p>
-            Do primeiro circuito à última entrega.
-            <br />O ponto de encontro dos seus projetos de sistemas digitais.
-          </p>
-        </div>
-        <div className="circuit-art" aria-hidden="true">
-          <div className="orbit orbit-one" />
-          <div className="orbit orbit-two" />
-          <div className="orbit orbit-three" />
-          <div className="circuit-line line-one" />
-          <div className="circuit-line line-two" />
-          <span className="art-node node-one">01</span>
-          <span className="art-node node-two">10</span>
-          <span className="art-label label-one">ideia</span>
-          <span className="art-label label-two">conexão</span>
-          <div className="chip">
-            <span className="chip-pins" />
-            <Icon name="book" size={60} />
-            <span className="chip-caption">LABRARY / DIGITAL</span>
-          </div>
-          <span className="orbit-dot dot-one" />
-          <span className="orbit-dot dot-two" />
-        </div>
-        <div className="story-footer">
-          <span>Aprender. Criar. Compartilhar.</span>
-          <span>PCS3643 ↗</span>
-        </div>
-      </section>
-      <section className="login-form-panel" aria-labelledby="login-title">
-        <div className="login-top">
-          <span className="small-dot" /> AMBIENTE ACADÊMICO
-        </div>
-        <div className="login-form-wrap">
-          <span className="login-symbol">
-            <Icon name="lock" size={24} />
-          </span>
-          <p className="eyebrow">BEM-VINDO DE VOLTA</p>
-          <h2 id="login-title">
-            Seu próximo projeto <br />
-            começa aqui.
-          </h2>
-          <a href="/acervo">Explorar acervo público</a>
-          <p className="muted login-description">
-            Entre com sua conta para acessar seu espaço.
-          </p>
-          {(error || message || googleError) && (
-            <Notice>{error || message || googleError}</Notice>
-          )}
-          {providerError && (
-            <Notice>
-              {providerError}
-              <button onClick={() => void loadProviders()}>
-                Tentar novamente
-              </button>
-            </Notice>
-          )}
-          {!providers && !providerError && (
-            <p role="status">Carregando opções de acesso…</p>
-          )}
-          {providers?.google && (
-            <p>
-              <a
-                className="primary login-submit google-login"
-                href="/api/auth/google"
-              >
-                <img
-                  src="/google-logo.webp"
-                  alt=""
-                  aria-hidden="true"
-                  width={28}
-                  height={28}
-                />
-                <span>Entrar com Google</span>
-              </a>
-            </p>
-          )}
-          {providers?.google && (
-            <p className="muted">
-              Use sua conta Google para acessar seu espaço.
-            </p>
-          )}
-          {providers?.local && (
-            <form onSubmit={submit} aria-label="Entrar na conta">
-              <label htmlFor="email">E-mail institucional</label>
-              <input
-                id="email"
-                type="email"
-                autoComplete="username"
-                placeholder="seu.nome@instituicao.br"
-                required
-                maxLength={254}
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                disabled={busy}
-              />
-              <label htmlFor="password">Senha</label>
-              <div className="password-field">
-                <input
-                  id="password"
-                  type={visible ? "text" : "password"}
-                  autoComplete="current-password"
-                  placeholder="Digite sua senha"
-                  required
-                  maxLength={256}
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  disabled={busy}
-                />
-                <button
-                  type="button"
-                  className="icon-button"
-                  aria-label={visible ? "Ocultar senha" : "Mostrar senha"}
-                  aria-pressed={visible}
-                  onClick={() => setVisible(!visible)}
-                >
-                  <Icon name={visible ? "eyeOff" : "eye"} />
-                </button>
-              </div>
-              <button
-                className="primary login-submit"
-                disabled={busy}
-                type="submit"
-              >
-                <span>{busy ? "Entrando…" : "Entrar no meu espaço"}</span>
-                {busy ? <span className="spinner" /> : <Icon name="arrow" />}
-              </button>
-            </form>
-          )}
-          <p className="account-help">
-            Precisa de acesso ou esqueceu sua senha?
-            <br />
-            {providers?.google ? (
-              <span>
-                Para recuperar a senha, acesse o{" "}
-                <a href="https://accounts.google.com/signin/recovery">Google</a>
-                . Para vínculos de turma, fale com o professor.
-              </span>
-            ) : (
-              <span>Entre em contato com o professor da sua turma.</span>
-            )}
-          </p>
-          <div className="login-security">
-            <Icon name="lock" size={15} />
-            <span>Acesso de acordo com o seu perfil acadêmico.</span>
-          </div>
-        </div>
-        <footer className="login-footer">
-          Labrary Digital <span>Projetos que conectam.</span>
-        </footer>
-      </section>
-    </main>
-  );
-}
+import { Brand } from "./components/Brand";
+import { Loading, Notice } from "./components/Feedback";
+import { Button } from "./components/ui/button";
+import { Label } from "./components/ui/label";
+import { NativeSelect } from "./components/ui/native-select";
+import { roleLabels } from "./labels";
+import { AppShell } from "./layout/AppShell";
+import { Dashboard } from "./pages/Dashboard";
+import { Landing } from "./pages/Landing";
+import { Login } from "./pages/Login";
 
 const CatalogDemo = import.meta.env.DEV
   ? lazy(() => import("./CatalogDemo"))
@@ -313,6 +31,8 @@ export function App() {
         <CatalogDemo />
       </Suspense>
     );
+  // Página inicial pública; o login fica em /login.
+  if (path === "/") return <Landing />;
   if (path === "/acervo" || path.startsWith("/acervo/"))
     return <Catalog provider={httpCatalog} />;
   return <PrivateApp />;
@@ -354,6 +74,10 @@ function PrivateApp() {
     window.addEventListener("popstate", pop);
     return () => window.removeEventListener("popstate", pop);
   }, [bootstrap]);
+  // Sessão já ativa ao abrir /login: segue direto para os projetos.
+  useEffect(() => {
+    if (user && path === "/login") navigate("/projetos");
+  }, [user, path, navigate]);
   useEffect(() => {
     if (!user) return;
     let active = true;
@@ -381,7 +105,7 @@ function PrivateApp() {
       await api<void>("/auth/logout", { method: "POST" });
       setUser(null);
       setMessage("");
-      navigate("/");
+      navigate("/login");
     } catch (error) {
       setLogoutError((error as Error).message);
     } finally {
@@ -407,19 +131,17 @@ function PrivateApp() {
   }
   if (initializing)
     return (
-      <main className="startup">
+      <main className="grid min-h-dvh place-content-center justify-items-center gap-2 bg-sidebar p-6">
         <Brand />
         <Loading />
       </main>
     );
   if (startupError)
     return (
-      <main className="startup">
+      <main className="grid min-h-dvh place-content-center justify-items-center gap-4 bg-sidebar p-6">
         <Brand />
         <Notice>{startupError}</Notice>
-        <button className="primary" onClick={() => void bootstrap()}>
-          Tentar novamente
-        </button>
+        <Button onClick={() => void bootstrap()}>Tentar novamente</Button>
       </main>
     );
   if (!user)
@@ -434,154 +156,51 @@ function PrivateApp() {
         }}
       />
     );
+  // Evita piscar "Página indisponível" enquanto o efeito redireciona de /login.
+  if (path === "/login") return null;
   const visibleUser: User =
     user.role === "ADMIN" && user.viewRole
       ? { ...user, role: user.viewRole }
       : user;
   return (
-    <div
-      className={`workspace${user.role === "ADMIN" ? " workspace-admin" : ""}`}
+    <AppShell
+      user={user}
+      visibleUser={visibleUser}
+      path={path}
+      navigate={navigate}
+      busy={busy}
+      logout={logout}
     >
-      <a className="skip-link" href="#main">
-        Pular para o conteúdo
-      </a>
-      <aside className="sidebar">
-        <a
-          href="/projetos"
-          onClick={(event) => {
-            event.preventDefault();
-            navigate("/projetos");
-          }}
-        >
-          <Brand />
-        </a>
-        <div className="workspace-name">
-          <span className="workspace-dot" /> Espaço acadêmico{" "}
-          <span className="tiny-badge">2026</span>
-        </div>
-        <p className="nav-label">MEU ESPAÇO</p>
-        <nav aria-label="Navegação principal">
-          <a className="nav-item" href="/acervo">Acervo público</a>
-          <button
-            className={
-              path.startsWith("/projetos") || path === "/"
-                ? "nav-item active"
-                : "nav-item"
-            }
-            onClick={() => navigate("/projetos")}
+      <div className="mb-6 grid gap-4 empty:hidden">
+        {logoutError && <Notice>{logoutError}</Notice>}
+        {user.role === "ADMIN" && (
+          <section
+            className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border bg-muted/50 px-4 py-3"
+            aria-label="Visualização de perfis"
           >
-            <Icon name="grid" />
-            {visibleUser.role === "ALUNO" ? "Meu projeto" : "Projetos"}
-            <span className="nav-active-dot" />
-          </button>
-          {["PROFESSOR", "ADMIN"].includes(visibleUser.role) && (
-            <button
-              className={`nav-item ${path === "/turmas" ? "active" : ""}`}
-              onClick={() => navigate("/turmas")}
+            <Label htmlFor="view-role">Visualizar como</Label>
+            <NativeSelect
+              id="view-role"
+              className="w-auto min-w-44"
+              value={user.viewRole ?? "ADMIN"}
+              disabled={viewBusy}
+              onChange={(event) => void changeView(event.target.value)}
             >
-              <Icon name="book" />
-              Minhas turmas
-            </button>
-          )}
-          {user.role === "ADMIN" && (
-            <button
-              className={`nav-item ${path === "/administracao" ? "active" : ""}`}
-              onClick={() => navigate("/administracao")}
-            >
-              <Icon name="user" />
-              Administrar usuários
-            </button>
-          )}
-          {["PROFESSOR", "ADMIN"].includes(visibleUser.role) && (
-            <button className={`nav-item ${path === "/notas" ? "active" : ""}`} onClick={() => navigate("/notas")}>
-              <Icon name="book" /> Consolidação de notas
-            </button>
-          )}
-          <button
-            className={`nav-item ${path === "/perfil" ? "active" : ""}`}
-            onClick={() => navigate("/perfil")}
-          >
-            <Icon name="user" />
-            Meu perfil
-          </button>
-        </nav>
-        <div className="sidebar-bottom">
-          <div className="sidebar-note">
-            <span className="note-spark">✦</span>
-            <strong>
-              Ideias ganham vida
-              <br />
-              quando conectadas.
-            </strong>
-            <p>Seu laboratório de possibilidades.</p>
-          </div>
-          <div className="sidebar-user">
-            <span className="avatar">
-              {user.fullName
-                .split(" ")
-                .map((part) => part[0])
-                .slice(0, 2)
-                .join("")}
-            </span>
-            <div>
-              <strong>{user.fullName}</strong>
-              <span>{roleLabels[user.role]}</span>
-            </div>
-          </div>
-          <button
-            className="logout"
-            disabled={busy}
-            onClick={() => void logout()}
-          >
-            <Icon name="logout" size={17} />
-            {busy ? "Saindo…" : "Sair da conta"}
-          </button>
-        </div>
-      </aside>
-      <div className="workspace-body">
-        <header className="workspace-header">
-          <span>
-            Meu espaço <span className="breadcrumb">/</span>{" "}
-            <strong>
-              {path === "/notas" ? "Notas" : path === "/administracao"
-                ? "Administração"
-                : path === "/perfil"
-                  ? "Perfil"
-                  : path === "/turmas"
-                    ? "Turmas"
-                    : "Projetos"}
-            </strong>
-          </span>
-          <span className="profile-badge">
-            <span className="small-dot" />
-            {roleLabels[user.role]}
-          </span>
-        </header>
-        <main id="main" className="workspace-main">
-          {logoutError && <Notice>{logoutError}</Notice>}
-          {user.role === "ADMIN" && (
-            <section className="admin-view" aria-label="Visualização de perfis">
-              <label htmlFor="view-role">Visualizar como</label>
-              <select
-                id="view-role"
-                value={user.viewRole ?? "ADMIN"}
-                disabled={viewBusy}
-                onChange={(event) => void changeView(event.target.value)}
-              >
-                <option value="ADMIN">Administrador</option>
-                <option value="ALUNO">Aluno</option>
-                <option value="AVALIADOR">Avaliador</option>
-                <option value="PROFESSOR">Professor</option>
-              </select>
-              <p>
-                {user.viewRole
-                  ? `Visualização de ${roleLabels[user.viewRole]}. Sua conta continua sendo Administrador; o acesso segue seus vínculos nesse perfil.`
-                  : "Visão administrativa de todas as turmas e projetos."}
-              </p>
-            </section>
-          )}
-          {viewError && <Notice>{viewError}</Notice>}
-          {path === "/notas" && ["PROFESSOR", "ADMIN"].includes(visibleUser.role) ? (
+              <option value="ADMIN">Administrador</option>
+              <option value="ALUNO">Aluno</option>
+              <option value="AVALIADOR">Avaliador</option>
+              <option value="PROFESSOR">Professor</option>
+            </NativeSelect>
+            <p className="basis-full text-xs text-muted-foreground md:basis-auto">
+              {user.viewRole
+                ? `Visualização de ${roleLabels[user.viewRole]}. Sua conta continua sendo Administrador; o acesso segue seus vínculos nesse perfil.`
+                : "Visão administrativa de todas as turmas e projetos."}
+            </p>
+          </section>
+        )}
+        {viewError && <Notice>{viewError}</Notice>}
+      </div>
+      {path === "/notas" && ["PROFESSOR", "ADMIN"].includes(visibleUser.role) ? (
             <Gradebook key={`${user.id}-${user.viewRole ?? ""}`} expired={expired} />
           ) : path === "/administracao" && user.role === "ADMIN" ? (
             <AdminUsers
@@ -600,672 +219,6 @@ function PrivateApp() {
               expired={expired}
             />
           )}
-        </main>
-        <footer className="workspace-footer">
-          <span>LABRARY DIGITAL</span>
-          <span>Um espaço para aprender e construir.</span>
-        </footer>
-      </div>
-    </div>
-  );
-}
-
-function Dashboard({
-  user,
-  path,
-  navigate,
-  expired,
-}: {
-  user: User;
-  path: string;
-  navigate: (path: string) => void;
-  expired: () => void;
-}) {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [scope, setScope] = useState<Scope>({ classes: [], groups: [] });
-  const [detail, setDetail] = useState<Project | null>(null);
-  const [materials, setMaterials] = useState<Material[]>([]);
-  const [materialRules, setMaterialRules] = useState<MaterialRules | null>(
-    null,
-  );
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [revision, setRevision] = useState(0);
-  const [query, setQuery] = useState("");
-  const [status, setStatus] = useState("");
-  const [group, setGroup] = useState("");
-  const [pending, setPending] = useState("");
-  const [creating, setCreating] = useState(false);
-  const detailId = /^\/projetos\/(\d+)$/.exec(path)?.[1];
-  const activeDetailId = useRef(detailId);
-  activeDetailId.current = detailId;
-  async function refreshMaterialRules() {
-    const rules = await api<MaterialRules>(
-      `/projects/${detailId}/material-rules`,
-    );
-    if (activeDetailId.current === detailId) setMaterialRules(rules);
-  }
-  const knownPath =
-    ["/", "/projetos", "/perfil"].includes(path) ||
-    !!detailId ||
-    (path === "/turmas" && ["PROFESSOR", "ADMIN"].includes(user.role));
-  useEffect(() => {
-    let active = true;
-    setLoading(true);
-    setError("");
-    setDetail(null);
-    setMaterials([]);
-    setMaterialRules(null);
-    setCreating(false);
-    const load = async () => {
-      try {
-        const [items, access] = await Promise.all([
-          api<Project[]>("/projects"),
-          api<Scope>("/scope"),
-        ]);
-        if (!active) return;
-        setProjects(items);
-        setScope(access);
-        if (detailId) {
-          const [project, files, rules] = await Promise.all([
-            api<Project>(`/projects/${detailId}`),
-            api<Material[]>(`/projects/${detailId}/materials`),
-            api<MaterialRules>(`/projects/${detailId}/material-rules`),
-          ]);
-          if (active) {
-            setDetail(project);
-            setMaterials(files);
-            setMaterialRules(rules);
-          }
-        }
-      } catch (failure) {
-        if (!active) return;
-        if (failure instanceof ApiError && failure.status === 401) expired();
-        else setError((failure as Error).message);
-      } finally {
-        if (active) setLoading(false);
-      }
-    };
-    void load();
-    return () => {
-      active = false;
-    };
-  }, [user, detailId, revision, expired]);
-  if (!knownPath)
-    return (
-      <div className="empty">
-        <Icon name="lock" size={30} />
-        <h1>Página indisponível</h1>
-        <p>Este endereço não está disponível no seu espaço.</p>
-        <button className="secondary" onClick={() => navigate("/projetos")}>
-          Voltar aos projetos
-        </button>
-      </div>
-    );
-  if (loading) return <Loading />;
-  if (error)
-    return (
-      <div className="error-page">
-        <Notice>{error}</Notice>
-        <div className="button-row">
-          <button
-            className="secondary"
-            onClick={() => setRevision(revision + 1)}
-          >
-            Tentar novamente
-          </button>
-          <button className="text-button" onClick={() => navigate("/projetos")}>
-            Voltar aos projetos
-          </button>
-        </div>
-      </div>
-    );
-  if (path === "/perfil")
-    return (
-      <>
-        <p className="eyebrow">SUA CONTA</p>
-        <h1>Meu perfil</h1>
-        <p className="page-intro">Seu lugar na comunidade Labrary.</p>
-        <section className="profile-card">
-          <span className="avatar large">
-            <Icon name="user" size={32} />
-          </span>
-          <h2>{user.fullName}</h2>
-          <span className="profile-badge">{roleLabels[user.role]}</span>
-          <dl>
-            <dt>E-mail</dt>
-            <dd>{user.email}</dd>
-            {user.googleLinked && (
-              <>
-                <dt>Autenticação</dt>
-                <dd>Conta Google vinculada</dd>
-              </>
-            )}
-            <dt>Permissões</dt>
-            <dd>{roleDescriptions[user.role]}</dd>
-          </dl>
-          <p className="muted">
-            Para atualizar sua conta ou seus vínculos, fale com o professor
-            responsável.
-          </p>
-        </section>
-      </>
-    );
-  if (path === "/turmas")
-    return (
-      <>
-        <p className="eyebrow">GESTÃO ACADÊMICA</p>
-        <h1>Minhas turmas</h1>
-        <p className="page-intro">
-          Grupos e projetos sob sua responsabilidade.
-        </p>
-        <div className="class-grid">
-          {scope.classes.map((item) => (
-            <article className="class-card" key={item.id}>
-              <Icon name="book" size={28} />
-              <span className="eyebrow">{item.academicYear}</span>
-              <h2>{item.name}</h2>
-              <p>
-                {
-                  scope.groups.filter((group) => group.classId === item.id)
-                    .length
-                }{" "}
-                grupos ·{" "}
-                {
-                  projects.filter((project) => project.classId === item.id)
-                    .length
-                }{" "}
-                projetos
-              </p>
-              <ul className="group-list">
-                {scope.groups
-                  .filter((group) => group.classId === item.id)
-                  .map((group) => (
-                    <li key={group.id}>
-                      <span>{group.name}</span>
-                      <span>
-                        {projects.some(
-                          (project) => project.groupId === group.id,
-                        )
-                          ? "Projeto cadastrado"
-                          : "Sem projeto"}
-                      </span>
-                    </li>
-                  ))}
-              </ul>
-              <GroupManager
-                classId={item.id}
-                onChanged={() => setRevision((value) => value + 1)}
-                expired={expired}
-              />
-              <button
-                className="text-button"
-                onClick={() => navigate("/projetos")}
-              >
-                Gerenciar projetos <Icon name="arrow" size={16} />
-              </button>
-            </article>
-          ))}
-        </div>
-        {!scope.classes.length && (
-          <Empty
-            title="Nenhuma turma vinculada"
-            text="Suas turmas aparecerão aqui quando forem vinculadas à sua conta."
-          />
-        )}
-      </>
-    );
-  if (detail)
-    return (
-      <>
-        <button
-          className="text-button back"
-          onClick={() => navigate("/projetos")}
-        >
-          <Icon name="back" size={17} />
-          Todos os projetos
-        </button>
-        <p className="eyebrow">
-          {detail.category} ·{" "}
-          {detail.groupName ??
-            `Grupo ${String(detail.groupId).padStart(2, "0")}`}
-        </p>
-        <h1>{detail.title}</h1>
-        <p className="page-intro">
-          {detail.description || "Este projeto ainda não tem uma descrição."}
-        </p>
-        <span className={`status-pill status-${detail.status}`}>
-          <span />
-          {statusLabels[detail.status]}
-        </span>
-        {detail.missingMaterials && (
-          <p>
-            {detail.missingMaterials.length
-              ? `Pendentes: ${detail.missingMaterials.map((kind) => materialLabels[kind]).join(", ")}`
-              : "Materiais obrigatórios presentes"}
-          </p>
-        )}
-        {materialRules && (
-          <MaterialsPanel
-            projectId={detail.id}
-            materials={materials}
-            rules={materialRules}
-            onSaved={(saved) => {
-              setMaterials((current) =>
-                current.some((item) => item.id === saved.id)
-                  ? current.map((item) => (item.id === saved.id ? saved : item))
-                  : [...current, saved],
-              );
-              setDetail(
-                (current) =>
-                  current && {
-                    ...current,
-                    missingMaterials: current.missingMaterials?.filter(
-                      (kind) => kind !== saved.kind,
-                    ),
-                  },
-              );
-            }}
-            expired={expired}
-          />
-        )}
-        <SubmissionPanel
-          key={`submission-${detail.id}`}
-          project={detail}
-          user={user}
-          materials={materials}
-          refreshKey={materialRules}
-          expired={expired}
-          onStatusChanged={(status) => {
-            setDetail((current) => current && { ...current, status });
-            // O novo estado muda o bloqueio de upload; recarrega as regras dos materiais.
-            refreshMaterialRules().catch((failure) => {
-              if (failure instanceof ApiError && failure.status === 401) expired();
-              else setRevision((value) => value + 1);
-            });
-          }}
-        />
-        <div className="access-note">
-          <Icon name="lock" size={17} />
-          Acesso restrito ao grupo e à equipe acadêmica vinculada ao projeto.
-        </div>
-        {user.role === "ALUNO" && <GroupResult key={`result-${detail.id}`} projectId={detail.id} expired={expired} />}
-        {["PROFESSOR", "ADMIN"].includes(user.role) && (
-          <EvaluatorManager
-            key={`evaluators-${detail.id}`}
-            projectId={detail.id}
-            classId={detail.classId}
-            expired={expired}
-          />
-        )}
-        {["PROFESSOR", "ADMIN"].includes(user.role) && (
-          <PublicationPanel
-            key={`publication-${detail.id}`}
-            projectId={detail.id}
-            expired={expired}
-            onChanged={() =>
-              setDetail(
-                (current) => current && { ...current, status: "FINALIZADO" },
-              )
-            }
-          />
-        )}
-        <ProjectAssessment
-          key={`assessment-${detail.id}-${user.role}`}
-          projectId={detail.id}
-          projectStatus={detail.status}
-          user={user}
-          expired={expired}
-          onConfigurationSaved={refreshMaterialRules}
-        />
-        <ProjectFeedback
-          key={detail.id}
-          projectId={detail.id}
-          materials={materials}
-          expired={expired}
-        />
-      </>
-    );
-  const filtered = projects.filter(
-    (project) =>
-      (!status || project.status === status) &&
-      (!group || String(project.groupId) === group) &&
-      (!pending ||
-        (project.missingMaterials?.length ?? 0) > 0 === (pending === "true")) &&
-      `${project.title} ${project.category} ${project.groupId}`
-        .toLocaleLowerCase("pt-BR")
-        .includes(query.toLocaleLowerCase("pt-BR")),
-  );
-  return (
-    <>
-      <div className="page-heading">
-        <div>
-          <p className="eyebrow">SEU LABORATÓRIO DE POSSIBILIDADES</p>
-          <h1>
-            Olá, {user.fullName.split(" ")[0]}
-            <span className="greeting-dot">.</span>
-          </h1>
-          <p className="page-intro">{roleDescriptions[user.role]}</p>
-        </div>
-        {["PROFESSOR", "ADMIN"].includes(user.role) && (
-          <button className="primary" onClick={() => setCreating(!creating)}>
-            {creating ? "Fechar formulário" : "+ Novo projeto"}
-          </button>
-        )}
-      </div>
-      {creating && (
-        <CreateProject
-          scope={scope}
-          projects={projects}
-          expired={expired}
-          onCreated={(project) => navigate(`/projetos/${project.id}`)}
-        />
-      )}
-      <div className="overview">
-        <div className="overview-main">
-          <span className="overview-icon">
-            <Icon name="folder" size={25} />
-          </span>
-          <div>
-            <span className="muted">
-              {user.role === "ALUNO"
-                ? "Projetos do meu grupo"
-                : user.role === "AVALIADOR"
-                  ? "Projetos atribuídos"
-                  : user.role === "ADMIN"
-                    ? "Projetos de todas as turmas"
-                    : "Projetos da minha turma"}
-            </span>
-            <strong>
-              {String(projects.length).padStart(2, "0")}
-              <small>projetos</small>
-            </strong>
-          </div>
-        </div>
-        <div className="overview-stat">
-          <span className="stat-dot purple" />
-          <span>Em preparação</span>
-          <strong>
-            {
-              projects.filter((project) => project.status === "PREPARACAO")
-                .length
-            }
-          </strong>
-        </div>
-        <div className="overview-stat">
-          <span className="stat-dot pink" />
-          <span>Em avaliação</span>
-          <strong>
-            {
-              projects.filter((project) => project.status === "EM_AVALIACAO")
-                .length
-            }
-          </strong>
-        </div>
-        <div className="overview-stat">
-          <span className="stat-dot green" />
-          <span>Finalizados</span>
-          <strong>
-            {
-              projects.filter((project) => project.status === "FINALIZADO")
-                .length
-            }
-          </strong>
-        </div>
-      </div>
-      <section aria-labelledby="projects-title">
-        <div className="section-heading">
-          <h2 id="projects-title">
-            {user.role === "ALUNO" ? "Meu projeto" : "Seus projetos"}
-            <span className="count">{projects.length}</span>
-          </h2>
-          <span className="muted section-caption">
-            Cada ideia tem um próximo passo.
-          </span>
-        </div>
-        <div className="filter-bar">
-          <div className="search-field">
-            <Icon name="search" size={18} />
-            <input
-              aria-label="Buscar projetos"
-              placeholder="Buscar por projeto, categoria ou grupo…"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-            />
-          </div>
-          <select
-            aria-label="Filtrar por estado"
-            value={status}
-            onChange={(event) => setStatus(event.target.value)}
-          >
-            <option value="">Todos os estados</option>
-            {Object.entries(statusLabels).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-          <select
-            aria-label="Filtrar por grupo"
-            value={group}
-            onChange={(event) => setGroup(event.target.value)}
-          >
-            <option value="">Todos os grupos</option>
-            {Array.from(
-              new Map(
-                projects.map((project) => [project.groupId, project]),
-              ).values(),
-            ).map((project) => (
-              <option key={project.groupId} value={project.groupId}>
-                {project.groupName ??
-                  `Grupo ${String(project.groupId).padStart(2, "0")}`}
-              </option>
-            ))}
-          </select>
-          <select
-            aria-label="Filtrar por pendências"
-            value={pending}
-            onChange={(event) => setPending(event.target.value)}
-          >
-            <option value="">Todas as pendências</option>
-            <option value="true">Com materiais pendentes</option>
-            <option value="false">Sem materiais pendentes</option>
-          </select>
-        </div>
-        <div className="project-grid">
-          {filtered.map((project, index) => (
-            <article className="project-card" key={project.id}>
-              <div
-                className={`project-cover cover-${index % 3}`}
-                aria-hidden="true"
-              >
-                <div className="cover-grid" />
-                <div className="cover-chip">
-                  <Icon
-                    name={
-                      project.category === "Instrumentação" ? "grid" : "folder"
-                    }
-                    size={38}
-                  />
-                </div>
-                <span className="cover-id">
-                  LD / {String(project.id).padStart(3, "0")}
-                </span>
-              </div>
-              <div className="project-content">
-                <div className="card-meta">
-                  <span className="project-category">{project.category}</span>
-                  <span className={`status-pill status-${project.status}`}>
-                    <span />
-                    {statusLabels[project.status]}
-                  </span>
-                </div>
-                <h3>
-                  <a
-                    href={`/projetos/${project.id}`}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      navigate(`/projetos/${project.id}`);
-                    }}
-                  >
-                    {project.title}
-                  </a>
-                </h3>
-                <p>{project.description || "Descrição ainda não informada."}</p>
-                {project.missingMaterials && (
-                  <p>
-                    {project.missingMaterials.length
-                      ? `Pendentes: ${project.missingMaterials.map((kind) => materialLabels[kind]).join(", ")}`
-                      : "Materiais obrigatórios presentes"}
-                  </p>
-                )}
-                <div className="card-footer">
-                  <span>
-                    <Icon name="user" size={15} />
-                    {project.groupName ??
-                      `Grupo ${String(project.groupId).padStart(2, "0")}`}
-                  </span>
-                  <a
-                    className="project-link"
-                    aria-label={`Abrir ${project.title}`}
-                    href={`/projetos/${project.id}`}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      navigate(`/projetos/${project.id}`);
-                    }}
-                  >
-                    Abrir projeto <Icon name="arrow" size={16} />
-                  </a>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-        {!filtered.length && (
-          <Empty
-            title={
-              projects.length
-                ? "Nenhum resultado por aqui"
-                : "Seu espaço está pronto"
-            }
-            text={
-              projects.length
-                ? "Tente outro termo ou ajuste os filtros."
-                : "Os projetos aparecerão aqui assim que forem vinculados ao seu perfil."
-            }
-          />
-        )}
-      </section>
-      <div className="access-note">
-        <Icon name="lock" size={16} />
-        Você visualiza apenas os projetos permitidos ao seu perfil.
-      </div>
-    </>
-  );
-}
-function Empty({ title, text }: { title: string; text: string }) {
-  return (
-    <div className="empty">
-      <span className="empty-icon">
-        <Icon name="folder" size={28} />
-      </span>
-      <h2>{title}</h2>
-      <p>{text}</p>
-    </div>
-  );
-}
-function CreateProject({
-  scope,
-  projects,
-  onCreated,
-  expired,
-}: {
-  scope: Scope;
-  projects: Project[];
-  onCreated: (project: Project) => void;
-  expired: () => void;
-}) {
-  const groups = scope.groups.filter(
-    (group) => !projects.some((project) => project.groupId === group.id),
-  );
-  const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    const group = groups.find(
-      (item) => item.id === Number(data.get("groupId")),
-    );
-    if (!group) return;
-    setBusy(true);
-    setError("");
-    try {
-      onCreated(
-        await api<Project>("/projects", {
-          method: "POST",
-          body: JSON.stringify({
-            groupId: group.id,
-            classId: group.classId,
-            title: data.get("title"),
-            description: data.get("description"),
-            category: data.get("category"),
-          }),
-        }),
-      );
-    } catch (failure) {
-      if (failure instanceof ApiError && failure.status === 401) expired();
-      else setError((failure as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  }
-  return (
-    <section className="create-panel">
-      <h2>Novo projeto</h2>
-      {error && <Notice>{error}</Notice>}
-      {!groups.length ? (
-        <p className="muted">
-          Todos os grupos vinculados já têm projeto. Cadastre outro grupo em
-          Minhas turmas.
-        </p>
-      ) : (
-        <form onSubmit={submit}>
-          <fieldset disabled={busy}>
-            <div className="form-grid">
-              <label>
-                Título
-                <input name="title" required maxLength={200} />
-              </label>
-              <label>
-                Grupo
-                <select name="groupId">
-                  {groups.map((group) => (
-                    <option key={group.id} value={group.id}>
-                      {group.name} ·{" "}
-                      {
-                        scope.classes.find((item) => item.id === group.classId)
-                          ?.name
-                      }
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Categoria
-                <input name="category" required maxLength={100} />
-              </label>
-              <label>
-                Descrição
-                <textarea name="description" maxLength={10000} rows={2} />
-              </label>
-            </div>
-            <button className="primary" type="submit">
-              {busy ? "Criando…" : "Criar projeto"}
-              <Icon name="arrow" size={17} />
-            </button>
-          </fieldset>
-        </form>
-      )}
-    </section>
+    </AppShell>
   );
 }

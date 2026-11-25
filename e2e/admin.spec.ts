@@ -3,7 +3,7 @@ test("administrador gerencia perfis, preserva último admin e alterna visualiza�
   page,
   context,
 }) => {
-  await page.goto("http://localhost:5181/");
+  await page.goto("http://localhost:5181/login");
   await page.getByRole("link", { name: "Entrar com Google" }).click();
   await page
     .getByRole("link", { name: "Selecionar conta de administrador" })
@@ -96,7 +96,7 @@ test("usuário comum não vê administração nem consegue se promover pela API"
   page,
   context,
 }) => {
-  await page.goto("http://localhost:5181/");
+  await page.goto("http://localhost:5181/login");
   await page.getByRole("link", { name: "Entrar com Google" }).click();
   await page.getByRole("link", { name: "Selecionar conta de aluno" }).click();
   await expect(

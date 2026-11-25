@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { GroupManager, EvaluatorManager } from "./Groups";
+import { describeChange, GroupManager, EvaluatorManager } from "./Groups";
 import type { Administration, Evaluators } from "./api";
 let administration: Administration;
 let links: Evaluators;
@@ -95,6 +95,11 @@ describe("gestão de grupos", () => {
     );
     await screen.findByRole("heading", { name: "Grupo novo" });
     expect(changed).toHaveBeenCalledOnce();
+    // Os integrantes ficam recolhidos até abrir a edição do grupo.
+    expect(screen.queryByRole("group", { name: "Integrantes de Grupo 02" })).toBeNull();
+    await userEvent.click(
+      screen.getByRole("button", { name: "Editar integrantes de Grupo 02" }),
+    );
     const group = screen.getByRole("group", {
       name: "Integrantes de Grupo 02",
     });
@@ -107,7 +112,7 @@ describe("gestão de grupos", () => {
     );
     await screen.findByText("Integrantes atualizados.");
     await userEvent.click(screen.getByText("Histórico de vínculos (1)"));
-    expect(screen.getByText(/Conta 3:/).textContent).toContain("[1] → []");
+    expect(screen.getByText(/Conta 3:/).textContent).toContain("removeu Marina");
     expect(writes).toContainEqual({ memberIds: [] });
   });
   it("trata falha de leitura, recuperação e falha de gravação sem anunciar sucesso", async () => {
@@ -157,6 +162,50 @@ describe("gestão de grupos", () => {
     await vi.waitFor(() => expect(expired).toHaveBeenCalledOnce());
   });
 });
+describe("resumo da turma", () => {
+  it("mostra integrantes, projeto de cada grupo e alunos sem grupo", async () => {
+    administration.people.push({ id: 4, fullName: "Ana Lima", role: "ALUNO" });
+    administration.groups.push({ id: 5, classId: 1, name: "Grupo 05", memberIds: [], history: [] });
+    const navigate = vi.fn();
+    render(
+      <GroupManager
+        classId={1}
+        onChanged={changed}
+        expired={expired}
+        navigate={navigate}
+        projects={[
+          {
+            id: 9,
+            classId: 1,
+            groupId: 2,
+            title: "Semáforo",
+            description: "",
+            category: "Sistemas digitais",
+            status: "EM_AVALIACAO",
+            dueAt: null,
+          },
+        ]}
+      />,
+    );
+    const row = within(await screen.findByRole("region", { name: "Grupo 02" }));
+    expect(row.getByText("Marina")).toBeTruthy();
+    expect(row.getByText("Em avaliação")).toBeTruthy();
+    await userEvent.click(row.getByRole("link", { name: "Semáforo" }));
+    expect(navigate).toHaveBeenCalledWith("/projetos/9");
+    const empty = within(screen.getByRole("region", { name: "Grupo 05" }));
+    expect(empty.getByText("Sem integrantes")).toBeTruthy();
+    expect(empty.getByText("Sem projeto")).toBeTruthy();
+    // Grupo sem integrantes já abre a edição.
+    expect(screen.getByRole("group", { name: "Integrantes de Grupo 05" })).toBeTruthy();
+    expect(screen.getByText("1 / 2")).toBeTruthy();
+    expect(screen.getByText("Sem grupo: Ana Lima")).toBeTruthy();
+    const edit = row.getByRole("button", { name: "Editar integrantes de Grupo 02" });
+    await userEvent.click(edit);
+    expect(edit.getAttribute("aria-expanded")).toBe("true");
+    await userEvent.click(edit);
+    expect(screen.queryByRole("group", { name: "Integrantes de Grupo 02" })).toBeNull();
+  });
+});
 describe("gestão de avaliadores", () => {
   it("seleciona contas apropriadas, salva e apresenta histórico", async () => {
     render(<EvaluatorManager classId={1} projectId={2} expired={expired} />);
@@ -170,7 +219,9 @@ describe("gestão de avaliadores", () => {
     await screen.findByText("Avaliadores atualizados.");
     expect(writes).toContainEqual({ evaluatorIds: [200] });
     await userEvent.click(screen.getByText("Histórico de vínculos (1)"));
-    expect(screen.getByText(/Conta 3:/).textContent).toContain("[2] → [200]");
+    expect(screen.getByText(/Conta 3:/).textContent).toContain(
+      "adicionou Administrador; removeu Rafael",
+    );
   });
   it("recupera falha de leitura e preserva seleção após falha de gravação", async () => {
     failure = "evaluators";
@@ -200,4 +251,13 @@ describe("gestão de avaliadores", () => {
     render(<EvaluatorManager classId={1} projectId={2} expired={expired} />);
     await screen.findByText("Nenhuma conta ativa disponível.");
   });
+});
+
+it("descreve alteração sem mudanças e conta sem nome conhecido", () => {
+  expect(
+    describeChange(
+      { before: [7], after: [7], changedBy: 9, changedAt: "2026-11-07T12:00:00Z" },
+      [],
+    ),
+  ).toBe("Conta 9: sem alterações");
 });

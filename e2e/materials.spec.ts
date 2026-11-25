@@ -96,7 +96,7 @@ test("aluno envia, substitui e baixa materiais; professor só consulta", async (
   await noHorizontalOverflow(page);
 
   await page.getByRole("button", { name: "Sair da conta" }).click();
-  await page.goto("/");
+  await page.goto("/login");
   await login(page, "avaliador");
   await expect(
     page.getByRole("heading", { name: "Olá, Rafael." }),
