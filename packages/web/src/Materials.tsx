@@ -180,6 +180,46 @@ function FileButton({
   );
 }
 
+function MaterialVideo({
+  version,
+  title,
+}: {
+  version: Material["currentVersion"];
+  title: string;
+}) {
+  const [failed, setFailed] = useState(false);
+  return (
+    <div className="material-video">
+      {failed ? (
+        <div className="notice" role="alert">
+          <p>
+            Não foi possível reproduzir este vídeo. Tente novamente ou use
+            Baixar.
+          </p>
+          <button
+            className="secondary compact"
+            type="button"
+            onClick={() => setFailed(false)}
+          >
+            Tentar reproduzir novamente
+          </button>
+        </div>
+      ) : (
+        <video
+          controls
+          playsInline
+          preload="none"
+          aria-label={`Assistir ${title} — versão ${version.versionNumber}`}
+          src={version.playbackUrl}
+          onError={() => setFailed(true)}
+        >
+          Seu navegador não oferece suporte à reprodução. Use o botão Baixar.
+        </video>
+      )}
+    </div>
+  );
+}
+
 function MaterialCard({
   projectId,
   rule,
@@ -209,8 +249,14 @@ function MaterialCard({
       <div className="material-info">
         <strong>{title}</strong>
         <span>{formatsText(rule)}</span>
-        {rule.dueAt && <span>Prazo de {title}: {formatDate(rule.dueAt)}</span>}
-        {rule.lock === "DEADLINE_PASSED" && <span>Prazo deste material encerrado.</span>}
+        {rule.dueAt && (
+          <span>
+            Prazo de {title}: {formatDate(rule.dueAt)}
+          </span>
+        )}
+        {rule.lock === "DEADLINE_PASSED" && (
+          <span>Prazo deste material encerrado.</span>
+        )}
         {current ? (
           <span className="material-state">
             Enviado · versão {current.versionNumber} · {author(current)} ·{" "}
@@ -256,6 +302,9 @@ function MaterialCard({
           </button>
         )}
       </div>
+      {current?.playbackUrl && current.mimeType.startsWith("video/") && (
+        <MaterialVideo key={current.id} version={current} title={title} />
+      )}
       <UploadFeedback upload={upload} label={title} />
       {material && history && (
         <ol className="version-history" aria-label={`Versões de ${title}`}>

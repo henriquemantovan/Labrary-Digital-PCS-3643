@@ -239,6 +239,49 @@ describe("materiais privados no R2 pelo protocolo S3", () => {
     expect(c.objects.size).toBe(1);
     expect(c.calls.at(-1)?.method).toBe("DELETE");
   });
+  it("reproduz vídeo privado por Range do R2 e verifica a sessão antes de acessar o bucket", async () => {
+    const c = await setup();
+    const app = context({ storage: c.storage });
+    const response = await upload(
+      app.client(1),
+      "/api/projects/2/materials",
+      { kind: "VIDEO" },
+      { filename: "video.webm", content: sampleFiles.webm },
+    );
+    expect(response.status).toBe(201);
+    const url = response.body.data.currentVersion.playbackUrl;
+    const before = c.calls.length;
+    expect((await request(app.app).get(url)).status).toBe(401);
+    expect((await app.client(2).get(url)).status).toBe(404);
+    expect(c.calls).toHaveLength(before);
+    const token = app.auth.createSession(1, Date.now(), 60_000);
+    expect(
+      (
+        await request(app.app)
+          .head(url)
+          .set("Cookie", `labrary_session=${token}`)
+      ).status,
+    ).toBe(200);
+    expect(
+      c.calls.filter((call) => call.method === "GET" && call.key),
+    ).toHaveLength(0);
+    const range = await app
+      .client(1)
+      .get(url)
+      .set("Range", "bytes=4-7")
+      .buffer(true)
+      .parse((response, callback) => {
+        const chunks: Buffer[] = [];
+        response.on("data", (chunk: Buffer) => chunks.push(chunk));
+        response.on("end", () => callback(null, Buffer.concat(chunks)));
+      });
+    expect(range.status).toBe(206);
+    expect(range.body).toEqual(sampleFiles.webm.subarray(4, 8));
+    expect(range.headers["content-range"]).toBe(
+      `bytes 4-7/${sampleFiles.webm.length}`,
+    );
+    expect(c.calls.at(-1)?.range).toBe("bytes=4-7");
+  });
   it("serve publicação por Range e HEAD, e retirada bloqueia novas chamadas ao R2", async () => {
     const c = await setup();
     const app = await publicationContext({ storage: c.storage });

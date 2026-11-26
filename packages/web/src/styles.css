@@ -1430,9 +1430,26 @@ svg {
 }
 .upload-progress,
 .upload-error,
+.material-video,
 .version-history {
   grid-column: 2 / -1;
 }
+.material-video {
+  min-width: 0;
+  margin-top: 12px;
+}
+.material-video video {
+  display: block;
+  width: 100%;
+  max-width: 760px;
+  aspect-ratio: 16 / 9;
+  max-height: 65vh;
+  object-fit: contain;
+  background: #101017;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.material-video .notice { margin: 0; }
 .upload-progress {
   display: flex;
   align-items: center;
@@ -1544,6 +1561,7 @@ input[type="file"]::file-selector-button {
   }
   .upload-progress,
   .upload-error,
+  .material-video,
   .version-history {
     grid-column: 1 / -1;
   }

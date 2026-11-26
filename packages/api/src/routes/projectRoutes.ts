@@ -29,6 +29,10 @@ export function createProjectRouter(
     "/projects/:projectId/materials/:materialId/versions/:versionId/file",
     controller.downloadVersion,
   );
+  router.get(
+    "/projects/:projectId/materials/:materialId/versions/:versionId/stream",
+    controller.streamVersion,
+  );
 
   const messages = createMessageController(
     repository,

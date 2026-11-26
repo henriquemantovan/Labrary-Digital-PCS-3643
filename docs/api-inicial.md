@@ -29,6 +29,7 @@ Rotas REST usam JSON, exceto o envio de arquivos de materiais (`multipart/form-d
 | POST | `/api/projects/:projectId/materials` | Registra material novo (versão 1) | `201 { data: ProjectMaterial }` |
 | POST | `/api/projects/:projectId/materials/:materialId/versions` | Substitui material criando nova versão | `201 { data: ProjectMaterial }` |
 | GET | `/api/projects/:projectId/materials/:materialId/versions/:versionId/file` | Baixa o arquivo de uma versão | `200` com o arquivo |
+| GET/HEAD | `/api/projects/:projectId/materials/:materialId/versions/:versionId/stream` | Reproduz vídeo privado; aceita Range simples | `200` ou `206` com os bytes autorizados |
 | GET | `/api/projects/:projectId/messages` | Consulta feedback privado | `200 { data: ProjectMessage[] }` |
 | POST | `/api/projects/:projectId/messages` | Envia feedback privado | `201` ou `200` na repetição idêntica |
 
@@ -66,7 +67,7 @@ Exemplo de erro:
 }
 ```
 
-`ProjectMaterial` contém `id`, `projectId`, `kind`, `title`, `createdBy`, `createdAt`, `currentVersion` e `versions` (da mais recente para a mais antiga). Cada versão traz `versionNumber`, `originalFilename`, `mimeType`, `sizeBytes`, `checksumSha256`, `uploadedBy { id, fullName }`, `uploadedAt` e `downloadUrl`; a chave interna de armazenamento não é exposta. Criar um material com o mesmo tipo e título (sem diferenciar maiúsculas) responde `409 MATERIAL_ALREADY_EXISTS`: a substituição usa a rota de versões, que nunca apaga versões anteriores. Material inexistente ou de outro projeto responde `404 MATERIAL_NOT_FOUND`.
+`ProjectMaterial` contém `id`, `projectId`, `kind`, `title`, `createdBy`, `createdAt`, `currentVersion` e `versions` (da mais recente para a mais antiga). Cada versão traz `versionNumber`, `originalFilename`, `mimeType`, `sizeBytes`, `checksumSha256`, `uploadedBy { id, fullName }`, `uploadedAt` e `downloadUrl`; vídeos também trazem `playbackUrl` para reprodução privada. A chave interna de armazenamento não é exposta. Criar um material com o mesmo tipo e título (sem diferenciar maiúsculas) responde `409 MATERIAL_ALREADY_EXISTS`: a substituição usa a rota de versões, que nunca apaga versões anteriores. Material inexistente ou de outro projeto responde `404 MATERIAL_NOT_FOUND`.
 
 `MaterialRules` contém `dueAt`, `lock` (`null`, `PROJECT_LOCKED` ou `DEADLINE_PASSED`), `canUpload` e `rules` (por tipo: `kind`, `defaultTitle`, `required`, `formats[{ label, mimeType, extensions }]`, `maxSizeBytes`). A política usa os requisitos da rubrica vigente; sem configuração, aplica os padrões: vídeo MP4/WebM até 500 MB; relatório e manual PDF até 20 MB; outros PDF/ZIP/PNG/JPEG até 50 MB. A entrega está aberta em Preparação antes de `dueAt` e em Ajustes (reabertura pelo professor, mesmo após o prazo). Envios recusados respondem `400 EMPTY_FILE`, `413 FILE_TOO_LARGE`, `415 UNSUPPORTED_FORMAT` (tipo ou extensão fora da regra) ou `409 DEADLINE_PASSED`.
 
@@ -83,6 +84,8 @@ Erros de formato do envio: `400 MULTIPART_REQUIRED`, `FILE_REQUIRED`, `UNEXPECTE
 Exemplo: `curl -b cookies.txt -H 'X-CSRF-Protection: 1' -F kind=RELATORIO -F 'file=@relatorio.pdf' http://localhost:3000/api/projects/2/materials`.
 
 **Download privado.** `GET …/versions/:versionId/file` exige sessão e acesso de leitura ao projeto (integrantes do grupo, avaliadores atribuídos e professor da turma). O arquivo vem com `Content-Disposition: attachment` (nome original em UTF-8), o `Content-Type` detectado no envio, `X-Content-Type-Options: nosniff`, `Content-Security-Policy: default-src 'none'; sandbox` e `Cache-Control: no-store`. Projeto fora do escopo → `404 PROJECT_NOT_FOUND`; material, versão ou arquivo ausente → `404 FILE_NOT_FOUND`. Essa rota permanece privada após publicação; bytes públicos autorizados usam a rota própria C4.
+
+**Player privado.** `GET/HEAD …/versions/:versionId/stream` usa a mesma sessão e o mesmo escopo, mesmo para projetos ainda não publicados. Só aceita versões de vídeo; documentos ou arquivos ausentes recebem `404 FILE_NOT_FOUND`. Retorna `Content-Disposition: inline`, `Accept-Ranges: bytes` e `Cache-Control: no-store`. Range simples válido recebe `206` e `Content-Range`; faixa inválida ou múltipla recebe `416 INVALID_RANGE`. HEAD retorna apenas os cabeçalhos, ignorando Range. O acesso ao projeto é revalidado depois de abrir os bytes e depois de abrir o intervalo; vínculo revogado bloqueia novas requisições. Links copiados não dispensam autenticação. A interface mostra o player da versão atual após o envio, carrega os bytes ao apertar Play e mantém Baixar e o histórico de versões.
 
 A HU01 autentica e autoriza estas rotas. O entrypoint da API persiste projetos, materiais com suas versões e mensagens em arquivo privado desde a HU07; os bytes dos arquivos ficam em `UPLOAD_DIR` ou no bucket privado R2, conforme `STORAGE_PROVIDER`. Sem snapshot anterior, no modo local há seed; no modo Google iniciam vazios. Identidades, vínculos de autorização, sessões e tentativas OAuth usam PostgreSQL no modo Google; no modo local, sessões ficam em memória.
 

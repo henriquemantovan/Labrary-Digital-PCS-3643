@@ -37,9 +37,10 @@ O administrador usa **Administrar usuários → Convidados externos** para autor
 ## Aluno: enviar, substituir e submeter
 
 1. Entre como aluno do Grupo 02 e abra seu projeto. Envie os três materiais pelos campos de arquivo; o sistema valida o conteúdo, o formato e o tamanho. Para vídeo de demonstração, use `e2e/fixtures/demonstracao.webm`; use PDFs próprios de teste para os documentos.
-2. Para corrigir um material, envie uma nova versão. O histórico anterior e os comentários ligados a ele continuam disponíveis.
-3. Em **Entrega para avaliação**, confira os três requisitos prontos e confirme **Submeter para avaliação**. A rodada congela versões e rubrica; novos envios ficam bloqueados durante a avaliação.
-4. Se o professor devolver a entrega para ajustes, corrija os materiais e submeta novamente. A nova rodada não herda notas da anterior.
+2. Após enviar um vídeo, use o player no próprio cartão para assistir, pausar ou avançar, sem publicar o projeto. Ele começa a carregar ao apertar Play. Alunos do grupo, avaliadores atribuídos e professor da turma podem assistir; o botão **Baixar** permanece disponível. Se a reprodução falhar, use **Tentar reproduzir novamente** ou baixe o arquivo.
+3. Para corrigir um material, envie uma nova versão. O player passa a usar a versão atual; o histórico anterior e os comentários ligados a ele continuam disponíveis.
+4. Em **Entrega para avaliação**, confira os três requisitos prontos e confirme **Submeter para avaliação**. A rodada congela versões e rubrica; novos envios ficam bloqueados durante a avaliação.
+5. Se o professor devolver a entrega para ajustes, corrija os materiais e submeta novamente. A nova rodada não herda notas da anterior.
 
 ## Grupo e equipe: feedback privado
 

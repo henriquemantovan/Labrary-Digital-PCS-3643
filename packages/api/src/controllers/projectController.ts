@@ -11,6 +11,7 @@ import {
   uploadLock,
 } from "../services/materialPolicy.js";
 import { FileStorage } from "../services/fileStorage.js";
+import { parseByteRange } from "../services/byteRange.js";
 import {
   assertDeclaredLength,
   ReceivedUpload,
@@ -103,6 +104,11 @@ export function createProjectController(
       ...version,
       uploadedBy: { id: uploadedBy, fullName: authorName(uploadedBy) },
       downloadUrl: `/api/projects/${projectId}/materials/${version.materialId}/versions/${version.id}/file`,
+      ...(version.mimeType.startsWith("video/")
+        ? {
+            playbackUrl: `/api/projects/${projectId}/materials/${version.materialId}/versions/${version.id}/stream`,
+          }
+        : {}),
     });
   const presentMaterial = ({ versions, ...material }: ProjectMaterial) => ({
     ...material,
@@ -141,9 +147,17 @@ export function createProjectController(
   };
   const largestRule = (project: Project) =>
     Math.max(...policy.rulesFor(project).map((rule) => rule.maxSizeBytes));
-  const assertMaterialDeadline = (project: Project, rule: MaterialRule, startedAt: number) => {
+  const assertMaterialDeadline = (
+    project: Project,
+    rule: MaterialRule,
+    startedAt: number,
+  ) => {
     if (materialUploadLock(project, rule, startedAt) === "DEADLINE_PASSED")
-      throw new ApiError(409, "DEADLINE_PASSED", "O prazo de entrega deste material terminou.");
+      throw new ApiError(
+        409,
+        "DEADLINE_PASSED",
+        "O prazo de entrega deste material terminou.",
+      );
   };
   const accessibleProject = (request: Request, response: Response) => {
     const { projectId } = projectIdSchema.parse(request.params);
@@ -243,7 +257,9 @@ export function createProjectController(
           rules: policy.rulesFor(project).map((rule) => ({
             ...rule,
             lock: materialUploadLock(project, rule, checkedAt),
-            canUpload: !materialUploadLock(project, rule, checkedAt) && permissions.canUpload(response.locals.user, project),
+            canUpload:
+              !materialUploadLock(project, rule, checkedAt) &&
+              permissions.canUpload(response.locals.user, project),
           })),
         },
       });
@@ -266,6 +282,70 @@ export function createProjectController(
       });
       // Se o cliente desistir no meio, o pipeline fecha o arquivo e a resposta.
       await pipeline(file.stream, response).catch(() => undefined);
+    },
+
+    async streamVersion(request: Request, response: Response) {
+      const project = accessibleProject(request, response);
+      const { materialId, versionId } = versionIdSchema.parse(request.params);
+      const version = repository
+        .getMaterial(project.id, materialId)
+        ?.versions.find((item) => item.id === versionId);
+      const missing = () =>
+        new ApiError(404, "FILE_NOT_FOUND", "Arquivo não encontrado.");
+      if (!version?.mimeType.startsWith("video/")) throw missing();
+      let file = await storage.open(version.storageKey);
+      if (!file) throw missing();
+      file.stream.on("error", () => undefined);
+      try {
+        // O acesso remoto pode ceder o processo a uma alteração de vínculos.
+        accessibleProject(request, response);
+        if (file.sizeBytes !== version.sizeBytes) throw missing();
+        const header =
+          request.method === "HEAD" ? undefined : request.get("Range");
+        const range = header
+          ? parseByteRange(header, file.sizeBytes)
+          : undefined;
+        if (header && !range) {
+          response.set("Content-Range", `bytes */${file.sizeBytes}`);
+          throw new ApiError(
+            416,
+            "INVALID_RANGE",
+            "Intervalo de bytes inválido.",
+          );
+        }
+        if (range) {
+          file.stream.destroy();
+          file = await storage.open(version.storageKey, range);
+          if (!file) throw missing();
+          file.stream.on("error", () => undefined);
+          accessibleProject(request, response);
+          if (file.sizeBytes !== version.sizeBytes) throw missing();
+          response.set(
+            "Content-Range",
+            `bytes ${range.start}-${range.end}/${file.sizeBytes}`,
+          );
+        }
+        response.status(range ? 206 : 200).set({
+          "Content-Type": version.mimeType,
+          "Content-Length": String(
+            range ? range.end - range.start + 1 : file.sizeBytes,
+          ),
+          "Content-Disposition": attachmentHeader(
+            version.originalFilename,
+          ).replace(/^attachment;/, "inline;"),
+          "Accept-Ranges": "bytes",
+          "Content-Security-Policy": "default-src 'none'; sandbox",
+        });
+        if (request.method === "HEAD") {
+          file.stream.destroy();
+          response.end();
+          return;
+        }
+        await pipeline(file.stream, response).catch(() => undefined);
+      } catch (error) {
+        file?.stream.destroy();
+        throw error;
+      }
     },
 
     async createMaterial(request: Request, response: Response) {

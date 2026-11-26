@@ -43,6 +43,7 @@ export interface MaterialVersion {
   uploadedBy: { id: number; fullName: string | null };
   uploadedAt: string;
   downloadUrl: string;
+  playbackUrl?: string;
 }
 export interface Material {
   id: number;
