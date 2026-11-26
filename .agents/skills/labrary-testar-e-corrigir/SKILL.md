@@ -10,7 +10,7 @@ Entregue a alteração com evidência de execução atual. Trabalhe a partir da 
 ## Preparar e escolher o teste
 
 - Leia a HU e seus critérios no `README.md`, o trecho afetado e os testes próximos. Confira `git status --short` para preservar o trabalho já existente.
-- Verifique `node --version` e `pnpm --version` contra `.nvmrc` e `package.json`. Se faltarem dependências, use `pnpm install --frozen-lockfile`; preserve o lockfile. Não sobrescreva um `.env` existente. Os testes atuais não exigem PostgreSQL nem geração do Prisma.
+- Verifique `node --version` e `pnpm --version` contra `.nvmrc` e `package.json`. Se faltarem dependências, use `pnpm install --frozen-lockfile`; preserve o lockfile. Não sobrescreva um `.env` existente. Os testes unitários não exigem PostgreSQL nem geração do Prisma. `pnpm db:test` valida as migrations e a persistência real em bancos descartáveis, usando uma `TEST_DATABASE_URL` própria com permissão CREATEDB; nunca use o banco compartilhado de avaliação.
 - Execute primeiro o teste relacionado para conhecer a situação inicial. Em bugs, acrescente uma reprodução e confirme que falha pela condição esperada antes de corrigir, quando viável. Se já houver um teste que reproduz o caso, aproveite-o.
 - Teste comportamentos observáveis e critérios de aceitação: sucesso, entrada inválida, limites e acesso indevido conforme a mudança. Para refatorações, testes existentes podem bastar se já cobrem o comportamento preservado.
 

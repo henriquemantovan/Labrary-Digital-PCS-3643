@@ -15,8 +15,7 @@ C4Component
         Component(repository, "Repositórios", "TypeScript", "Persistência de identidades e domínio acadêmico")
         Component(storage, "Armazenamento de arquivos", "FileStorage", "Uploads e leitura autorizada")
     }
-    ContainerDb(postgres, "PostgreSQL", "Banco relacional", "Contas, vínculos, convites e sessões")
-    ContainerDb(json, "Arquivos privados", "JSON", "Projetos, critérios de avaliação, avaliações, resultados e controle R2")
+    ContainerDb(postgres, "PostgreSQL", "Banco relacional", "Contas, vínculos, sessões e domínio acadêmico")
     ContainerDb(r2, "Cloudflare R2", "Bucket privado", "Vídeos, imagens e documentos")
     Rel(usuario, web, "Usa")
     Rel(web, controller, "Chama", "HTTP /api")
@@ -25,27 +24,29 @@ C4Component
     Rel(controller, storage, "Envia e lê arquivos")
     Rel(model, storage, "Confere materiais")
     Rel(repository, postgres, "Persiste")
-    Rel(repository, json, "Persiste")
-    Rel(storage, json, "Reserva operações R2")
+    Rel(storage, postgres, "Reserva operações R2")
     Rel(storage, r2, "Grava e lê", "API S3")
 ```
 
 ## Persistência
 
-| Informação | Armazenamento |
+| Informação | Armazenamento no ambiente fornecido |
 | --- | --- |
-| Identidades, dados acadêmicos, vínculos, auditoria, convites e sessões Google | PostgreSQL |
-| Projetos, versões de materiais, mensagens, submissões e publicações | `PROJECT_DATA_FILE` |
-| Requisitos e critérios de avaliação | `RUBRIC_DATA_FILE` |
-| Avaliações | `EVALUATION_DATA_FILE` |
-| Liberações de resultado | `RESULT_RELEASE_DATA_FILE` |
-| Controle de uso do R2 | `R2_USAGE_FILE` |
-| Vínculos no modo local | `GROUP_DATA_FILE` |
-| Arquivos enviados | Disco privado ou R2, conforme configuração |
+| Identidades, dados acadêmicos do usuário, vínculos, auditoria, convites e sessões Google | PostgreSQL, tabelas relacionais |
+| Projetos, versões de materiais, mensagens, submissões e publicações | PostgreSQL, `academic_state` (`domain=projects`) |
+| Requisitos e critérios de avaliação | PostgreSQL, `academic_state` (`domain=rubrics`) |
+| Avaliações | PostgreSQL, `academic_state` (`domain=evaluations`) |
+| Liberações de resultado | PostgreSQL, `academic_state` (`domain=results`) |
+| Controle de uso do R2 | PostgreSQL, `r2_usage` |
+| Arquivos enviados | Bucket R2 privado |
 
-O domínio acadêmico usa arquivos JSON privados com escrita por substituição do snapshot. É suportado **um processo escritor**; não há transação distribuída entre PostgreSQL, arquivos e R2. A factory de testes aceita repositórios em memória. O modo local usa sessões em memória, e o modo Google utiliza sessões PostgreSQL.
+`academic_state` preserva os agregados versionados em colunas JSONB nativas do PostgreSQL. Não há arquivos JSON locais no caminho de persistência do modo Google. Os adapters recarregam o estado a cada operação, bloqueiam a linha durante a alteração e só retornam sucesso após COMMIT. IDs, versões e idempotência são protegidos contra escritas concorrentes entre instâncias. A reserva das operações R2 usa UPDATE atômico e é confirmada antes da chamada remota.
 
-O schema SQL inclui tabelas para um modelo mais amplo que os adapters ativos. A existência de uma tabela não implica que o domínio já esteja sendo gravado nela. Consulte o [DER](diagrama-er.md) e o [procedimento de backup](instalacao-e-aceitacao.md#backup-e-restauração).
+Os agregados não foram normalizados nas tabelas acadêmicas históricas; suas referências internas continuam validadas pela aplicação. O bloqueio é por agregado, e o estado inteiro é carregado por operação: grandes volumes podem exigir particionamento ou normalização. Não existe transação única entre os vários serviços de domínio e o R2. O limite de capacidade do bucket serializa uploads nesta instância; mantenha uma instância responsável pelos envios se depender dessa margem de capacidade.
+
+A factory de testes aceita repositórios em memória. O demo isolado, sem serviços externos, conserva adapters de arquivo e sessões em memória. Esses adapters não são usados pelo ambiente Google/PostgreSQL entregue.
+
+A migração adiciona `academic_state`, `academic_data_import` e `r2_usage`. A importação legada é explícita por `pnpm db:importar-json`, cria cópias privadas e recusa sobrescrever dados divergentes. O hash da origem permite repetir o comando sem reverter alterações posteriores. Contadores R2 nunca são reduzidos pela importação. Consulte o [DER](diagrama-er.md) e o [procedimento de backup](instalacao-e-aceitacao.md#backup-e-restauração).
 
 ## Autorização e privacidade
 
@@ -63,7 +64,7 @@ Com `STORAGE_PROVIDER=disk`, os materiais ficam em `UPLOAD_DIR`. A troca de prov
 
 Para uma configuração nova, use bucket R2 **Standard** privado e credenciais restritas a ele. Preencha `R2_ACCOUNT_ID`, `R2_BUCKET`, `R2_ACCESS_KEY_ID` e `R2_SECRET_ACCESS_KEY` no `.env`. Não exponha acesso público nem variáveis com segredo ao frontend.
 
-O controle local limita o bucket a 9.000.000.000 bytes e reserva até 100.000 operações A e 1.000.000 B por mês UTC. As reservas são persistidas antes das chamadas remotas. O controle deve ser conservado entre reinícios e não mede uso externo da conta. A [franquia e cobrança do R2](https://developers.cloudflare.com/r2/pricing/) pertencem ao provedor; os limites da aplicação não garantem custo zero absoluto.
+O controle da API limita o bucket a 9.000.000.000 bytes e reserva até 100.000 operações A e 1.000.000 B por mês UTC. As reservas são persistidas no PostgreSQL antes das chamadas remotas. O controle deve ser conservado entre reinícios e não mede uso externo da conta. A [franquia e cobrança do R2](https://developers.cloudflare.com/r2/pricing/) pertencem ao provedor; os limites da aplicação não garantem custo zero absoluto.
 
 ## Testes e recursos de demonstração
 

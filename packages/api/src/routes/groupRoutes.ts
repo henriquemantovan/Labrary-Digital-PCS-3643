@@ -1,3 +1,4 @@
+import type { DataRepository } from "../repositories/asyncRepository.js";
 import { Router } from "express";
 import { createGroupController } from "../controllers/groupController.js";
 import { AuthRepository } from "../repositories/authRepository.js";
@@ -5,7 +6,7 @@ import { ProjectRepository } from "../repositories/projectRepository.js";
 import { GroupRepository } from "../repositories/groupRepository.js";
 
 export function createGroupRouter(
-  projects: ProjectRepository,
+  projects: DataRepository<ProjectRepository>,
   auth: AuthRepository,
   planning: GroupRepository,
   now: () => number,

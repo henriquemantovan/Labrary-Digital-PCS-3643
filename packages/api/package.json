@@ -12,6 +12,7 @@
     "test": "vitest run --coverage",
     "db:generate": "prisma generate --schema prisma/schema.prisma",
     "db:deploy": "prisma migrate deploy",
+    "db:importar-json": "tsx src/scripts/importAcademicJson.ts",
     "db:baseline": "prisma migrate resolve --applied 20261001000000_baseline",
     "db:status": "prisma migrate status",
     "db:test": "tsx integration/database.ts",

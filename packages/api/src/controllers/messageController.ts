@@ -1,3 +1,4 @@
+import type { DataRepository } from "../repositories/asyncRepository.js";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { ApiError } from "../errors.js";
@@ -15,32 +16,32 @@ const inputSchema = z
   .strict();
 
 export function createMessageController(
-  repository: ProjectRepository,
+  repository: DataRepository<ProjectRepository>,
   auth: AuthRepository,
   now: () => number,
 ) {
   const permissions = createPermissions(auth);
-  const authorize = (request: Request, response: Response) => {
+  const authorize = async (request: Request, response: Response) => {
     const { projectId } = params.parse(request.params);
-    const project = repository.get(projectId);
+    const project = (await repository.get(projectId));
     if (!project || !permissions.canRead(response.locals.user, project)) {
       throw new ApiError(404, "PROJECT_NOT_FOUND", "Projeto não encontrado.");
     }
     return project;
   };
   return {
-    list(request: Request, response: Response) {
-      const project = authorize(request, response);
-      response.json({ data: repository.listMessages(project.id) });
+    async list(request: Request, response: Response) {
+      const project = (await authorize(request, response));
+      response.json({ data: (await repository.listMessages(project.id)) });
     },
-    create(request: Request, response: Response) {
-      const project = authorize(request, response);
+    async create(request: Request, response: Response) {
+      const project = (await authorize(request, response));
       const input = inputSchema.parse(request.body);
       const version =
         input.materialVersionId === null
           ? null
-          : repository
-              .listMaterials(project.id)
+          : (await repository
+              .listMaterials(project.id))
               .flatMap(({ title, versions }) =>
                 versions.map(({ id, versionNumber }) => ({
                   id,
@@ -56,14 +57,14 @@ export function createMessageController(
           "Versão de material não encontrada.",
         );
       const user = response.locals.accountUser;
-      const result = repository.createMessage({
+      const result = (await repository.createMessage({
         projectId: project.id,
         clientMessageId: input.clientMessageId,
         body: input.body,
         author: { id: user.id, fullName: user.fullName, role: user.role },
         createdAt: new Date(now()).toISOString(),
         materialVersion: version,
-      });
+      }));
       response
         .status(result.created ? 201 : 200)
         .json({ data: result.message });

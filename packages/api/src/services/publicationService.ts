@@ -1,3 +1,4 @@
+import type { DataRepository } from "../repositories/asyncRepository.js";
 import { ApiError } from "../errors.js";
 import { User } from "../models/auth.js";
 import { Project } from "../models/project.js";
@@ -37,7 +38,7 @@ const conflict = () =>
 const sameIds = (a: number[], b: number[]) =>
   a.length === b.length && a.every((id) => b.includes(id));
 export function createPublicationService(
-  projects: ProjectRepository,
+  projects: DataRepository<ProjectRepository>,
   auth: AuthRepository,
   storage: FileStorage,
   now: () => number,
@@ -54,21 +55,21 @@ export function createPublicationService(
       if (locks.get(id) === pending) locks.delete(id);
     });
   }
-  const managed = (id: number, user: User) => {
+  const managed = async (id: number, user: User) => {
     if (!["PROFESSOR", "ADMIN"].includes(user.role))
       throw new ApiError(
         403,
         "FORBIDDEN",
         "Você não tem permissão para esta ação.",
       );
-    const project = projects.get(id);
+    const project = (await projects.get(id));
     if (!project || !permissions.ownsClass(user, project.classId))
       throw new ApiError(404, "PROJECT_NOT_FOUND", "Projeto não encontrado.");
     return project;
   };
-  const history = (id: number) => projects.publicationHistory(id);
-  const finalized = (id: number) =>
-    history(id).find((event) => event.action === "FINALIZADO");
+  const history = async (id: number) => (await projects.publicationHistory(id));
+  const finalized = async (id: number) =>
+    (await history(id)).find((event) => event.action === "FINALIZADO");
   async function fromProvider<T>(read: () => Promise<T>): Promise<T> {
     try {
       return await read();
@@ -138,7 +139,7 @@ export function createPublicationService(
         throw notReady();
     }
     for (const material of submission.materials) {
-      const stored = projects.getMaterial(project.id, material.materialId);
+      const stored = (await projects.getMaterial(project.id, material.materialId));
       const version = stored?.versions.find(
         (version) => version.id === material.versionId,
       );
@@ -170,7 +171,7 @@ export function createPublicationService(
       .filter((link) => link.projectId === project.id)
       .map((link) => link.evaluatorId);
     if (!sameIds(expected, currentExpected)) throw conflict();
-    const latest = projects.get(project.id);
+    const latest = (await projects.get(project.id));
     if (
       !latest ||
       latest.status !== project.status ||
@@ -181,7 +182,7 @@ export function createPublicationService(
   }
   async function current(project: Project) {
     const submission = await ready(project);
-    const previous = finalized(project.id);
+    const previous = (await finalized(project.id));
     if (
       previous &&
       JSON.stringify(previous.submission) !== JSON.stringify(submission)
@@ -189,18 +190,18 @@ export function createPublicationService(
       throw conflict();
     return submission;
   }
-  const active = (id: number): PublicProject | undefined => {
-    if (projects.get(id)?.status !== "FINALIZADO") return undefined;
-    const last = history(id).at(-1);
+  const active = async (id: number): Promise<PublicProject | undefined> => {
+    if ((await projects.get(id))?.status !== "FINALIZADO") return undefined;
+    const last = (await history(id)).at(-1);
     return last?.action === "PUBLICADO"
       ? structuredClone(last.publicProject)
       : undefined;
   };
   return {
     async management(id: number, user: User): Promise<PublicationManagement> {
-      const project = managed(id, user),
-        events = history(id),
-        final = finalized(id),
+      const project = (await managed(id, user)),
+        events = (await history(id)),
+        final = (await finalized(id)),
         last = events.at(-1);
       let reason: string | null = null,
         submission: Submission | undefined;
@@ -248,21 +249,21 @@ export function createPublicationService(
     },
     finalize(id: number, user: User, actorId: number, submissionId: number) {
       return serialized(id, async () => {
-        const project = managed(id, user);
+        const project = (await managed(id, user));
         const submission = await current(project);
         if (submission.id !== submissionId) throw conflict();
-        const previous = finalized(id);
+        const previous = (await finalized(id));
         if (previous) return previous;
         if (project.status !== "EM_AVALIACAO") throw notReady();
-        managed(id, user);
-        return projects.recordPublicationDecision({
+        (await managed(id, user));
+        return (await projects.recordPublicationDecision({
           action: "FINALIZADO",
           projectId: id,
           submissionId,
           actorId,
           createdAt: new Date(now()).toISOString(),
           submission,
-        });
+        }));
       });
     },
     publish(
@@ -276,8 +277,8 @@ export function createPublicationService(
       },
     ) {
       return serialized(id, async () => {
-        const project = managed(id, user);
-        if (project.status !== "FINALIZADO" || !finalized(id)) throw notReady();
+        const project = (await managed(id, user));
+        if (project.status !== "FINALIZADO" || !(await finalized(id))) throw notReady();
         const submission = await current(project);
         if (submission.id !== input.submissionId) throw conflict();
         const versions = submission.materials.filter((material) =>
@@ -308,7 +309,7 @@ export function createPublicationService(
             contentUrl: `/api/catalog/${id}/materials/${material.versionId}/file`,
           })),
         });
-        const last = history(id).at(-1);
+        const last = (await history(id)).at(-1);
         if (last?.action === "PUBLICADO") {
           if (
             sameIds(
@@ -325,8 +326,8 @@ export function createPublicationService(
             "Retire a publicação atual antes de alterar os materiais autorizados.",
           );
         }
-        managed(id, user);
-        return projects.recordPublicationDecision({
+        (await managed(id, user));
+        return (await projects.recordPublicationDecision({
           action: "PUBLICADO",
           projectId: id,
           submissionId: submission.id,
@@ -337,28 +338,27 @@ export function createPublicationService(
             reference: input.groupAuthorization.reference,
           },
           publicProject: dto,
-        });
+        }));
       });
     },
     withdraw(id: number, user: User, actorId: number) {
       return serialized(id, async () => {
-        managed(id, user);
-        const last = history(id).at(-1);
+        (await managed(id, user));
+        const last = (await history(id)).at(-1);
         if (last?.action !== "PUBLICADO") return;
-        projects.recordPublicationDecision({
+        (await projects.recordPublicationDecision({
           action: "RETIRADO",
           projectId: id,
           submissionId: last.submissionId,
           actorId,
           createdAt: new Date(now()).toISOString(),
-        });
+        }));
       });
     },
     async list(filter: CatalogFilter) {
       const query = (filter.q ?? "").trim().toLocaleLowerCase("pt-BR");
-      return projects
-        .list({})
-        .map((project) => active(project.id))
+      const publications = await Promise.all((await projects.list({})).map((project) => active(project.id)));
+      return publications
         .filter((item): item is PublicProject => !!item)
         .filter(
           (project) =>
@@ -372,17 +372,17 @@ export function createPublicationService(
         );
     },
     async get(id: number) {
-      return active(id);
+      return (await active(id));
     },
-    publicVersion(id: number, versionId: number) {
-      const publication = active(id);
+    async publicVersion(id: number, versionId: number) {
+      const publication = (await active(id));
       const material = publication?.materials.find(
         (item) => item.versionId === versionId,
       );
       const version =
         material &&
-        projects
-          .getMaterial(id, material.id)
+        (await projects
+          .getMaterial(id, material.id))
           ?.versions.find((item) => item.id === versionId);
       if (
         !material ||

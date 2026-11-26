@@ -1,3 +1,4 @@
+import type { DataRepository } from "./repositories/asyncRepository.js";
 import { createReadRouter } from "./routes/readRoutes.js";
 import type { ReadProviders } from "./models/readModels.js";
 import { createPublicationService } from "./services/publicationService.js";
@@ -40,7 +41,7 @@ import {
   ProjectRepository,
 } from "./repositories/projectRepository.js";
 import { createProjectRouter } from "./routes/projectRoutes.js";
-import { MaterialPolicy } from "./services/materialPolicy.js";
+import { MaterialPolicy, AsyncMaterialPolicy } from "./services/materialPolicy.js";
 import { createDiskStorage, FileStorage } from "./services/fileStorage.js";
 import { EvaluationProvider } from "./models/consolidation.js";
 import {
@@ -66,21 +67,21 @@ export interface AppOptions {
   publicationProviders?: PublicationProviders;
 
   evaluations?: EvaluationProvider;
-  evaluationRepository?: EvaluationRepository;
-  resultReleases?: ResultReleaseRepository;
-  rubrics?: RubricRepository;
+  evaluationRepository?: DataRepository<EvaluationRepository>;
+  resultReleases?: DataRepository<ResultReleaseRepository>;
+  rubrics?: DataRepository<RubricRepository>;
   groups?: GroupRepository;
   admin?: AdminRepository;
   google?: GoogleAuthOptions;
   localLogin?: boolean;
-  repository?: ProjectRepository;
+  repository?: DataRepository<ProjectRepository>;
   auth?: AuthRepository;
   now?: () => number;
   secureCookies?: boolean;
   origin?: string;
   sessionTtlMs?: number;
   loginLimit?: number;
-  materialPolicy?: MaterialPolicy;
+  materialPolicy?: MaterialPolicy | AsyncMaterialPolicy;
   storage?: FileStorage;
 }
 

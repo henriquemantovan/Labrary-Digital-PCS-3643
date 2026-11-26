@@ -25,6 +25,7 @@ import {
   createAuthRepository,
 } from "./repositories/authRepository.js";
 import { createApp } from "./app.js";
+import { createPostgresDomainRepositories } from "./repositories/postgresDomainRepositories.js";
 import { config } from "dotenv";
 import { resolve } from "node:path";
 
@@ -51,8 +52,9 @@ let google;
 let admin;
 let groups;
 let academicAccess;
+let pool: Pool | undefined;
 if (googleConfig) {
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  pool = new Pool({ connectionString: process.env.DATABASE_URL });
   academicAccess = createPostgresAcademicAccessRepository(pool, developmentTestLogin);
   const identity = createPostgresIdentityRepository(pool);
   admin = createPostgresAdminRepository(pool);
@@ -75,10 +77,16 @@ const dataFile =
     process.cwd(),
     `../../.data/projects-${google ? "google" : process.env.AUTH_DEMO === "true" ? "demo" : "local"}.json`,
   );
-const repository = createMemoryProjectRepository(
-  !google,
-  createFileProjectStorage(dataFile),
-);
+const domain = pool ? createPostgresDomainRepositories(pool) : {
+  repository: createMemoryProjectRepository(true, createFileProjectStorage(dataFile)),
+  evaluationRepository: createEvaluationRepository(process.env.EVALUATION_DATA_FILE ?? `${dataFile}.evaluations.json`),
+  resultReleases: createResultReleaseRepository(process.env.RESULT_RELEASE_DATA_FILE ?? `${dataFile}.results.json`),
+  rubrics: createMemoryRubricRepository(createFileRubricStorage(process.env.RUBRIC_DATA_FILE ?? `${dataFile}.rubrics.json`)),
+};
+if (pool) {
+  const states = await pool.query("SELECT domain FROM academic_state");
+  if (states.rows.length !== 4) throw new Error("Execute pnpm db:deploy antes de iniciar a API.");
+}
 groups ??= createMemoryGroupRepository(
   auth.directory,
   createFileGroupStorage(
@@ -87,26 +95,15 @@ groups ??= createMemoryGroupRepository(
 );
 const app = createApp({
   academicAccess,
-  evaluationRepository: createEvaluationRepository(
-    process.env.EVALUATION_DATA_FILE ?? `${dataFile}.evaluations.json`,
-  ),
-  resultReleases: createResultReleaseRepository(
-    process.env.RESULT_RELEASE_DATA_FILE ?? `${dataFile}.results.json`,
-  ),
-  rubrics: createMemoryRubricRepository(
-    createFileRubricStorage(
-      process.env.RUBRIC_DATA_FILE ?? `${dataFile}.rubrics.json`,
-    ),
-  ),
+  ...domain,
   groups,
-  repository,
   admin,
   auth,
   google,
   localLogin: !google,
   origin,
   secureCookies: process.env.NODE_ENV === "production",
-  storage: createConfiguredStorage(process.env, repositoryRoot, dataFile),
+  storage: createConfiguredStorage(process.env, repositoryRoot, dataFile, pool),
 });
 const listening = () => {
   console.log(`Labrary API listening on http://localhost:${port}`);

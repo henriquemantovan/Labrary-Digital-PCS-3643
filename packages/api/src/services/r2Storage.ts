@@ -29,11 +29,11 @@ const unavailable = () =>
 export function createR2Storage(options: {
   client: S3Client;
   bucket: string;
-  reserve(operation: "A" | "B"): void;
+  reserve(operation: "A" | "B"): void | Promise<void>;
   temporaryRoot?: string;
 }): FileStorage {
   const { client, bucket, reserve } = options;
-  // A aplicação já exige um único escritor para os snapshots de projetos.
+  // Serializa verificações de capacidade e uploads nesta instância.
   let writer = Promise.resolve();
   async function serialize<T>(action: () => Promise<T>): Promise<T> {
     const previous = writer;
@@ -53,7 +53,7 @@ export function createR2Storage(options: {
     let continuation: string | undefined;
     const tokens = new Set<string>();
     do {
-      reserve("A");
+      await reserve("A");
       const page = await client.send(
         new ListObjectsV2Command({
           Bucket: bucket,
@@ -101,7 +101,7 @@ export function createR2Storage(options: {
                 "STORAGE_CAPACITY_LIMIT",
                 "O limite de armazenamento dos arquivos foi atingido. Contate o administrador.",
               );
-            reserve("A");
+            await reserve("A");
             const file = (await staging.open(stored.storageKey))!;
             file.stream.on("error", () => undefined);
             try {
@@ -129,7 +129,7 @@ export function createR2Storage(options: {
     async open(storageKey, range) {
       if (!validKey.test(storageKey)) return undefined;
       return remote(async () => {
-        reserve("B");
+        await reserve("B");
         const head = await client
           .send(new HeadObjectCommand({ Bucket: bucket, Key: storageKey }))
           .catch((error) => {
@@ -145,7 +145,7 @@ export function createR2Storage(options: {
           throw unavailable();
         // Reserva antes de devolver o stream, para a API ainda poder responder
         // 503 quando a cota acabar. HEAD pode reservar mais que o uso real.
-        reserve("B");
+        await reserve("B");
         const abort = new AbortController();
         const stream = Readable.from(
           (async function* () {

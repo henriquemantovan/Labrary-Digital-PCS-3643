@@ -23,6 +23,8 @@ GOOGLE_CLIENT_ID=seu-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=preencher-no-ambiente-privado
 ```
 
+Neste modo, contas, sessões, vínculos, projetos, critérios, avaliações, resultados e controle R2 são persistidos no PostgreSQL. Uma cópia com o mesmo `.env` acessa os mesmos dados, sem precisar de snapshots locais.
+
 Não use `AUTH_USERS_FILE` nesse modo. Para um banco próprio novo, execute `pnpm db:deploy` e `pnpm db:status` antes de iniciar `pnpm dev`. Em produção, utilize HTTPS e mantenha o login de teste desativado.
 
 ## Cadastro e convidados

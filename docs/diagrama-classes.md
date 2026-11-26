@@ -104,7 +104,7 @@ classDiagram
     SubmittedMaterial --> MaterialVersion : referência por ID
 ```
 
-`Submission` também contém a cópia dos critérios de avaliação usados na entrega. Não há alteração retroativa de uma rodada ao substituir um arquivo ou criar outros critérios de avaliação. Mensagens (`ProjectMessage`) têm projeto, autor e contexto opcional de versão; ficam no snapshot privado de projetos.
+`Submission` também contém a cópia dos critérios de avaliação usados na entrega. Não há alteração retroativa de uma rodada ao substituir um arquivo ou criar outros critérios de avaliação. Mensagens (`ProjectMessage`) têm projeto, autor e contexto opcional de versão; ficam no agregado de projetos persistido no PostgreSQL.
 
 ## Critérios de avaliação
 

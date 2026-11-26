@@ -4,6 +4,8 @@ import { resolveUploadDir } from "./configuration.js";
 import { createDiskStorage } from "./fileStorage.js";
 import { createR2Storage } from "./r2Storage.js";
 import { createR2UsageLimiter } from "./r2Usage.js";
+import type { Pool } from "pg";
+import { createPostgresR2UsageLimiter } from "./postgresR2Usage.js";
 
 export function loadR2Config(
   env: NodeJS.ProcessEnv,
@@ -36,6 +38,7 @@ export function createConfiguredStorage(
   env: NodeJS.ProcessEnv,
   repositoryRoot: string,
   dataFile: string,
+  pool?: Pool,
 ) {
   const provider = env.STORAGE_PROVIDER || "disk";
   if (provider === "disk")
@@ -43,7 +46,9 @@ export function createConfiguredStorage(
   if (provider !== "r2")
     throw new Error("STORAGE_PROVIDER deve ser disk ou r2.");
   const config = loadR2Config(env, repositoryRoot, dataFile);
-  const usage = createR2UsageLimiter(config.usageFile, config.scope);
+  const usage = pool
+    ? createPostgresR2UsageLimiter(pool, config.scope)
+    : createR2UsageLimiter(config.usageFile, config.scope);
   const client = new S3Client({
     region: "auto",
     endpoint: `https://${config.accountId}.r2.cloudflarestorage.com`,

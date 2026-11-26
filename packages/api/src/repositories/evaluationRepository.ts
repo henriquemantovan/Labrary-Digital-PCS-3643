@@ -15,7 +15,7 @@ const recordSchema = z.object({
 }).strict();
 type StoredEvaluation = z.infer<typeof recordSchema>;
 
-const recordsSchema = z.array(recordSchema).refine((records) => {
+export const evaluationRecordsSchema = z.array(recordSchema).refine((records) => {
   const keys = records.map(({ projectId, submissionId, evaluation }) =>
     `${projectId}/${submissionId}/${evaluation.evaluatorId}`);
   return new Set(keys).size === keys.length;
@@ -26,9 +26,14 @@ export interface EvaluationRepository {
   save(round: EvaluationRoundKey, evaluation: Evaluation): Evaluation;
 }
 
+export interface EvaluationStorage {
+  load(): StoredEvaluation[];
+  save(records: StoredEvaluation[]): void;
+}
+
 function load(path: string): StoredEvaluation[] {
   try {
-    return recordsSchema.parse(JSON.parse(readFileSync(path, "utf8")));
+    return evaluationRecordsSchema.parse(JSON.parse(readFileSync(path, "utf8")));
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
     throw error;
@@ -36,8 +41,10 @@ function load(path: string): StoredEvaluation[] {
 }
 
 /** Arquivo privado de um único processo escritor, como os demais snapshots. */
-export function createEvaluationRepository(path?: string): EvaluationRepository {
-  let records = path ? load(path) : [];
+export function createEvaluationRepository(source?: string | EvaluationStorage): EvaluationRepository {
+  const path = typeof source === "string" ? source : undefined;
+  const storage = typeof source === "object" ? source : undefined;
+  let records = storage ? evaluationRecordsSchema.parse(storage.load()) : path ? load(path) : [];
   function belongsToRound(record: StoredEvaluation, round: EvaluationRoundKey) {
     if (record.projectId !== round.projectId || record.submissionId !== round.id)
       return false;
@@ -62,6 +69,7 @@ export function createEvaluationRepository(path?: string): EvaluationRepository 
       const next = records.filter((existing) =>
         !belongsToRound(existing, round) || existing.evaluation.evaluatorId !== evaluation.evaluatorId);
       next.push(record);
+      storage?.save(structuredClone(next));
       if (path) {
         mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
         const temporary = `${path}.tmp`;

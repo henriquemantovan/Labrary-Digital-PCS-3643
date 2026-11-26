@@ -13,7 +13,7 @@ import { ApiError } from "../errors.js";
 // Margem abaixo da franquia da conta: não representa um limite de cobrança
 // da Cloudflare e não contabiliza acessos feitos fora desta API.
 export const r2OperationLimits = { A: 100_000, B: 1_000_000 } as const;
-const usageSchema = z
+export const r2UsageSchema = z
   .object({
     version: z.literal(1),
     scope: z.string().min(1),
@@ -48,7 +48,7 @@ export function createR2UsageLimiter(
   scope: string,
   now = Date.now,
 ) {
-  let state = usageSchema.parse(JSON.parse(readFileSync(path, "utf8")));
+  let state = r2UsageSchema.parse(JSON.parse(readFileSync(path, "utf8")));
   if (state.scope !== scope)
     throw new Error("O controle de uso R2 pertence a outra conta ou bucket.");
   return {

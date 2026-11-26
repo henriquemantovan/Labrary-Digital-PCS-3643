@@ -7,6 +7,27 @@ datasource db {
   provider = "postgresql"
 }
 
+model AcademicState {
+  domain String @id
+  payload Json
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz
+  @@map("academic_state")
+}
+
+model AcademicDataImport {
+  sourceHash String @id @map("source_hash") @db.Char(64)
+  importedAt DateTime @default(now()) @map("imported_at") @db.Timestamptz
+  @@map("academic_data_import")
+}
+
+model R2Usage {
+  scope String @id
+  month String @db.Char(7)
+  usedA Int @default(0) @map("used_a")
+  usedB Int @default(0) @map("used_b")
+  @@map("r2_usage")
+}
+
 enum UserRole {
   ADMIN
   ALUNO

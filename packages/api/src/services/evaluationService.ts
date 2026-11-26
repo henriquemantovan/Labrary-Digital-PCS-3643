@@ -1,3 +1,4 @@
+import type { DataRepository } from "../repositories/asyncRepository.js";
 import { ApiError } from "../errors.js";
 import type { User } from "../models/auth.js";
 import type { EvaluationProvider } from "../models/consolidation.js";
@@ -35,9 +36,9 @@ function assertEditableRound(active: boolean) {
 }
 
 export function createEvaluationService(
-  projects: ProjectRepository,
+  projects: DataRepository<ProjectRepository>,
   auth: AuthRepository,
-  repository: EvaluationRepository,
+  repository: DataRepository<EvaluationRepository>,
   now: () => number,
 ) {
   const permissions = createPermissions(auth);
@@ -49,22 +50,22 @@ export function createEvaluationService(
     return [...new Set(ids)].sort((left, right) => left - right);
   }
 
-  function forRound({ projectId, submissionId, user }: EvaluationContext) {
-    const project = projects.get(projectId);
+  async function forRound({ projectId, submissionId, user }: EvaluationContext) {
+    const project = (await projects.get(projectId));
     if (!project || !permissions.canRead(user, project))
       throw new ApiError(404, "PROJECT_NOT_FOUND", "Projeto não encontrado.");
     const teacher = permissions.ownsClass(user, project.classId);
     if (!teacher && user.role !== "AVALIADOR")
       throw new ApiError(403, "FORBIDDEN", "Somente avaliadores atribuídos e docentes podem acessar avaliações.");
-    const submission = projects.getSubmission(projectId, submissionId);
+    const submission = (await projects.getSubmission(projectId, submissionId));
     if (!submission)
       throw new ApiError(404, "SUBMISSION_NOT_FOUND", "Submissão não encontrada.");
-    const latest = projects.listSubmissions(projectId).at(-1);
+    const latest = (await projects.listSubmissions(projectId)).at(-1);
     const active = project.status === "EM_AVALIACAO" && submission.status === "SUBMETIDA" && latest?.id === submission.id;
     return { submission, teacher, active };
   }
 
-  function record(
+  async function record(
     submission: Submission,
     previous: Evaluation,
     actorId: number,
@@ -74,22 +75,22 @@ export function createEvaluationService(
   ) {
     const at = new Date(now()).toISOString();
     const revision = previous.revision + 1;
-    return repository.save(submission, {
+    return (await repository.save(submission, {
       evaluatorId: previous.evaluatorId,
       status: action,
       revision,
       scores,
       finalizedAt: action === "FINALIZADA" ? at : null,
       history: [...previous.history, { action, actorId, at, reason, revision, scores }],
-    });
+    }));
   }
 
   const getCurrentRound: EvaluationProvider["getCurrentRound"] = async (projectId) => {
-    const submission = projects.listSubmissions(projectId).at(-1);
+    const submission = (await projects.listSubmissions(projectId)).at(-1);
     if (!submission || submission.status === "DEVOLVIDA") return undefined;
 
     const expectedEvaluatorIds = expectedEvaluators(projectId);
-    const evaluations = repository.list(submission)
+    const evaluations = (await repository.list(submission))
       .filter((item) => expectedEvaluatorIds.includes(item.evaluatorId))
       .sort((left, right) => left.evaluatorId - right.evaluatorId);
     return {
@@ -105,9 +106,9 @@ export function createEvaluationService(
 
   return {
     getCurrentRound,
-    read(context: EvaluationContext) {
-      const { submission, teacher, active } = forRound(context);
-      const stored = new Map(repository.list(submission).map((item) => [item.evaluatorId, item]));
+    async read(context: EvaluationContext) {
+      const { submission, teacher, active } = (await forRound(context));
+      const stored = new Map((await repository.list(submission)).map((item) => [item.evaluatorId, item]));
       const ids = teacher
         ? [...new Set([...expectedEvaluators(context.projectId), ...stored.keys()])].sort((left, right) => left - right)
         : [context.user.id];
@@ -121,24 +122,24 @@ export function createEvaluationService(
         } : {}),
       };
     },
-    edit(context: EvaluationContext, input: EvaluationEdit, finalizing: boolean) {
-      const { submission, active } = forRound(context);
+    async edit(context: EvaluationContext, input: EvaluationEdit, finalizing: boolean) {
+      const { submission, active } = (await forRound(context));
       if (context.user.role !== "AVALIADOR")
         throw new ApiError(403, "FORBIDDEN", "Somente o avaliador atribuído pode registrar suas notas.");
       assertEditableRound(active);
-      const previous = repository.list(submission).find((item) => item.evaluatorId === context.user.id) ?? pending(context.user.id);
+      const previous = (await repository.list(submission)).find((item) => item.evaluatorId === context.user.id) ?? pending(context.user.id);
       assertRevision(previous, input.expectedRevision);
       if (previous.status === "FINALIZADA")
         throw new ApiError(409, "EVALUATION_FINALIZED", "O professor precisa reabrir a avaliação finalizada.");
       const scores = validateEvaluationScores(submission.rubric, input.scores, finalizing);
       return record(submission, previous, context.user.id, finalizing ? "FINALIZADA" : "RASCUNHO", scores);
     },
-    reopen(context: EvaluationContext, evaluatorId: number, input: { reason: string; expectedRevision: number }) {
-      const { submission, teacher, active } = forRound(context);
+    async reopen(context: EvaluationContext, evaluatorId: number, input: { reason: string; expectedRevision: number }) {
+      const { submission, teacher, active } = (await forRound(context));
       if (!teacher)
         throw new ApiError(403, "FORBIDDEN", "Somente o professor da turma pode reabrir uma avaliação.");
       assertEditableRound(active);
-      const previous = repository.list(submission).find((item) => item.evaluatorId === evaluatorId);
+      const previous = (await repository.list(submission)).find((item) => item.evaluatorId === evaluatorId);
       if (!previous)
         throw new ApiError(404, "EVALUATION_NOT_FOUND", "Avaliação não encontrada.");
       assertRevision(previous, input.expectedRevision);

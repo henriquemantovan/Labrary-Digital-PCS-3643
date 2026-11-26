@@ -1,3 +1,4 @@
+import type { DataRepository } from "../repositories/asyncRepository.js";
 import { createMessageController } from "../controllers/messageController.js";
 import { AuthRepository } from "../repositories/authRepository.js";
 import { Router } from "express";
@@ -8,7 +9,7 @@ import {
 import { ProjectRepository } from "../repositories/projectRepository.js";
 
 export function createProjectRouter(
-  repository: ProjectRepository,
+  repository: DataRepository<ProjectRepository>,
   auth: AuthRepository,
   options: ProjectControllerOptions,
 ) {
