@@ -142,6 +142,16 @@ test("aluno envia, reproduz, substitui e baixa materiais; professor só consulta
   await expect(page.getByText("Adicionar material complementar")).toHaveCount(
     0,
   );
+  if ((page.viewportSize()?.width ?? 0) < 640) {
+    const widths = await reportCard.evaluate((card) => ({
+      card: card.getBoundingClientRect().width,
+      title: card.querySelector("strong")!.getBoundingClientRect().width,
+    }));
+    expect(
+      widths.title,
+      "O título do material deve ter espaço legível com os controles de consulta no celular.",
+    ).toBeGreaterThan(widths.card * 0.45);
+  }
   expect((await context.request.get(downloadUrl)).status()).toBe(200);
   expect((await context.request.get(playbackUrl!)).status()).toBe(200);
   await expect(player).toBeVisible();

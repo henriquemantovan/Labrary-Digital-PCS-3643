@@ -320,7 +320,7 @@ function MaterialCard({
             </span>
           )}
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
           {!current && (
             <Badge variant={rule.required ? "warning" : "secondary"}>
               {rule.required ? "Pendente" : "Opcional"}
