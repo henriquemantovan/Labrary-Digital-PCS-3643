@@ -1,609 +1,148 @@
 # Labrary Digital
 
-Autenticação e administração: [SSO Google, perfis, PostgreSQL e migrations](docs/login-google.md). Os arquivos `schema.sql` são o snapshot histórico já implantado; novas instalações e alterações usam `pnpm db:deploy`.
+[![Build e testes da main](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/actions/workflows/ci.yml)
+[![Cobertura API na base c2dbb7f](https://img.shields.io/badge/API%20c2dbb7f-98.49%25%20statements-brightgreen)](docs/revisao-final.md#verificações-da-base)
+[![Cobertura web na base c2dbb7f](https://img.shields.io/badge/web%20c2dbb7f-95.62%25%20statements-brightgreen)](docs/revisao-final.md#verificações-da-base)
 
-> Documento de definição do projeto e planejamento Scrum — PCS3643, Laboratório de Engenharia de Software I.
-> Plataforma voltada aos projetos de Laboratório de Projeto de Sistemas Digitais.
-> Versão inicial: 04/10/2026. Situação atual: base MVC/REST, HU01, HU02 (incremento S5) e HU04 implementadas localmente; revisão da equipe pendente.
+Plataforma de gestão, avaliação e divulgação de projetos acadêmicos de sistemas digitais. Reúne vídeo, relatório, manual, feedback privado, submissões versionadas, avaliação por rubrica e liberação de resultados.
 
-**Programando com IA:** veja o [guia de desenvolvimento com IA](docs/desenvolvimento-com-ia.md), o [AGENTS.md](AGENTS.md) e as [skills compartilhadas](.agents/skills/). O fluxo inclui gerar código com testes, a própria IA executá-los, corrigir falhas e relatar os resultados.
+Projeto de **PCS3643 — Laboratório de Engenharia de Software I**. Esta revisão documental descreve a base `c2dbb7f` (merge do PR #58), conferida em 25/11/2026. Os badges de cobertura são valores estáticos dessa validação, não medições contínuas desta branch.
 
-## 1. Tema
+## 1. Tema e escopo
 
-**Gestão, avaliação e divulgação de projetos acadêmicos de sistemas digitais.**
+O tema é uma adaptação de plataforma de conteúdo digital para projetos acadêmicos. **Não há aprovação do professor registrada no repositório para a adaptação ou para a dispensa de requisitos originais.** Consulte o [registro acadêmico](docs/escopo-academico.md) e a [matriz de critérios e pendências](docs/revisao-final.md).
 
-A plataforma centraliza os materiais de cada grupo — vídeo de apresentação, relatório do projeto e manual de uso —, permite feedback durante o desenvolvimento, avaliação por critérios e consolidação de notas. Depois da finalização, o professor pode publicar o projeto no acervo para todos os usuários, incluindo visitantes.
-
-### Problema e objetivo
-
-Arquivos, comentários e avaliações dispersos dificultam acompanhar pendências, garantir que todos avaliem a mesma versão e consolidar os resultados. O Labrary Digital reúne o ciclo de entrega e transforma projetos autorizados em um acervo consultável.
-
-### Escopo inicial
-
-- Login e autorização por perfil.
-- Cadastro de grupos, projetos, requisitos e rubrica pela equipe docente.
-- Envio e versionamento de materiais pelos alunos.
-- Checklist de entrega e submissão para avaliação.
-- Acompanhamento e conversa de feedback privados.
-- Avaliação por critérios e consolidação de notas.
-- Liberação de resultados para o próprio grupo.
-- Finalização e publicação explícita de materiais autorizados.
-- Galeria pública de projetos concluídos, com busca e filtros.
-
-Histórico, favoritos, estatísticas e sugestões são complementos propostos no backlog P2. Chat em tempo real e pagamentos não fazem parte do MVP. O SSO Google foi adicionado ao escopo: [configuração de login e migrations](docs/login-google.md).
-
-### Alinhamento com o enunciado geral
-
-O tema é uma **adaptação proposta de plataforma de conteúdo digital**. O enunciado aceita propor outro tipo de conteúdo, sujeito à avaliação do professor. Não há registro de aprovação nesta entrega.
-
-| Requisito do enunciado | Tratamento no Labrary Digital |
+| Área | Estado do código na base revisada |
 | --- | --- |
-| Conteúdo digital, categorias, metadados e acesso mobile | Vídeo, relatório e manual; categoria, título, turma e ano; layout responsivo |
-| Cadastro de usuários | Contas e vínculos provisionados pelo professor no MVP; cadastro público depende de validação |
-| Avaliações e comentários | Rubrica docente e feedback privado; confirmar se substituem avaliação pública do catálogo |
-| Busca e filtros | HU12 |
-| Histórico, vistos, listas e recomendações | HU13–HU14, complementares; se o professor mantiver a exigência, promover a P0 |
-| Administração e estatísticas | Professor gerencia projetos; estatísticas previstas na HU14 |
-| Assinatura individual/familiar e quatro perfis | Não incorporadas ao MVP acadêmico; solicitar decisão explícita do professor |
-| Restrição etária e idade mínima da assinatura individual | Não incorporadas; validar a adaptação com o professor |
-| Receita, custos de conteúdo e infraestrutura | Não incorporados como funcionalidade; validar dispensa ou criar histórias adicionais |
-| MVC, REST, testes, cobertura, CI e instalação | Mantidos no planejamento técnico |
+| Autenticação e perfis | Login local ou Google, sessão, permissões por turma/grupo e administração de papéis |
+| Grupos e projetos | Cadastro docente, integrantes, atribuição de avaliadores e auditoria de vínculos |
+| Requisitos e rubricas | Versões por projeto, três materiais obrigatórios, prazos e pesos dos critérios |
+| Materiais | Upload real, histórico de versões, checksum e download protegido |
+| Submissão | Checklist, snapshot da rubrica/materiais, bloqueios, devolução e reabertura |
+| Acompanhamento e feedback | Busca/filtros privados e conversa vinculada às versões |
+| Avaliações e notas | Rascunho, finalização, reabertura, consolidação, CSV e liberação ao grupo integrados |
+| Publicação e acervo | Serviço, API e interface existem; finalização/publicação indisponíveis no servidor normal por falta de conexão dos provedores reais C1/C3 |
+| Interface | Página inicial pública, login, quadro de projetos, turmas, perfil, notas e acervo; redesign do PR #58 integrado |
+| Complementos | Histórico de consumo, vistos, favoritos, recomendações e estatísticas ainda no backlog |
 
-**Pendência acadêmica:** validar tema, substituições e dispensas com o professor antes de considerar o escopo aprovado. A [solicitação preparada para #20](docs/escopo-academico.md) registra o que precisa de decisão; envio e resposta permanecem pendentes. Não interpretar esta tabela como atendimento integral aos requisitos originais.
+Assinaturas individual/familiar, quatro acessos, restrição etária, receita e custos não foram implementados. Rubrica docente e feedback privado não equivalem automaticamente à avaliação pública exigida no enunciado. As dispensas precisam de decisão explícita do professor.
 
-## 2. Nome do sistema e do grupo
+## 2. Sistema e equipe
 
-- **Sistema:** Labrary Digital.
-- **Origem:** lab + library; biblioteca digital dos projetos de laboratório.
-- **Nome proposto do grupo:** Equipe Labrary Digital, a confirmar.
-- **Número do grupo:** a preencher.
-- **Repositório:** [Labrary-Digital-PCS-3643](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643).
+**Sistema:** Labrary Digital (lab + library). **Grupo:** Equipe Labrary Digital, nome proposto; número acadêmico a confirmar.
 
-| Integrante | Perfil GitHub |
-| --- | --- |
-| Henrique Mantovan | [henriquemantovan](https://github.com/henriquemantovan) |
-| Enzo Pimentel | [enplo](https://github.com/enplo) |
-| Dan Kiyochi | [kiyochii](https://github.com/kiyochii) |
-| Yuhang | [yuhangf2333](https://github.com/yuhangf2333) |
-| Kauê Barbosa | [kauebmr](https://github.com/kauebmr) |
+| Integrante | GitHub | Área principal |
+| --- | --- | --- |
+| Henrique Mantovan | [henriquemantovan](https://github.com/henriquemantovan) | Integração, arquitetura, acesso e publicação |
+| Enzo Pimentel | [enplo](https://github.com/enplo) | Materiais, submissão e backup |
+| Dan Kiyochi | [kiyochii](https://github.com/kiyochii) | Acompanhamento, feedback, resultado e acervo |
+| Yuhang | [yuhangf2333](https://github.com/yuhangf2333) | Rubricas, avaliação e redesign da interface |
+| Kauê Barbosa | [kauebmr](https://github.com/kauebmr) | Consolidação, CSV, testes e instalação |
 
-Os quatro nomes civis não foram informados; os perfis exatos fornecidos pelo grupo identificam os integrantes sem inferir nomes.
+A divisão detalhada e o planejamento estão em [responsabilidades e sprints](docs/planejamento.md). O compartilhamento com `higoramario` e a adequação do nome do repositório ao padrão solicitado precisam ser confirmados pela equipe; não foram presumidos nesta revisão.
 
-A aula sugere o padrão de repositório `pcs3643-grupoX-nomedoprojeto`. Foi mantido o nome solicitado pelo grupo; confirmar com o professor se isso atende à entrega. A aula também pede compartilhar o link com `higoramario`; isso permanece uma ação do grupo, sem convite enviado nesta etapa.
+## 3. Crazy 8 e protótipos
 
-## 3. Crazy 8
-
-As imagens do Crazy8 feito em sala ficaram em docs/crazy8
+As [fotografias, autores, três ideias escolhidas e justificativas](docs/crazy8/README.md) estão registradas. Há folhas com menos de oito ideias e validação de protótipos ainda sem registro de conclusão. As [telas desktop](docs/prototipos) e suas [versões mobile](docs/prototipos/mobile) documentam o protótipo; não são capturas da interface atual.
 
 ## 4. Histórias de usuários
 
-As funcionalidades foram registradas como issues no formato **Como [papel], eu gostaria de [ação], de forma que [benefício]**, com tarefas, critérios de aceitação, responsável proposto, dependências, estimativa e definição de Done.
+As [HU01–HU14, critérios e definição de Done](docs/historias-de-usuario.md) permanecem rastreáveis às issues. Código integrado, testes passando e história aceita são estados diferentes. A [revisão final](docs/revisao-final.md) identifica os incrementos existentes e as pendências de aceite.
 
-| Perfil | Acesso |
-| --- | --- |
-| Visitante | Acervo e materiais publicados |
-| Aluno | Materiais e feedback do próprio grupo; resultados liberados |
-| Avaliador | Projetos atribuídos, feedback e avaliações |
-| Professor | Grupos da turma, requisitos, rubrica, consolidação, liberação e publicação |
+## 5. Instalação e execução
 
-### [HU01 — Autenticar usuários e controlar permissões](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/1)
+Requer **Node.js 24.19.0** e **pnpm 11.25.0**. A instalação detalhada, inclusive preparação de uma máquina Linux nova, está em [instalação e aceitação](docs/instalacao-e-aceitacao.md). O requisito acadêmico é Ubuntu **26.04**; o CI usa **24.04**, e a validação limpa na distribuição exigida continua pendente.
 
-**Como usuário, eu gostaria de entrar com minhas credenciais, de forma que possa acessar as funções permitidas ao meu perfil.**
-
-- Prioridade P0; sprint sugerida 2; 5 pontos; responsável @henriquemantovan.
-- Dependências: nenhuma.
-
-**Critérios de aceitação:**
-
-- [x] Login válido abre a área do perfil; credenciais inválidas exibem erro sem revelar dados.
-- [x] Logout invalida a sessão.
-- [x] Aluno acessa apenas seu grupo; avaliador apenas projetos atribuídos; professor gerencia sua turma.
-- [x] A API rejeita acesso indevido mesmo quando a URL é acessada diretamente.
-
-**Estado local:** implementação e testes da HU01 prontos para revisão. Regras, instalação, contas de demonstração, limites da persistência em memória e roteiro de validação em [docs/hu01.md](docs/hu01.md). Aprovação por outro integrante, refinamento com o grupo e demonstração da sprint ainda pendentes.
-
-### [HU02 — Cadastrar grupos e projetos](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/2)
-
-**Como professor, eu gostaria de cadastrar grupos, integrantes e projetos da turma, de forma que possa organizar as entregas.**
-
-- Prioridade P0; sprint sugerida 3; continuidade na S5 (#32); 5 pontos; responsável @henriquemantovan.
-- Dependências: HU01.
-
-**Critérios de aceitação:**
-
-- [x] Projeto tem título, descrição, turma, ano e categoria.
-- [x] Professor vincula integrantes e avaliadores à turma/projeto.
-- [x] Aluno vê somente projetos do próprio grupo na área de entrega.
-- [x] Alterações de vínculos preservam o histórico.
-
-**Estado local:** incremento da S5 pronto para revisão, com grupos/vínculos persistentes no PostgreSQL (Google) e em arquivo privado (local), histórico, autorização e formulários. A extração do PR #26 conserva a autoria do trabalho de Yuhang; HU03 segue separada. Veja [HU02 e composição](docs/hu02.md), [arquitetura revisada](docs/arquitetura-semana-5.md), [contrato C4](docs/contratos/c4-publicacao.md) e [pendência acadêmica #20](docs/escopo-academico.md). Revisão da equipe, demonstração e aceite não são presumidos.
-
-### [HU03 — Configurar requisitos e critérios de avaliação](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/3)
-
-**Como professor, eu gostaria de definir materiais obrigatórios, prazo e rubrica, de forma que possa padronizar a entrega e a avaliação.**
-
-- Prioridade P0; sprint sugerida 3; 5 pontos; responsável @yuhangf2333.
-- Dependências: HU01.
-
-**Critérios de aceitação:**
-
-- [ ] Vídeo, relatório e manual são requisitos obrigatórios iniciais.
-- [ ] Cada requisito possui formatos, tamanho máximo e prazo definidos.
-- [ ] Rubrica define critérios, escala de 0 a 10 e pesos positivos cuja soma é 100%.
-- [ ] Mudanças após início de avaliações exigem nova versão explícita; avaliações preservam a rubrica utilizada.
-
-### [HU04 — Enviar e substituir materiais](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/4)
-
-**Como aluno, eu gostaria de enviar vídeo, relatório e manual do projeto, de forma que possa cumprir os requisitos de entrega.**
-
-- Prioridade P0; sprint sugerida 3; 8 pontos; responsável @enplo.
-- Dependências: HU02,HU03.
-
-**Critérios de aceitação:**
-
-- [x] Arquivos válidos são persistidos e vinculados ao projeto; nenhum acesso público é criado na etapa de rascunho.
-- [x] Formato e tamanho são validados no servidor; falhas exibem mensagem e permitem tentar novamente.
-- [x] Tela mostra progresso, data, autor e versão; substituição mantém histórico.
-- [x] Envio é permitido somente ao próprio grupo, enquanto a entrega está aberta.
-
-**Estado local:** implementação e testes da HU04 prontos para revisão. Formatos e limites usam uma política padrão até a HU03 permitir a configuração pelo professor. Regras, segurança, limitações e roteiro de validação em [docs/hu04.md](docs/hu04.md). Aprovação por outro integrante, refinamento com o grupo e demonstração da sprint ainda pendentes.
-
-### [HU05 — Concluir a entrega do projeto](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/5)
-
-**Como aluno, eu gostaria de verificar pendências e submeter o projeto, de forma que possa encaminhar uma entrega completa para avaliação.**
-
-- Prioridade P0; sprint sugerida 4; 5 pontos; responsável @enplo.
-- Dependências: HU04.
-
-**Critérios de aceitação:**
-
-- [ ] Checklist mostra os materiais obrigatórios presentes e ausentes.
-- [ ] Submissão incompleta ou fora do prazo é bloqueada, salvo reabertura explícita pelo professor.
-- [ ] Submissão registra data e snapshot dos materiais e muda estado para Em avaliação.
-- [ ] Materiais submetidos ficam bloqueados; devolução para ajustes cria nova rodada e preserva a anterior.
-
-### [HU06 — Acompanhar projetos em andamento](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/6)
-
-**Como avaliador, eu gostaria de visualizar projetos atribuídos ainda em preparação, de forma que possa orientar os grupos antes da entrega.**
-
-- Prioridade P0; sprint sugerida 4; 3 pontos; responsável @kiyochii.
-- Dependências: HU01,HU02,HU04.
-
-**Critérios de aceitação:**
-
-- [x] Lista filtra por grupo, estado e pendências.
-- [ ] Detalhe permite visualizar materiais autorizados e versões.
-- [x] Projetos não atribuídos ficam inacessíveis ao avaliador.
-- [ ] Nenhuma nota ou comentário privado aparece na galeria pública.
-
-**Estado local:** acompanhamento de metadados implementado para revisão; filtros combináveis, pendências e histórico de versões disponíveis. O conteúdo dos arquivos abre pelo download protegido da HU04; o critério da galeria pública será validado com HU11/HU12. Regras, limites e roteiro em [docs/hu06.md](docs/hu06.md). Revisão por outro integrante, refinamento e demonstração permanecem pendentes; a issue não está Done.
-
-### [HU07 — Trocar feedback no projeto](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/7)
-
-**Como aluno ou avaliador, eu gostaria de trocar mensagens no projeto, de forma que possa esclarecer dúvidas e orientar melhorias.**
-
-- Prioridade P0; sprint sugerida 4; 5 pontos; responsável @kiyochii.
-- Dependências: HU06.
-
-**Critérios de aceitação:**
-
-- [x] Somente integrantes do grupo e equipe docente autorizada podem ler e enviar mensagens.
-- [x] Mensagens persistem com autor, data e contexto da versão do material.
-- [x] Atualizar ou reabrir a página conserva a conversa em ordem cronológica.
-- [x] Erros de envio são indicados sem duplicar mensagens; conteúdo é escapado para prevenir scripts.
-- [x] MVP usa comentários com atualização manual, sem exigir chat em tempo real.
-
-**Estado local:** implementação e testes da conversa privada prontos para revisão. Persistência local de projetos/metadados/mensagens, contexto de versão, atualização manual e repetição de envio sem duplicação descritos em [docs/hu07.md](docs/hu07.md). Revisão de outro integrante, refinamento e demonstração permanecem pendentes; a issue não está Done.
-
-### [HU08 — Avaliar projetos por rubrica](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/8)
-
-**Como avaliador, eu gostaria de registrar notas e comentários por critério, de forma que possa avaliar os projetos de maneira consistente.**
-
-- Prioridade P0; sprint sugerida 5; 8 pontos; responsável @yuhangf2333.
-- Dependências: HU03,HU05.
-
-**Critérios de aceitação:**
-
-- [ ] Avaliador autorizado vê o snapshot submetido e a rubrica correspondente.
-- [ ] Notas fora da escala são rejeitadas; rascunho e avaliação final são diferenciados.
-- [ ] Finalização exige todos os critérios; registra autor, data e rodada.
-- [ ] Professor pode reabrir avaliação com justificativa; o histórico permanece auditável.
-
-**Implementação para revisão (#39/#44):** [fluxo de avaliação e consolidação](docs/hu08.md) sobre submissão real, com avaliações persistidas, reabertura auditável e consulta à rubrica de rodadas anteriores.
-
-### [HU09 — Consolidar notas dos grupos](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/9)
-
-**Como professor, eu gostaria de consultar a consolidação das avaliações, de forma que possa acompanhar os resultados e identificar pendências.**
-
-- Prioridade P0; sprint sugerida 5; 5 pontos; responsável @kauebmr.
-- Dependências: HU08.
-
-**Critérios de aceitação:**
-
-- [ ] Tabela exibe grupo, avaliadores previstos, recebidos, nota e situação.
-- [ ] Nota por avaliador = soma(nota do critério × peso/100); nota final = média das avaliações finalizadas previstas.
-- [ ] Avaliações ausentes não contam como zero; resultado parcial é identificado e nota final só existe com todas concluídas.
-- [ ] Cálculo preserva precisão interna e arredonda apenas exibição a duas casas; exportação CSV corresponde à tabela.
-- [ ] Somente professor da turma acessa a consolidação completa.
-
-### [HU10 — Consultar resultado do próprio grupo](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/10)
-
-**Como aluno, eu gostaria de consultar notas liberadas e comentários da avaliação, de forma que possa entender o resultado do projeto.**
-
-- Prioridade P1; sprint sugerida 5; 3 pontos; responsável @kiyochii.
-- Dependências: HU09.
-
-**Critérios de aceitação:**
-
-- [ ] Professor libera explicitamente os resultados da rodada.
-- [ ] Integrantes veem apenas o resultado de seu grupo.
-- [ ] Rubrica, notas por critério e comentários liberados são exibidos.
-- [ ] Resultados ainda não liberados mostram estado pendente.
-
-### [HU11 — Finalizar e publicar projetos](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/11)
-
-**Como professor, eu gostaria de finalizar e publicar um projeto aprovado para divulgação, de forma que possa disponibilizar seu conteúdo no acervo.**
-
-- Prioridade P0; sprint sugerida 6; 5 pontos; responsável @henriquemantovan.
-- Dependências: HU09.
-
-**Critérios de aceitação:**
-
-- [ ] Finalização exige materiais completos e avaliações concluídas; registra responsável e data.
-- [ ] Publicação é ação explícita posterior à finalização; projeto finalizado não é automaticamente público.
-- [ ] Professor seleciona os materiais autorizados para divulgação e registra autorização do grupo.
-- [ ] Somente metadados e materiais autorizados tornam-se públicos; notas e feedback continuam privados.
-- [ ] Professor pode retirar publicação preservando conteúdo e histórico privados.
-
-**Incremento S6 (#37):** serviço/API e controles docentes de finalização, registro da autorização do grupo, seleção de versões, publicação e retirada, com auditoria persistente e acesso público C4/Range. As ações de finalização/publicação permanecem desabilitadas no entrypoint até os adapters reais C1 (Enzo #38) e C3 (Kauê #41) estarem conectados. Os testes com doubles não representam aceite integrado. Veja [HU11, integração e evidências](docs/hu11.md).
-
-### [HU12 — Explorar projetos publicados](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/12)
-
-**Incremento S5 (#35):** catálogo/detalhe responsivos, busca e filtros combinados sobre C4, demonstráveis em `/demo/acervo` somente no servidor de desenvolvimento. Cliente HTTP separado, sem fallback de fixtures em produção. Publicação real e aceite permanecem na S6/S7. [Demonstração, regressão HU06 e evidências](docs/catalogo-semana-5.md).
-
-**Como visitante ou usuário, eu gostaria de buscar e visualizar projetos publicados, de forma que possa conhecer os trabalhos concluídos.**
-
-- Prioridade P0; sprint sugerida 6; 5 pontos; responsável @kiyochii.
-- Dependências: HU11.
-
-**Critérios de aceitação:**
-
-- [ ] Galeria mostra apenas projetos Publicados.
-- [ ] Busca por título e filtros por ano, turma e categoria podem ser combinados.
-- [ ] Detalhe permite assistir ao vídeo e acessar relatório/manual autorizados.
-- [ ] Projeto despublicado deixa de aparecer e seu acesso público direto é bloqueado.
-- [ ] Galeria e detalhes funcionam em computadores e smartphones.
-
-### [HU13 — Consultar histórico de acessos e favoritos](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/13)
-
-**Como usuário autenticado, eu gostaria de salvar favoritos e acompanhar projetos vistos, de forma que possa retomar conteúdos de interesse.**
-
-- Prioridade P2; sprint sugerida 6; 3 pontos; responsável @henriquemantovan.
-- Dependências: HU12.
-
-**Critérios de aceitação:**
-
-- [ ] Abrir conteúdo publicado registra acesso e marca como visto no perfil.
-- [ ] Usuário pode incluir/remover favoritos e consultar sua lista.
-- [ ] Histórico e favoritos são privados e isolados por usuário.
-- [ ] Despublicação oculta o conteúdo do catálogo; registro histórico permanece para controle administrativo.
-
-### [HU14 — Ver estatísticas e sugestões de conteúdo](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/14)
-
-**Como professor ou usuário autenticado, eu gostaria de consultar estatísticas ou receber sugestões conforme meu perfil, de forma que possa acompanhar o acervo e descobrir conteúdos relevantes.**
-
-- Prioridade P2; sprint sugerida 6; 5 pontos; responsável @kauebmr.
-- Dependências: HU13.
-
-**Critérios de aceitação:**
-
-- [ ] Professor vê acessos por projeto/categoria e quantidade de usuários de sua turma.
-- [ ] Usuário recebe sugestões por categorias do histórico; sem histórico, vê projetos publicados recentes.
-- [ ] Recomendações excluem conteúdos privados ou despublicados.
-- [ ] Estatísticas não expõem histórico individual para outros alunos.
-
-### Definição de concluído compartilhada
-
-- [ ] Todos os critérios de aceitação atendidos.
-- [ ] Código ou artefato revisado por outro integrante e aprovado.
-- [ ] Testes unitários, integração e/ou sistema pertinentes passam.
-- [ ] Cobertura de pelo menos 85% no escopo testável definido e documentado.
-- [ ] Permissões, erros e acesso mobile verificados quando aplicáveis.
-- [ ] Documentação e backlog atualizados.
-- [ ] Incremento demonstrado na revisão da sprint.
-
-## 5. Definição das responsabilidades
-
-**Divisão proposta**, baseada nas áreas do projeto; habilidades e disponibilidade ainda precisam ser validadas pelos cinco integrantes. Todos participam do desenvolvimento, planejamento, revisão e testes. Papéis de Scrum não excluem a contribuição técnica.
-
-| Integrante | Responsabilidade principal | Papel Scrum proposto | Itens sob responsabilidade |
-| --- | --- | --- | --- |
-| @henriquemantovan | Integração, arquitetura, acesso e publicação | Product Owner interno: ordenar backlog e levar dúvidas ao professor | HU01, HU11, HU13, TEC02, TEC06 |
-| @enplo | Entrega de materiais e validação dos esboços | Developer | HU04, HU05, TEC03 |
-| @kiyochii | Interface do acervo, feedback e resultados | Developer | HU06, HU07, HU10, HU12 |
-| @yuhangf2333 | Regras de negócio, rubrica, API e CI | Developer | HU02, HU03, HU08, TEC04 |
-| @kauebmr | Banco, consolidação e garantia da qualidade | Scrum Master interno e Developer | HU09, HU14, TEC01, TEC05 |
-
-O professor é stakeholder e valida os requisitos acadêmicos; o papel interno de Product Owner não substitui essa validação. Scrum Master facilita eventos e remoção de impedimentos; não distribui unilateralmente tarefas.
-
-**Revisão cruzada proposta:** Henrique ↔ yuhangf2333 nas APIs; enplo ↔ kiyochii nas interfaces; kauebmr revisa cálculo, persistência e testes, com revisão de outro integrante em seus próprios PRs. Compartilhar testes evita concentrar toda a qualidade em uma pessoa.
-
-As responsabilidades estão no corpo das issues. Os convites para @enplo, @kiyochii, @yuhangf2333 e @kauebmr foram enviados e aguardam aceite. Após o aceite, os responsáveis poderão ser definidos no campo Assignees.
-
-## 6. Montagem do backlog
-
-**Acompanhamento central:** [Product Backlog e sprints — issue #21](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/21).
-
-**HU01 — atualização local:** implementação pronta para revisão; critérios técnicos cobertos por testes. A conclusão formal depende da revisão e demonstração da equipe. Ver [registro da HU01](docs/hu01.md). Issues remotas não foram alteradas.
-
-O **Product Backlog** contém todas as histórias e tarefas técnicas. O **Sprint Backlog** contém o recorte que a equipe assume após avaliar capacidade. A coluna de sprint abaixo é uma sugestão de sequenciamento, não um compromisso já assumido.
-
-Prioridades: **P0** essencial ao MVP/entrega técnica; **P1** importante; **P2** complemento condicionado à capacidade e à decisão do professor. Pontos são estimativas relativas iniciais, sem equivalência fixa em horas.
-
-| Item | Entrega | Prioridade | Pontos | Sprint | Responsável proposto | Dependências |
-| --- | --- | --- | ---: | ---: | --- | --- |
-| [TEC01](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/15) | Modelar e criar o banco de dados | P0 | 5 | 1 | @kauebmr | — |
-| [HU01](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/1) | Autenticar usuários e controlar permissões | P0 | 5 | 2 | @henriquemantovan | — |
-| [TEC02](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/16) | Preparar ambiente MVC/REST e APIs iniciais | P0 | 5 | 2 | @henriquemantovan | TEC01 |
-| [TEC03](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/17) | Validar Crazy 8 e protótipos com o grupo | P0 | 3 | 2 | @enplo | — |
-| [TEC04](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/18) | Implementar testes e integração contínua | P0 | 5 | 2 | @yuhangf2333 | TEC02 |
-| [HU02](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/2) | Cadastrar grupos e projetos | P0 | 5 | 3 | @yuhangf2333 | HU01 |
-| [HU03](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/3) | Configurar requisitos e critérios de avaliação | P0 | 5 | 3 | @yuhangf2333 | HU01 |
-| [HU04](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/4) | Enviar e substituir materiais | P0 | 8 | 3 | @enplo | HU02,HU03 |
-| [HU05](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/5) | Concluir a entrega do projeto | P0 | 5 | 4 | @enplo | HU04 |
-| [HU06](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/6) | Acompanhar projetos em andamento | P0 | 3 | 4 | @kiyochii | HU01,HU02,HU04 |
-| [HU07](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/7) | Trocar feedback no projeto | P0 | 5 | 4 | @kiyochii | HU06 |
-| [HU08](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/8) | Avaliar projetos por rubrica | P0 | 8 | 5 | @yuhangf2333 | HU03,HU05 |
-| [HU09](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/9) | Consolidar notas dos grupos | P0 | 5 | 5 | @kauebmr | HU08 |
-| [HU10](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/10) | Consultar resultado do próprio grupo | P1 | 3 | 5 | @kiyochii | HU09 |
-| [HU11](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/11) | Finalizar e publicar projetos | P0 | 5 | 6 | @henriquemantovan | HU09 |
-| [HU12](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/12) | Explorar projetos publicados | P0 | 5 | 6 | @kiyochii | HU11 |
-| [HU13](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/13) | Consultar histórico de acessos e favoritos | P2 | 3 | 6 | @henriquemantovan | HU12 |
-| [HU14](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/14) | Ver estatísticas e sugestões de conteúdo | P2 | 5 | 6 | @kauebmr | HU13 |
-| [TEC05](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/19) | Validar fluxos pelo navegador e preparar instalação | P0 | 5 | 7 | @kauebmr | HU01,HU04,HU07,HU08,HU09,HU12,TEC04 |
-| [TEC06](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/20) | Atualizar documentação e preparar apresentação final | P0 | 3 | 7 | @henriquemantovan | TEC05 |
-
-### Sprints semanais propostas
-
-A aula prevê sete sprints entre 08/10 e 26/11, com apresentação final em 26/11/2026. As janelas abaixo são uma proposta operacional; confirmar as datas de revisão com o professor.
-
-| Sprint | Janela proposta de 2026 | Objetivo | Itens sugeridos |
-| --- | --- | --- | --- |
-| 1 | 08–14/10 | DER, banco, migrações, script SQL e seed | TEC01 |
-| 2 | 15–21/10 | Frontend inicial, APIs, classes, acesso e CI | TEC02, TEC03, HU01, TEC04 |
-| 3 | 22–28/10 | Grupos, requisitos e envio versionado | HU02, HU03, HU04 |
-| 4 | 29/10–04/11 | Submissão, acompanhamento e feedback; demonstração parcial | HU05, HU06, HU07 |
-| 5 | 05–11/11 | Avaliação, consolidação e resultado do grupo | HU08, HU09, HU10 |
-| 6 | 12–18/11 | Publicação e acervo; complementos conforme capacidade | HU11, HU12; HU13–HU14 se aprovadas |
-| 7 | 19–25/11 | Aceitação, testes web, instalação limpa e apresentação | TEC05, TEC06 e correções |
-| Entrega | 26/11 | Apresentação e conteúdo final | Demonstração e repositório atualizado |
-
-Banco, testes, documentação e backlog evoluem em todas as sprints; não são encerrados após sua sprint inicial.
-
-### Fluxo de trabalho e eventos
-
-- **Planejamento semanal:** definir objetivo, selecionar itens prontos e assumir responsáveis.
-- **Alinhamento breve:** comunicar progresso, próxima ação e impedimentos.
-- **Revisão semanal:** demonstrar incremento e registrar aceite/ajustes.
-- **Retrospectiva:** definir uma melhoria concreta do processo.
-- **Refinamento:** revisar critérios, dependências e estimativas antes da próxima sprint.
-- **Kanban proposto:** Backlog → Pronto → Em andamento → Em revisão → Concluído. Impedimentos são sinalizados e documentados.
-- **Pronto:** critérios claros, responsável, estimativa, dependências tratadas e protótipo validado quando aplicável.
-- **Concluído:** Definition of Done satisfeita; fechar a issue após aceite, preferencialmente vinculando o PR.
-
-O backlog foi montado nas issues, conforme solicitado. A issue de acompanhamento agrega checklists por sprint e uma visão inicial dos estados. Um quadro GitHub Projects não foi criado; a equipe pode espelhar esse fluxo nele quando disponível.
-
-### Atualização do Kanban — 11/10/2026
-
-| Coluna | Itens | Situação registrada |
-| --- | --- | --- |
-| Backlog | HU01–HU14, TEC02–TEC06 | Aguardando priorização e capacidade das sprints |
-| Em andamento | TEC01 — modelagem e criação do banco | DER e script SQL inicial adicionados; execução em PostgreSQL, revisão do modelo e seed ainda pendentes |
-| Em revisão | — | Nenhum item registrado |
-| Concluído | — | Nenhum item marcado como concluído sem aceite da equipe |
-
-Essa atualização documenta o estado no repositório e complementa a issue #21; não altera o quadro remoto do GitHub Projects.
-
-### Atualização local — HU06 (02/11/2026)
-
-Acompanhamento de metadados em revisão: filtros por grupo, estado e pendências, detalhe com histórico de versões e acesso restrito às atribuições. Pendências para concluir a história: conteúdo privado de arquivos (HU04), validação da futura galeria pública (HU11/HU12), revisão de outro integrante, refinamento com o grupo e demonstração. Detalhes em [docs/hu06.md](docs/hu06.md). Este registro não fecha a issue #6 nem altera o backlog remoto #21.
-
-### Atualização local — HU07 (02/11/2026)
-
-Conversa privada implementada para revisão, com persistência local, contexto de versão e atualização manual. Critérios funcionais cobertos por testes; refinamento, revisão e demonstração pendentes. Veja [docs/hu07.md](docs/hu07.md). Esse registro não fecha a issue #7 nem altera o backlog remoto #21.
-
-## 7. Protótipo da interface (telas do sistema)
-
-Os SVGs abaixo são **wireframes estáticos de desktop**, com dados fictícios. Não representam telas implementadas. A validação de navegação mobile integra a TEC03 e o desenvolvimento das histórias.
-
-### Tela 1 — Login
-
-![Login](docs/prototipos/01-login.svg)
-
-### Tela 2 — Projetos finalizados e publicados
-
-![Projetos finalizados e publicados](docs/prototipos/02-acervo.svg)
-
-### Tela 3 — Detalhe de projeto publicado
-
-![Detalhe de projeto publicado](docs/prototipos/03-detalhe-publico.svg)
-
-### Tela 4 — Meu projeto: materiais
-
-![Meu projeto: materiais](docs/prototipos/04-materiais.svg)
-
-### Tela 5 — Feedback do projeto
-
-![Feedback do projeto](docs/prototipos/05-feedback.svg)
-
-### Tela 6 — Acompanhamento de projetos
-
-![Acompanhamento de projetos](docs/prototipos/06-acompanhamento.svg)
-
-### Tela 7 — Avaliação por critérios
-
-![Avaliação por critérios](docs/prototipos/07-avaliacao.svg)
-
-### Tela 8 — Consolidação de notas
-
-![Consolidação de notas](docs/prototipos/08-consolidacao.svg)
-
-### Navegação e comportamento previstos
-
-| Tela | Perfil | Ações e histórias relacionadas |
-| --- | --- | --- |
-| Login | Usuário | Entrar, sair, erro de autenticação — HU01 |
-| Acervo | Todos | Buscar e filtrar; abrir publicado — HU12 |
-| Detalhe público | Todos | Vídeo, relatório e manual autorizados — HU11–HU12 |
-| Materiais | Aluno | Enviar/substituir, checklist e submeter — HU04–HU05 |
-| Feedback | Grupo e docentes autorizados | Ler, enviar e atualizar mensagens — HU07 |
-| Acompanhamento | Avaliador/professor | Filtrar pendências, abrir materiais e feedback — HU06 |
-| Avaliação | Avaliador | Rubrica, rascunho e finalização — HU08 |
-| Consolidação | Professor | Pendências, nota, CSV, liberação e publicação — HU09–HU11 |
-
-O aluno acessa o resultado liberado em uma aba do próprio projeto (HU10); cadastro de grupos e configuração de rubrica ficam na área docente (HU02–HU03). Esses fluxos auxiliares serão refinados na TEC03.
-
-### Regras de interface
-
-- Mostrar estado do projeto, progresso de envio, pendências, sucesso e falha.
-- Manter navegação, nomes e ações consistentes; confirmar submissão e publicação.
-- Desabilitar submissão incompleta e explicar o motivo.
-- Exibir nota parcial como parcial e manter ausência de avaliação como pendência.
-- Permitir navegação por teclado, rótulos de campo, foco visível e informações além da cor.
-- Em smartphones, empilhar cartões e campos; tabela de notas deve ter rolagem identificada ou cartões por grupo.
-- Mostrar estados de carregamento, lista vazia, perda de sessão e falha de envio com recuperação.
-
-### Ciclo do projeto
-
-```mermaid
-stateDiagram-v2
-    [*] --> Preparacao
-    Preparacao --> EmAvaliacao: aluno submete entrega completa
-    EmAvaliacao --> Ajustes: professor devolve
-    Ajustes --> EmAvaliacao: aluno submete nova rodada
-    EmAvaliacao --> Finalizado: professor finaliza avaliações completas
-    Finalizado --> Publicado: publicação explícita autorizada
-    Publicado --> Finalizado: professor retira publicação
-```
-
-Preparação e Ajustes permitem edição conforme prazo/reabertura. Em avaliação usa snapshot imutável. Finalizado é privado até a ação explícita de publicação. Feedback e notas nunca entram na exposição pública automaticamente.
-
-## 8. Tecnologias do sistema
-
-**Stack implementada inicialmente na TEC02.** A escolha prioriza uma aplicação pequena, com TypeScript no frontend/backend e separação MVC/REST. Versões diretas e transitivas ficam fixadas em `pnpm-lock.yaml`; versões principais e runtime também estão declarados nos manifests e em `.nvmrc`.
-
-| Camada | Tecnologia proposta | Uso |
-| --- | --- | --- |
-| Frontend | React + TypeScript + Vite | Views, formulários e navegação por perfil |
-| Estilo | CSS responsivo | Layout desktop/mobile e componentes visuais |
-| Backend | Node.js + TypeScript + Express | Controllers REST, autorização e regras de negócio |
-| Persistência | PostgreSQL + Prisma | Models, relações, migrações e acesso ao banco |
-| Arquivos | Volume privado no MVP; adapter de armazenamento | Vídeos/PDFs separados dos metadados; acesso passa pela autorização |
-| Sessões | Cookie HttpOnly e sessão no servidor | Autenticação; hash seguro de senha e proteção de operações de escrita |
-| Testes | Vitest, Testing Library e Supertest | Unidade, interface e integração de APIs |
-| Navegador | Playwright | Sistema, mobile e gravação de pelo menos cinco vídeos |
-| Qualidade/CI | ESLint, TypeScript e GitHub Actions | Build, testes e cobertura mínima de 85% |
-| Ambiente | Docker Compose e scripts de inicialização | Aplicação, banco, volume persistente e instalação reprodutível |
-| Gestão | GitHub Issues e pull requests | Backlog, revisão e rastreabilidade |
-| Diagramas | Mermaid | Componentes, DER e estados no repositório |
-
-**Baseline da TEC02 (15/10/2026):** Node.js 24.19.0, pnpm 11.25.0, React 19.3.1, Vite 8.3.4, Express 5.3.0, TypeScript 5.9.3 e Prisma 7.10.0. Os manifests fixam versões diretas; o lockfile fixa a árvore completa. O frontend e a API TypeScript têm build configurado. A API oferece `GET /api/health`, listagem/criação/detalhe de projetos e listagem/registro de metadados de materiais. O [contrato inicial](docs/api-inicial.md) descreve rotas, validações, envelopes e erros. A HU01 acrescenta login, sessão com cookie HttpOnly, autorização por vínculo e uma área por perfil em tema escuro roxo/rosa. O [registro da HU01](docs/hu01.md) detalha regras e limitações.
-
-**Instalação e desenvolvimento local:** requer Node.js 24.19.0 e pnpm 11.25.0. Na raiz do repositório, copie `.env.example` para `.env`, instale com `pnpm install --frozen-lockfile` e inicie as duas aplicações com `pnpm dev`. O frontend fica em `http://localhost:5173` e encaminha `/api` para a API em `http://localhost:3000`. `pnpm build` compila os workspaces e `pnpm test` executa os testes da API e da interface com cobertura mínima de 85% nas quatro métricas. `pnpm test:e2e` verifica os três perfis em desktop e celular (instale Chromium com `pnpm exec playwright install --with-deps chromium`). As contas de demonstração e o uso de `AUTH_USERS_FILE` estão em [docs/hu01.md](docs/hu01.md). A API persiste projetos, metadados e mensagens em arquivo privado desde a HU07 (um processo escritor; configuração em [docs/hu07.md](docs/hu07.md)); no modo local, sessões ficam em memória; no modo Google, identidades, sessões e tentativas OAuth são persistidas no PostgreSQL. Os bytes dos materiais ficam em armazenamento privado (`UPLOAD_DIR`) desde a HU04. Grupos/vínculos e seu histórico usam PostgreSQL no modo Google e `GROUP_DATA_FILE` no modo local; veja [HU02](docs/hu02.md). `pnpm db:generate` continua disponível para gerar o cliente Prisma, sem ser necessário para executar a HU01.
-
-O DER está em [docs/diagrama-er.md](docs/diagrama-er.md), o diagrama de classes inicial em [docs/diagrama-classes.md](docs/diagrama-classes.md) e o model Prisma em `packages/api/prisma/schema.prisma`. O SQL de TEC01 permanece em `db/schema.sql` como snapshot histórico. A evolução usa migrations versionadas do Prisma; identidades Google e sessões usam o adapter PostgreSQL. Consulte o [guia de migrations](docs/login-google.md).
-
-**CI:** o workflow [Build e testes](.github/workflows/ci.yml) executa build, cobertura e testes de navegador. Sua primeira execução remota depende da publicação das alterações; não foram inseridos badges com resultados presumidos.
-
-## 9. Arquitetura: componentes da aplicação
-
-### Banco de dados e script de criação
-
-O DER detalhado está em [docs/diagrama-er.md](docs/diagrama-er.md). O schema inicial para PostgreSQL está em [db/schema.sql](db/schema.sql), com tabelas, chaves, índices, restrições e tipos enumerados para usuários, turmas, grupos, projetos, entregas, materiais versionados, feedback, rubricas, avaliações, liberação de resultados e publicação.
-
-Com PostgreSQL instalado, banco vazio criado e `DATABASE_URL` configurada no `.env`, execute na raiz:
+Após preparar Git, Node e pnpm:
 
 ```sh
-pnpm db:deploy
-pnpm db:status
+git clone https://github.com/henriquemantovan/Labrary-Digital-PCS-3643.git
+cd Labrary-Digital-PCS-3643
+git switch revisao-final
+node --version
+pnpm --version
+pnpm install --frozen-lockfile
+pnpm build
+pnpm demo
 ```
 
-As migrations criam os objetos dentro de transações. Em banco onde `schema.sql` já foi aplicado, registre primeiro a baseline conforme o [guia de implantação](docs/login-google.md). Não inclui seed nem armazena arquivos binários; os arquivos ficam em armazenamento privado e `storage_key` guarda sua referência. A HU01 impõe autorização por perfil e vínculo. A aplicação ainda deverá impor outras regras que dependem de múltiplas linhas, como soma dos pesos da rubrica igual a 100% e compatibilidade de papel.
+`pnpm demo` inicia frontend/API com dados locais isolados, sem PostgreSQL nem credenciais Google. Abra **http://localhost:5173/login**. A página inicial fica em `/`, projetos em `/projetos`, turmas em `/turmas`, notas em `/notas`, perfil em `/perfil` e acervo em `/acervo`.
 
-A [revisão da arquitetura na S5](docs/arquitetura-semana-5.md) distingue os adapters efetivos do modelo planejado. O model Prisma descreve as entidades do MVP. O modo Google consulta PostgreSQL para identidades, vínculos de autorização, sessões e tentativas OAuth; projetos, metadados e mensagens usam o adapter de arquivo privado da HU07. `pnpm db:test` verifica instalação limpa e adoção do schema existente em PostgreSQL real e descartável. A validação no Google real exige Client ID, Client Secret e URI de redirecionamento cadastrados no Google Cloud.
+| Conta de demonstração | Papel | Senha |
+| --- | --- | --- |
+| `aluno@labrary.local` | Aluno do Grupo 02 | `Labrary@2026` |
+| `avaliador@labrary.local` | Avaliador inicialmente atribuído ao projeto 1 | `Labrary@2026` |
+| `professor@labrary.local` | Professora da turma 1 | `Labrary@2026` |
 
-### Visão dos componentes e separação MVC
+Essas contas são apenas locais. A demonstração padrão não inclui uma conta ADMIN. O [manual de uso](docs/manual-de-uso.md) explica a preparação dos vínculos e o fluxo completo de avaliação.
+
+Para desenvolvimento com configuração persistente, copie `.env.example` para `.env` **apenas se ainda não existir**, ajuste as variáveis e execute `pnpm dev`. Para Google/PostgreSQL, siga [SSO e migrations](docs/login-google.md); usuários, papéis e turmas precisam ser provisionados conforme o guia. Não reutilize dados da demonstração em contas reais.
+
+## 6. Testes, CI e evidências
+
+```sh
+pnpm build
+pnpm test
+pnpm exec playwright install --with-deps chromium
+pnpm test:e2e
+```
+
+- Vitest/Supertest: unidade e integração da API; Testing Library/jsdom: interação da interface.
+- Cobertura mínima de **85% em statements, branches, funções e linhas**, separadamente para API e web.
+- Playwright: Chromium desktop e emulação mobile, com servidores e dados de teste isolados.
+- O enunciado não fixa quantidade mínima de testes; exige tipos de teste, cobertura e **ao menos cinco vídeos de funcionalidades diferentes**.
+- `pnpm test:e2e` executa as suítes geral, submissão, notas (um perfil por processo) e avaliação.
+- O [workflow](.github/workflows/ci.yml) instala dependências, compila, testa cobertura, testa PostgreSQL/migrations e executa E2E; publica cobertura e resultados como artefatos.
+- Testes locais e CI não comprovam login com Google real ou instalação no Ubuntu 26.04.
+
+A [última validação da base](docs/revisao-final.md#verificações-da-base) registra 277 testes API, 127 web e 54 cenários E2E aprovados. Esta branch altera somente documentação e não declara uma nova execução dessas suítes. As [gravações de Dan](docs/dan-semana7.md) distinguem fluxos reais de pré-requisitos de publicação simulados. A seleção final dos cinco vídeos permanece em revisão.
+
+`pnpm db:test` exige um PostgreSQL descartável com permissão CREATEDB; veja [instalação e aceitação](docs/instalacao-e-aceitacao.md). Não o execute contra infraestrutura de produção.
+
+## 7. Tecnologias
+
+| Camada | Tecnologias e versões diretas principais |
+| --- | --- |
+| Runtime e pacotes | Node 24.19.0; pnpm 11.25.0; TypeScript 5.9.3 |
+| Interface | React/React DOM 19.3.1; Vite 8.3.4; Tailwind 4.3.5; Base UI 1.9.0; componentes coss ui copiados para `components/ui`; Lucide 1.73.0 |
+| API | Express 5.3.0; Zod 4.6.7; busboy 1.6.0; jose 6.2.14 |
+| Dados | PostgreSQL (CI: imagem 18), pg 8.23.1; Prisma 7.10.0 para schema/migrations; JSON e volume privado para o domínio acadêmico |
+| Testes | Vitest/coverage-v8 5.0.5; Supertest 7.3.1; Testing Library React 16.3.0; Playwright 1.56.1 |
+
+Todas as dependências diretas e transitivas estão nos manifests da [raiz](package.json), [API](packages/api/package.json), [web](packages/web/package.json) e no [lockfile](pnpm-lock.yaml). Use instalação congelada. Não há Docker Compose ou script de lint versionado nesta base.
+
+## 8. Arquitetura e diagramas
+
+A implementação usa View React, controllers/rotas Express, serviços de domínio e repositórios. **A persistência é híbrida**: PostgreSQL para identidades/sessões/vínculos no modo Google, JSON privado para projetos, rubricas, avaliações e liberações, e disco privado para os arquivos enviados. A API usa consultas `pg`; a existência do model Prisma não significa que todo o domínio seja persistido pelo Prisma.
 
 ```mermaid
 flowchart TB
-    U["Navegador: aluno, avaliador, professor ou visitante"]
-    V["View: React e componentes de interface"]
-    C["Controller: Express, rotas REST e autorização"]
-    S["Serviços: entrega, feedback, avaliação e publicação"]
-    M["Model: entidades e repositórios Prisma"]
-    D[("PostgreSQL: metadados e registros")]
-    F[("Armazenamento privado: vídeos e documentos")]
-    U --> V
-    V -->|"HTTPS / JSON"| C
-    C --> S
-    S --> M
-    M --> D
-    S -->|"adapter; verificação de acesso"| F
+    V["View: React"] -->|"HTTP /api"| C["Controllers: Express"]
+    C --> S["Serviços e autorização"]
+    S --> M["Model e repositórios"]
+    M --> P["PostgreSQL: identidade e vínculos Google"]
+    M --> J["JSON: domínio acadêmico"]
+    M --> F["Disco privado: arquivos"]
 ```
 
-A View apresenta dados e captura ações. Controllers validam requisições, autenticam e autorizam; serviços aplicam regras. Models/repositórios cuidam dos dados persistidos. Arquivos têm acesso mediado pelo backend, inclusive quando o projeto possui uma versão pública. O frontend não acessa diretamente o banco.
+- [Arquitetura e componentes atuais](docs/arquitetura.md).
+- [Classes e tipos do domínio implementado](docs/diagrama-classes.md).
+- [DER físico ativo e relações lógicas](docs/diagrama-er.md).
+- [Sequências de autenticação, submissão, avaliação e publicação](docs/diagramas-sequencia.md).
+- [Estados do projeto e publicação](docs/estados-do-projeto.md).
+- [Contratos REST](docs/api-inicial.md) e [contratos C0–C4](docs/contratos).
 
-### Componentes funcionais
+O [SQL inicial](db/schema.sql) e o [schema Prisma](packages/api/prisma/schema.prisma) incluem o modelo relacional alvo. Instalações novas usam `pnpm db:deploy`; não reaplique o SQL histórico em banco já migrado. Backup completo inclui JSON, uploads e PostgreSQL quando utilizado.
 
-| Componente | Responsabilidade |
+## 9. Entrega e rastreabilidade
+
+| Documento | Finalidade |
 | --- | --- |
-| Identidade e autorização | Sessão, perfis, vínculos com turma/grupo e projetos atribuídos |
-| Projetos e requisitos | Metadados, requisitos, prazos e estados |
-| Materiais e submissões | Upload, versionamento, validação e snapshot da entrega |
-| Feedback | Mensagens privadas contextualizadas |
-| Avaliações | Rubricas versionadas, rascunhos, finalização e histórico |
-| Consolidação | Notas ponderadas, avaliações pendentes e CSV |
-| Publicação e catálogo | Materiais autorizados, busca e despublicação |
-| Descoberta e estatísticas | Histórico, favoritos, sugestões e contagens; itens P2 |
+| [Manual de uso](docs/manual-de-uso.md) | Passos por perfil e roteiro de demonstração |
+| [Instalação e aceitação](docs/instalacao-e-aceitacao.md) | Ambiente, banco, seed, backup, testes e evidências |
+| [Revisão final](docs/revisao-final.md) | Matriz de requisitos, verificações e pendências por responsável |
+| [Escopo acadêmico](docs/escopo-academico.md) | Decisões do professor ainda necessárias |
+| [Planejamento](docs/planejamento.md) | Responsabilidades, backlog e histórico de sprints |
+| [Uso de IA](docs/desenvolvimento-com-ia.md) | Orientações e registro dos prompts conhecidos |
 
-### Contratos REST do MVP
-
-A API inicial implementa health check, consulta/criação de projetos e registro/listagem de metadados de materiais; o [contrato detalhado e os exemplos de erro](docs/api-inicial.md) identificam o escopo atual. As demais rotas abaixo são previstas para histórias futuras; grupos/vínculos já usam as rotas implementadas por turma e por projeto documentadas na HU02 e no contrato detalhado.
-
-| Método e rota | Finalidade |
-| --- | --- |
-| POST /api/sessions; DELETE /api/sessions/current | Login e logout |
-| GET /api/me | Perfil e vínculos do usuário |
-| POST /api/groups; POST /api/projects | Cadastro docente |
-| GET /api/projects; GET /api/projects/:id | Listagem e detalhe conforme permissões |
-| PUT /api/projects/:id/requirements | Configurar requisitos |
-| POST /api/projects/:id/materials | Enviar nova versão, multipart |
-| GET /api/materials/:id/content | Conteúdo com autorização; Range para vídeo |
-| POST /api/projects/:id/submissions | Submeter snapshot completo |
-| GET/POST /api/projects/:id/messages | Consultar e enviar feedback |
-| PUT /api/submissions/:id/evaluations/me | Salvar avaliação do avaliador |
-| POST /api/submissions/:id/evaluations/me/finalize | Finalizar avaliação |
-| GET /api/classes/:id/grades | Consolidar notas para professor |
-| POST /api/projects/:id/results/release | Liberar resultado ao grupo |
-| POST /api/projects/:id/finalization | Finalizar projeto |
-| POST/DELETE /api/projects/:id/publication | Publicar/retirar publicação |
-| GET /api/catalog; GET /api/catalog/:id | Consulta pública somente de publicados |
-
-## Rastreabilidade e pendências da entrega
-
-| Exigência da aula | Local ou próximo passo |
-| --- | --- |
-| Tema | Seção 1; aprovação da adaptação pendente |
-| Nome do sistema/grupo | Seção 2; nome do grupo proposto e número a confirmar |
-| Crazy 8 e três escolhas | Seção 3 e SVG; sessão e imagens reais pendentes |
-| Histórias de usuário | Seção 4 e issues HU01–HU14 |
-| Responsabilidades | Seção 5 e texto de cada issue |
-| Backlog do produto/sprints | Seção 6 e issue de acompanhamento |
-| Imagens dos protótipos | Seção 7 e docs/prototipos |
-| Tecnologias | Seção 8; versões a fixar na implementação |
-| Arquitetura e banco | Seção 9; MVC/REST, [DER](docs/diagrama-er.md), [classes](docs/diagrama-classes.md), Prisma e [schema PostgreSQL](db/schema.sql) |
-| Compartilhamento com professor | Compartilhar link com higoramario conforme aula |
-
-## Incremento de Kauê — 12/11/2026
-
-Cálculo/CSV e contrato C3 da #36 implementados; API/tabela docente, liberação persistida e preparação de instalação da #41 disponíveis contra porta C2 injetável. A integração com avaliações reais, revisão e demonstração continuam pendentes. Consulte [C3 e limites da integração](docs/contratos/c3-consolidacao.md) e [instalação/seed e aceitação](docs/instalacao-e-aceitacao.md). `pnpm demo` inicia um ambiente local isolado com as contas de demonstração existentes. [Evidências e dependências da entrega](docs/entrega-kaue-2026-11-12.md). Esses incrementos não marcam HU09 ou a aceitação final como concluídas.
+A apresentação final está prevista para **26/11/2026**. Não há declaração de aceite integral: faltam integração real de publicação, comprovação do ambiente exigido, revisão das evidências e decisões acadêmicas. A atualização desta branch não fecha issues nem altera o código da aplicação.

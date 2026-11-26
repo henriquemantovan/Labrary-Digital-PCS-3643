@@ -1,5 +1,7 @@
 # Revisão de arquitetura — semana 5 (#16/#32)
 
+> Registro histórico. Para o estado da base `c2dbb7f`, consulte a [arquitetura atual](arquitetura.md) e a [revisão final](revisao-final.md).
+
 Revisão local de 07/11/2026. O modelo completo no DER continua sendo alvo do MVP; tabelas existentes não comprovam que haja adapter de produção para todas as histórias.
 
 ```mermaid

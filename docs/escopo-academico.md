@@ -2,6 +2,10 @@
 
 Registro local preparado em 07/11/2026 por Henrique, referente à tarefa #32. **Solicitação ainda não enviada ao professor; resposta e aprovação pendentes.** Este arquivo não representa um comentário já publicado na issue nem uma decisão do professor.
 
+## Conferência da revisão final — 25/11/2026
+
+A base `c2dbb7f` ainda não contém resposta/aprovação do professor. A implementação avançou em avaliação, consolidação e interface, mas isso não dispensa requisitos. Esta revisão não envia a solicitação nem altera a decisão acadêmica. Consulte a [matriz atual](revisao-final.md) para funcionalidades e responsáveis.
+
 ## Solicitação preparada
 
 Professor, solicitamos validar a adaptação do tema de plataforma de conteúdo digital para gestão, avaliação e divulgação de projetos acadêmicos de sistemas digitais, descrita no README do Labrary Digital.

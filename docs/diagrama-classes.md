@@ -1,113 +1,147 @@
-# Diagrama de classes inicial
+# Classes e tipos do domínio implementado
 
-Modelo de domínio que acompanha o [DER](diagrama-er.md). As classes representam os objetos e serviços principais; a autorização e as regras entre objetos ficam na camada de serviço.
+Base `c2dbb7f`, revisão de 25/11/2026. O backend usa interfaces TypeScript, schemas Zod e factories; os blocos UML abaixo representam tipos e relações, não classes ORM instanciadas. IDs do domínio em execução são `number`; os tipos SQL do modelo relacional são tratados no [DER](diagrama-er.md).
+
+## Projetos, materiais e rodadas
 
 ```mermaid
 classDiagram
-    class AppUser {
-      +BigInt id
-      +String fullName
-      +String email
-      +UserRole role
-      +Boolean active
-    }
-    class CourseClass {
-      +BigInt id
-      +String name
-      +Int academicYear
-    }
-    class StudentGroup {
-      +BigInt id
-      +String name
-    }
-    class GroupMembership {
-      +DateTime joinedAt
-      +DateTime leftAt
-    }
+    direction TB
     class Project {
-      +BigInt id
-      +String title
-      +String description
-      +String category
-      +ProjectStatus status
+        +number id
+        +number classId
+        +number groupId
+        +string title
+        +string category
+        +ProjectStatus status
+        +string dueAt
     }
-    class ProjectEvaluator {
-      +DateTime assignedAt
-    }
-    class AcademicLinkAudit {
-      +BigInt id
-      +String target
-      +BigInt targetId
-      +BigInt[] beforeIds
-      +BigInt[] afterIds
-      +DateTime changedAt
-    }
-    AppUser "1" --> "0..*" AcademicLinkAudit : altera vínculos
     class ProjectMaterial {
-      +BigInt id
-      +MaterialKind kind
-      +String title
+        +number id
+        +number projectId
+        +MaterialKind kind
+        +string title
     }
     class MaterialVersion {
-      +BigInt id
-      +Int versionNumber
-      +String storageKey
-      +String mimeType
-      +BigInt sizeBytes
+        +number id
+        +number versionNumber
+        +string storageKey
+        +string mimeType
+        +number sizeBytes
+        +string checksumSha256
     }
     class Submission {
-      +BigInt id
-      +Int roundNumber
-      +SubmissionStatus status
+        +number id
+        +number projectId
+        +number round
+        +string clientSubmissionId
+        +SubmissionStatus status
+        +number rubricVersionId
     }
-    class ProjectMessage {
-      +BigInt id
-      +String body
-      +DateTime createdAt
+    class SubmittedMaterial {
+        +number materialId
+        +number versionId
+        +number versionNumber
+        +string mimeType
+        +string checksumSha256
     }
-    class Evaluation {
-      +BigInt id
-      +Boolean isFinal
-      +DateTime finalizedAt
-    }
-    class EvaluationScore {
-      +Decimal score
-      +String comment
-    }
-    class RubricVersion {
-      +BigInt id
-      +Int versionNumber
-      +String title
-    }
-    class RubricCriterion {
-      +BigInt id
-      +Decimal weight
-      +Decimal minScore
-      +Decimal maxScore
-    }
-    class ProjectPublication {
-      +BigInt id
-      +PublicationStatus status
-      +DateTime publishedAt
-    }
-    AppUser "1" --> "0..*" CourseClass : ministra
-    CourseClass "1" --> "0..*" StudentGroup : organiza
-    AppUser "1" --> "0..*" GroupMembership : participa
-    StudentGroup "1" --> "0..*" GroupMembership : registra
-    StudentGroup "1" --> "0..1" Project : desenvolve
-    Project "1" --> "0..*" ProjectEvaluator : atribui
-    AppUser "1" --> "0..*" ProjectEvaluator : avalia
-    Project "1" --> "0..*" ProjectMaterial : recebe
-    ProjectMaterial "1" --> "1..*" MaterialVersion : versiona
-    AppUser "1" --> "0..*" MaterialVersion : envia
-    Project "1" --> "0..*" Submission : recebe
-    Project "1" --> "0..*" ProjectMessage : conversa
-    AppUser "1" --> "0..*" ProjectMessage : escreve
-    Submission "1" --> "0..*" Evaluation : recebe
-    Evaluation "1" --> "0..*" EvaluationScore : detalha
-    RubricVersion "1" --> "1..*" RubricCriterion : define
-    RubricVersion "1" --> "0..*" Evaluation : referencia
-    Project "1" --> "0..*" ProjectPublication : publica
+    Project "1" *-- "0..*" ProjectMaterial : materiais
+    ProjectMaterial "1" *-- "1..*" MaterialVersion : versões
+    Project "1" *-- "0..*" Submission : rodadas
+    Submission "1" *-- "1..*" SubmittedMaterial : snapshot
+    SubmittedMaterial --> MaterialVersion : referência por ID
 ```
 
-O diagrama mostra o domínio completo planejado. Na S5, identidades/sessões e grupos/vínculos Google usam PostgreSQL; projetos/metadados/mensagens usam arquivo privado e bytes ficam em disco privado. No modo local, grupos/vínculos usam arquivo separado. As factories de teste continuam injetáveis e em memória. A relação de projeto com avaliador é lógica: o projeto efetivo ainda é resolvido no snapshot, sem FK para a tabela legada. Veja [revisão da arquitetura](arquitetura-semana-5.md) e [decisão da HU02](hu02.md).
+`Submission` também contém a cópia da rubrica usada na entrega. Não há alteração retroativa de uma rodada ao substituir um arquivo ou criar outra rubrica. Mensagens (`ProjectMessage`) têm projeto, autor e contexto opcional de versão; ficam no snapshot privado de projetos.
+
+## Rubrica e avaliação
+
+```mermaid
+classDiagram
+    direction TB
+    class RubricVersion {
+        +number id
+        +number projectId
+        +number classId
+        +number versionNumber
+        +string title
+    }
+    class RubricCriterion {
+        +string id
+        +string title
+        +number weight
+        +number minScore
+        +number maxScore
+    }
+    class EvaluationContract {
+        +number projectId
+        +number submissionId
+        +number round
+        +number rubricVersionId
+        +number[] expectedEvaluatorIds
+    }
+    class Evaluation {
+        +number evaluatorId
+        +string status
+        +number revision
+        +string finalizedAt
+    }
+    class CriterionScore {
+        +string criterionId
+        +number score
+        +string comment
+    }
+    RubricVersion "1" *-- "1..*" RubricCriterion : critérios
+    EvaluationContract --> RubricVersion : snapshot C0
+    EvaluationContract "1" *-- "0..*" Evaluation : C2
+    Evaluation "1" *-- "0..*" CriterionScore : notas
+    CriterionScore --> RubricCriterion : criterionId
+```
+
+Rubricas são versionadas **por projeto**, com contexto de turma. Os três requisitos obrigatórios são vídeo, relatório e manual. Pesos somam 100%; notas variam de 0 a 10. Avaliações usam `PENDENTE`, `RASCUNHO`, `FINALIZADA` ou `REABERTA`, com revisão e histórico. A reabertura exige justificativa; não há campo `isFinal` no tipo C2 atual.
+
+## Consolidação e decisões
+
+```mermaid
+classDiagram
+    direction TB
+    class EvaluationProvider {
+        <<interface>>
+        +getCurrentRound(projectId)
+    }
+    class ConsolidatedResult {
+        +number projectId
+        +number submissionId
+        +number round
+        +string status
+        +number grade
+        +boolean allEvaluationsCompleted
+        +boolean resultReleased
+    }
+    class ResultRelease {
+        +number projectId
+        +number submissionId
+        +number round
+        +string fingerprint
+        +number releasedBy
+        +string releasedAt
+    }
+    class PublicationProviders {
+        <<interface>>
+        +submissions.latest(projectId)
+        +evaluations.completeness(projectId, submissionId)
+    }
+    class PublicationDecision {
+        +number id
+        +number projectId
+        +number submissionId
+        +number actorId
+        +string action
+        +string createdAt
+    }
+    EvaluationProvider --> ConsolidatedResult : fornece C2
+    ConsolidatedResult --> ResultRelease : consulta fingerprint
+    PublicationProviders --> PublicationDecision : pré-requisito da decisão
+```
+
+`ResultRelease` identifica o resultado efetivo por fingerprint; alterações na rodada/avaliação podem tornar a liberação anterior inaplicável. `PublicationDecision` é uma união: `FINALIZADO` guarda a submissão, `PUBLICADO` guarda autorização e DTO público, `RETIRADO` registra a retirada. O bootstrap conecta avaliação à consolidação, mas ainda não fornece `PublicationProviders` reais. Ver [arquitetura](arquitetura.md).
