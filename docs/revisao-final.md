@@ -1,6 +1,66 @@
 # Revisão final: situação, critérios e evidências
 
-Revisão da integração de 25/11/2026: `origin/main` em `d9f7d83` mais os incrementos de Henrique preservados até `95a5148`. Os resultados históricos da base seguem identificados separadamente. Esta revisão não encerra issues nem presume aprovação acadêmica ou revisão humana.
+Estado documentado em 26/11/2026: merge local `43200ea` integra `origin/main` em `d9f7d83` e os incrementos até `95a5148`; as contas/cenários de desenvolvimento posteriores foram acrescentados nesta branch. A execução local não comprova publicação dos commits nem CI remoto. Os resultados históricos da base seguem identificados separadamente. Esta revisão não encerra issues nem presume aprovação acadêmica ou revisão humana.
+
+## Revisão documental — 26/11/2026
+
+README, instalação, manual, permissões, contratos, persistência, histórias, diagramas e apresentação foram conferidos com o código atual. Foram removidas descrições de submissão/publicação como integrações futuras e de armazenamento exclusivamente local. O roteiro distingue três contas locais de oito contas PostgreSQL de desenvolvimento e explicita quais projetos/arquivos são privados deste ambiente, em vez de prometer que acompanham o clone. Planos antigos permanecem identificados como históricos; critérios técnicos de HU01–HU12 não substituem revisão humana nem fecham issues.
+
+Nesta revisão exclusivamente documental: 39 Markdown, 281 links locais, 64 âncoras, 21 blocos shell e 11 comandos pnpm conferidos; 17 diagramas Mermaid renderizados; slides verificados em 1440 e 390 px, com navegação, teclado e impressão. Dois links relativos do plano e duas âncoras antigas dos slides foram corrigidos. `git diff --check` aprovado. Código, configurações, `.env`, dependências, migrations, AGENTS e skills foram preservados por comparação de hashes. Build, cobertura, banco e E2E da aplicação não foram repetidos: os resultados das implementações anteriores estão datados nas seções seguintes.
+
+## Demonstração completa — 26/11/2026
+
+A demonstração ganhou dois acessos reservados, além das seis contas anteriores: `cadastro@labrary.test` para o primeiro cadastro e `convidado@labrary.test` para convite/revogação. A exceção de cadastro é restrita ao endereço específico e à opção validada de desenvolvimento. Não cria identidade Google nem afirma vínculo USP. As validações de nome, NUSP único e ingresso, o bloqueio da área acadêmica e a persistência usam os mesmos contratos da aplicação. O convidado fictício exige convite ativo no login e durante a sessão; repetir o seed não reativa um convite revogado.
+
+`pnpm demonstracao:completa` prepara os cenários ausentes pelas rotas normais: avaliação com rascunho, ajustes, resultado liberado, finalizado privado, publicado, retirado e prazo vencido. O ADMIN tem uma turma separada com vínculos próprios para visualizar os três papéis. O projeto principal anterior fica preservado para apresentar o percurso completo. O [roteiro de demonstração](manual-de-uso.md#demonstração-completa-com-postgresql-e-r2) relaciona contas, funcionalidades e projetos. Os arquivos seguem o provedor configurado; a preparação deste ambiente usou R2.
+
+| Verificação da implementação em 26/11/2026 | Resultado |
+| --- | --- |
+| `pnpm build` | API e web aprovadas |
+| `pnpm test` | 330 testes API e 140 web aprovados; 470 no total |
+| API: statements / branches / funções / linhas | 96,33% / 95,50% / 96,08% / 97,17% |
+| Web: statements / branches / funções / linhas | 95,51% / 91,92% / 93,34% / 96,36% |
+| `pnpm db:test` | Aprovado em PostgreSQL 18.6 local e descartável, banco vazio e existente: oito contas, cadastro após reinício, proteção do último ADMIN real, convite/revogação e seed sem reativação indevida |
+| E2E focado das contas de desenvolvimento | Oito cenários aprovados, cadastro e convidados incluídos em desktop/mobile |
+| `pnpm test:e2e` | 53 cenários aprovados e um timeout global de 60 s na avaliação desktop; o comando completo terminou com erro |
+| `pnpm exec playwright test --config playwright.evaluation.config.ts --project desktop` | Repetição isolada aprovada em 37,1 s; mesmo código, limite e asserções |
+| `pnpm exec playwright test --config playwright.publication.config.ts` | Dois cenários aprovados, desktop/mobile |
+| `pnpm exec playwright test --config playwright.academic.config.ts` | Quatro cenários aprovados, desktop/mobile |
+| `pnpm exec playwright test --config playwright.test-accounts.config.ts` | Oito cenários aprovados, desktop/mobile, na execução final |
+| `pnpm demonstracao:completa` e repetição | Preparação real aprovada; repetição preservou os hashes de todos os arquivos de metadados e os papéis/estado das contas reais |
+| Conferência do ambiente `.env` | Oito logins reais PostgreSQL, bloqueio do cadastro pendente, convidado autorizado, avaliação parcial, ajustes, resultado 9,30, CSV, prazo/reabertura, publicação/retirada e prévias ADMIN aprovados; vídeo público do R2 reproduzido e Range 206 confirmado |
+| Navegador no ambiente real | Aluno, professor, avaliador, cadastro e convidado conferidos em desktop/mobile; capturas de cadastro e consolidação mobile inspecionadas, sem estouro horizontal da página |
+| Documentação e Git | Cinco Markdown, 80 links locais, 18 âncoras e cinco blocos shell validados; `.env`, dados e capturas privados ignorados; `git diff --check` aprovado |
+
+Os 68 cenários de navegador passaram no conjunto das execuções atuais: 46 gerais, quatro de submissão, dois de notas, dois de avaliação, dois de publicação, quatro de cadastro USP/convidados e oito das contas fictícias. O trace do timeout desktop registrou as etapas de nota/liberação/reabertura concluídas e o limite global atingido no POST da segunda versão de rubrica. A repetição isolada passou sem alterações; não se declara que o comando integral passou.
+
+A primeira compilação identificou uma referência a `NodeJS.ProcessEnv` em um módulo alcançado pelos tipos da web; a configuração passou a receber um mapa de strings, mantendo as mesmas validações. O primeiro início do cluster descartável falhou por tentar o socket padrão ausente; foi corrigido especificando porta e diretório de socket locais. Build e testes de banco foram repetidos com sucesso. Nenhuma dependência, migration, limite de cobertura ou timeout foi alterado.
+
+## Contas de desenvolvimento — 26/11/2026
+
+Registro da etapa anterior, antes da ampliação para oito contas e dos cenários completos descritos acima.
+
+Adicionadas seis contas fictícias com senha no ambiente Google/PostgreSQL/R2, habilitadas somente por `DEV_TEST_LOGIN=true`, `NODE_ENV=development` e origem local. O login comum continua no Google. O provisionamento é idempotente e não sobrescreve identidades existentes; desligar a opção impede reutilizar sessões das contas fictícias. Um administrador de teste não substitui a proteção do último administrador real. Configuração e credenciais fictícias estão no [guia de login](login-google.md#contas-fictícias-com-senha-no-desenvolvimento-googler2).
+
+| Verificação em 26/11/2026 | Resultado |
+| --- | --- |
+| `pnpm build` | API e web aprovadas |
+| `pnpm test` | 328 testes API e 139 web aprovados; 467 no total |
+| API: statements / branches / funções / linhas | 96,32% / 95,49% / 96,07% / 97,16% |
+| Web: statements / branches / funções / linhas | 95,51% / 91,97% / 93,34% / 96,36% |
+| `pnpm db:test` | Aprovado em PostgreSQL 18.6 descartável: banco vazio e adoção de banco existente, seis migrations, 25 tabelas; provisionamento repetível, hashes distintos, identidades preservadas, proteção do último ADMIN real e revogação de sessões de teste |
+| `pnpm test:e2e` | Na execução com servidores adicionais pausados, 46 cenários gerais, quatro de submissão e dois de notas aprovados; processo encerrado por SIGTERM antes de concluir avaliação |
+| `pnpm exec playwright test --config playwright.evaluation.config.ts` | Dois cenários aprovados, desktop/mobile |
+| `pnpm exec playwright test --config playwright.publication.config.ts` | Dois cenários aprovados, desktop/mobile |
+| `pnpm exec playwright test --config playwright.academic.config.ts` | Quatro cenários aprovados, desktop/mobile |
+| `pnpm exec playwright test --config playwright.test-accounts.config.ts` | Quatro cenários aprovados, desktop/mobile: exceção optativa, rejeição de conta comum e revogação da sessão ao desligar |
+| Documentação e arquivos privados | Cinco Markdown, 75 links locais, 13 âncoras e quatro blocos shell validados; `.env` e dados privados ignorados; sem valores secretos do `.env` nos arquivos versionáveis |
+
+Os 64 cenários de navegador passaram no conjunto dessas execuções. A primeira tentativa completa foi interrompida após timeouts inclusive em fluxos já existentes; havia servidores adicionais de desenvolvimento e menor memória disponível. Após pausá-los, a nova tentativa aprovou os primeiros 52 cenários e terminou com SIGTERM na etapa seguinte. As quatro suítes restantes passaram nos comandos individuais acima. Não se declara sucesso do comando integral; timeouts, asserções e limites de cobertura foram preservados. As duas instâncias de desenvolvimento foram restauradas após a validação.
+
+O teste de banco usou `TEST_DATABASE_URL` local e descartável; não criou nem removeu bancos no serviço configurado no `.env`. Nenhuma migration foi alterada. Os resultados de 25/11 abaixo descrevem a integração anterior.
+
+No ambiente real autorizado, `pnpm contas:teste` criou os seis usuários no PostgreSQL. Foram preparados dois grupos, uma turma e dois projetos: o principal ficou em preparação, com avaliador atribuído, rubrica de pesos 50/30/20, mensagens e quatro materiais em cinco versões no bucket privado R2. Downloads conferidos por SHA-256, resposta parcial `206`, bloqueio anônimo, isolamento entre grupos e permissões foram verificados. O navegador reproduziu e avançou o vídeo no R2, em desktop e mobile. Usuários reais existentes foram preservados. As contas de teste são locais à aplicação; não são identidades Google verificadas.
 
 ## Verificações da integração atual
 
@@ -91,7 +151,7 @@ A referência principal é o documento **Projeto da disciplina PCS3643**, comple
 | Cinco vídeos distintos | Oito clipes existentes organizados em quatro percursos desktop/mobile; preparar índice inequívoco de cinco funcionalidades e identificar fixtures |
 | Instalação autônoma Ubuntu 26.04 | Dependências, build e preparação do seed aprovados em cópia limpa no Ubuntu 26.04 LTS; preparação de SO novo e aceite independente ainda pendentes; CI permanece 24.04 |
 | README, versões, uso e badges | Atualizados nesta revisão; badge de CI identifica a main remota, e cobertura atual está na tabela de verificações |
-| Scripts, seed e dados da demonstração | Scripts e seed existentes; falta fechar pacote com materiais e dados necessários à apresentação |
+| Scripts, seed e dados da demonstração | Três contas locais e oito de desenvolvimento; CLI de cenários, WebM versionado e PDFs gerados. Projeto principal, imagem/versões e grupo de isolamento deste ambiente são dados privados a preparar em outra instalação; roteiro e ensaio final ainda exigem revisão humana |
 | Prompts, modelos e versões de IA | Registro desta revisão criado; histórico de outros integrantes ainda deve ser reunido sem inventar versões |
 | Apresentações e autoavaliação | Não comprováveis pelo código; confirmar com equipe/professor |
 | Número do grupo, nome e compartilhamento | Confirmar; não foi enviado convite nesta revisão |
@@ -111,7 +171,7 @@ O enunciado condiciona a aceitação à instalação pelo README sem auxílio da
 | Equipe; coordenação de Kauê | Selecionar cinco vídeos distintos, nomear fluxo, autor, commit e natureza dos dados | Seleção final pendente |
 | Equipe | Atualizar issues e kanban com revisão e evidências reais | Pendente |
 | Equipe | Completar registro de prompts/modelos/versões e decisões do Crazy 8 | Parcial |
-| Henrique + equipe | Fechar apresentação, dados e roteiro para 26/11/2026 | Pendente de confirmação |
+| Henrique + equipe | Fechar apresentação, dados e roteiro para 26/11/2026 | Roteiro e slides alinhados aos cenários de desenvolvimento; narração, ensaio e aceite da equipe pendentes |
 
 ## Documentação e evidências
 

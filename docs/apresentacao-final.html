@@ -51,7 +51,7 @@
       <h1 id="titulo-1">Da entrega privada ao acervo autorizado.</h1>
       <p>Gestão, avaliação e divulgação de projetos acadêmicos de sistemas digitais.</p>
       <p class="muted">Henrique · Enzo · Yuhang · Dan · Kauê</p>
-      <small>Semana 7, revisão de 25/11/2026 após integração da main. Aceite humano e acadêmico pendentes.</small>
+      <small>Semana 7, documentação revisada em 26/11/2026. Aceite humano e acadêmico pendentes.</small>
     </section>
     <section aria-labelledby="titulo-2" hidden>
       <div class="eyebrow">01 · O problema e a entrega</div>
@@ -87,7 +87,7 @@
         <div class="card"><strong>C3 · Consolidação</strong><p>Completude e liberação do resultado.</p></div>
         <div class="card"><strong>C4 · Publicação</strong><p>Somente metadados e versões autorizadas.</p></div>
       </div>
-      <p>Sessão HttpOnly, CSRF e verificação de escopo no backend. Metadados em arquivos privados com um processo escritor; vídeos e documentos em disco ou R2 privado. Identidades, cadastro e sessões Google em PostgreSQL.</p>
+      <p>Sessão HttpOnly, CSRF e verificação de escopo no backend. Metadados em arquivos privados com um processo escritor; vídeos e documentos em disco ou R2 privado. Identidades, cadastro, convites e sessões Google/desenvolvimento em PostgreSQL.</p>
       <small><a href="arquitetura.md">Arquitetura atual</a> · <a href="contratos/c4-publicacao.md">Contrato público C4</a></small>
     </section>
     <section aria-labelledby="titulo-5" hidden>
@@ -100,19 +100,19 @@
         <li>Professor autoriza vídeo e relatório; visitante abre o acervo.</li>
         <li>Retirada bloqueia URLs copiadas, HEAD e novas requisições Range.</li>
       </ol>
-      <p><code>pnpm demo:publicacao</code> grava o roteiro automatizado pelo servidor normal.</p>
-      <small>Contas/conteúdo demonstrativos; a referência de autorização deste roteiro não é consentimento de um grupo real.</small>
+      <p><code>pnpm demonstracao:completa</code> prepara cenários no desenvolvimento já configurado; <code>pnpm demo:publicacao</code> grava o percurso automatizado isolado.</p>
+      <small>Oito contas de teste incluem cadastro e convidado. A demonstração completa usa pesos 50/30/20 e nota 9,30; a gravação automatizada usa outro exemplo. Dados e autorização são fictícios. <a href="manual-de-uso.md#demonstração-completa-com-postgresql-e-r2">Roteiro completo</a>.</small>
     </section>
     <section aria-labelledby="titulo-6" hidden>
       <div class="eyebrow">05 · Evidência técnica</div>
       <h2 id="titulo-6">Verificações reproduzíveis e falhas corrigidas.</h2>
       <div class="cards">
-        <div class="card"><strong>Build e cobertura</strong><p>API e interface compiladas; as quatro métricas de cada pacote superam 85%.</p></div>
+        <div class="card"><strong>Build e cobertura</strong><p>330 testes API e 140 web aprovados na execução de 26/11; as quatro métricas de cada pacote superam 85%.</p></div>
         <div class="card"><strong>Persistência e privacidade</strong><p>C1/C2/C3/C4 conservados após reinício dos repositórios. Notas e feedback fora do acervo.</p></div>
-        <div class="card"><strong>Navegador real</strong><p>Submissão, avaliação, vídeo e retirada em Chromium desktop e celular emulado.</p></div>
+        <div class="card"><strong>Navegador real</strong><p>68 cenários aprovados em execuções complementares; timeout global da avaliação desktop passou na repetição isolada.</p></div>
       </div>
       <p>Regressão corrigida: avaliação reaberta durante a leitura dos arquivos impede a finalização.</p>
-      <small>Comandos e pendências na <a href="../README.md#validação-da-entrega">validação da entrega</a>.</small>
+      <small>Comandos e pendências na <a href="../README.md#6-testes-ci-e-evidências">validação da entrega</a>.</small>
     </section>
     <section aria-labelledby="titulo-7" hidden>
       <div class="eyebrow">06 · Limites e fechamento</div>
@@ -124,7 +124,7 @@
         <li>Um escritor e disco persistente; retirada não recolhe bytes já recebidos.</li>
       </ul>
       <p>Manual, contratos, arquitetura e roteiro estão disponíveis no repositório.</p>
-      <small><a href="manual-usuario.md">Manual</a> · <a href="limitacoes.md">Limitações</a> · <a href="../README.md#alinhamento-com-o-enunciado-geral">Escopo acadêmico</a> · <a href="apresentacao-final.md">Falas e roteiro detalhado</a></small>
+      <small><a href="manual-usuario.md">Manual</a> · <a href="limitacoes.md">Limitações</a> · <a href="../README.md#1-tema-e-escopo">Escopo acadêmico</a> · <a href="apresentacao-final.md">Falas e roteiro detalhado</a></small>
     </section>
   </main>
   <nav aria-label="Navegação da apresentação">

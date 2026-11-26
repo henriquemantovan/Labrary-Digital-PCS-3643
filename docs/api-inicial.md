@@ -1,4 +1,4 @@
-# API REST — contratos integrados (25/11/2026)
+# API REST — contratos integrados (26/11/2026)
 
 O [C0 — requisitos/rubricas](contratos/c0-requisitos-rubrica.md) define a configuração versionada. O [C2 — avaliação](contratos/c2-avaliacao.md) usa a rubrica da submissão C1 para registrar as avaliações que alimentam a consolidação C3.
 
@@ -6,11 +6,11 @@ Rotas REST usam JSON, exceto o envio de arquivos de materiais (`multipart/form-d
 
 | Método | Rota | Uso | Sucesso |
 | --- | --- | --- | --- |
-| GET | `/api/auth/providers` | Opções disponíveis `{ google, local }` | `200` |
+| GET | `/api/auth/providers` | Opções `{ google, local }`; inclui `testLogin: true` somente com a exceção de desenvolvimento habilitada | `200` |
 | GET | `/api/auth/google` | Inicia OpenID Connect no Google | `302` |
 | GET | `/api/auth/google/callback` | Valida tentativa e cria sessão | `302` para `/cadastro`, `/projetos` ou `/login?authError=google` |
 | POST | `/api/auth/login` | Autentica `{ email, password }` e emite cookie HttpOnly | `200 { data: PublicUser }` |
-| POST | `/api/auth/profile` | Aluno Google USP confirma `{fullName, uspNumber, entryYear}` | `200 { data: PublicUser }` |
+| POST | `/api/auth/profile` | Aluno Google USP confirma `{fullName, uspNumber, entryYear}`; exceção restrita a `cadastro@labrary.test` no desenvolvimento | `200 { data: PublicUser }` |
 | GET | `/api/admin/guests` | ADMIN consulta autorizações de convidados e histórico de revogação | `200 { data: GuestInvitation[] }` |
 | POST | `/api/admin/guests` | ADMIN autoriza `{email}` externo antes do login Google | `201 { data: GuestInvitation }` |
 | DELETE | `/api/admin/guests/:invitationId` | ADMIN revoga autorização e sessões do convidado | `204` |
@@ -33,11 +33,11 @@ Rotas REST usam JSON, exceto o envio de arquivos de materiais (`multipart/form-d
 | GET | `/api/projects/:projectId/messages` | Consulta feedback privado | `200 { data: ProjectMessage[] }` |
 | POST | `/api/projects/:projectId/messages` | Envia feedback privado | `201` ou `200` na repetição idêntica |
 
-Todas as rotas de projetos, materiais e escopo exigem sessão válida. `GET /projects` aplica o escopo antes de retornar dados; filtros não ampliam acesso. Um projeto fora do escopo responde com o mesmo `404` de um projeto inexistente. Professor/ADMIN cria projetos conforme seu escopo; apenas aluno do grupo registra metadados enquanto o projeto está em Preparação/Ajustes (`409 PROJECT_LOCKED` nos demais estados).
+Todas as rotas de projetos, materiais e escopo exigem sessão válida. `GET /projects` aplica o escopo antes de retornar dados; filtros não ampliam acesso. Um projeto fora do escopo responde com o mesmo `404` de um projeto inexistente. Professor/ADMIN cria projetos conforme seu escopo; apenas aluno do grupo envia arquivos enquanto o projeto está em Preparação/Ajustes (`409 PROJECT_LOCKED` nos demais estados).
 
-`PublicUser` contém `id`, `fullName`, `email`, `role`; contas Google incluem `googleLinked: true`. Segredos OAuth não são retornados. Em modo Google, o login local responde `403 LOCAL_LOGIN_DISABLED`. Veja [configuração Google e migrations](login-google.md). Credenciais inválidas/inativas retornam `401 INVALID_CREDENTIALS`, sempre com `E-mail ou senha inválidos.`. Mutações POST, PUT, PATCH e DELETE exigem o cabeçalho `X-CSRF-Protection: 1`; `Origin`, se informado, deve ser igual a `APP_ORIGIN`. Não há CORS. Use a mesma origem para frontend e `/api`.
+`PublicUser` contém `id`, `fullName`, `email`, `role`; contas Google incluem `googleLinked: true`. Segredos OAuth não são retornados. No modo Google, o login por senha responde `403 LOCAL_LOGIN_DISABLED`, exceto pelos oito endereços fictícios `@labrary.test` com `DEV_TEST_LOGIN=true` em desenvolvimento local. A exceção recusa senhas de usuários comuns, mesmo com hash legado, e não atribui identidade Google às contas fictícias. Desligar a opção bloqueia suas sessões. Veja [configuração e contas de teste](login-google.md#contas-fictícias-com-senha-no-desenvolvimento-googler2). Credenciais inválidas/inativas retornam `401 INVALID_CREDENTIALS`, sempre com `E-mail ou senha inválidos.`. Mutações POST, PUT, PATCH e DELETE exigem o cabeçalho `X-CSRF-Protection: 1`; `Origin`, se informado, deve ser igual a `APP_ORIGIN`. Não há CORS. Use a mesma origem para frontend e `/api`.
 
-Contas Google também recebem `guest`, `uspNumber`, `entryYear` e `requiresAcademicProfile`. NUSP e ano ficam nulos antes do preenchimento; esses campos são da própria conta e não entram no catálogo ou nas listas de integrantes. A API exige `@usp.br` ou convite vigente; validar o domínio só na interface não autoriza a conta. Aluno USP sem cadastro completo recebe `403 ACADEMIC_PROFILE_REQUIRED` em projetos, turmas e escopo. `/auth/me`, `/auth/profile` e logout continuam disponíveis para concluir o cadastro ou sair.
+Contas Google também recebem `guest`, `uspNumber`, `entryYear` e `requiresAcademicProfile`. NUSP e ano ficam nulos antes do preenchimento; esses campos são da própria conta e não entram no catálogo ou nas listas de integrantes. A API exige `@usp.br` ou convite vigente; validar o domínio só na interface não autoriza a conta. Aluno USP sem cadastro completo recebe `403 ACADEMIC_PROFILE_REQUIRED` em projetos, turmas e escopo. `/auth/me`, `/auth/profile` e logout continuam disponíveis para concluir o cadastro ou sair. No desenvolvimento com a exceção ativa, `cadastro@labrary.test` exerce o mesmo preenchimento e bloqueio, sem identidade Google; os dados são salvos no PostgreSQL. Os `PublicUser` fictícios recebem `developmentTest: true`, `guest`, `uspNumber`, `entryYear` e `requiresAcademicProfile`. As demais contas por senha continuam sem cadastro obrigatório. `convidado@labrary.test` exige convite ativo no login e nas requisições privadas; revogar remove suas sessões e bloqueia a senha até uma nova autorização. Nenhuma dessas exceções é habilitada em produção.
 
 O cadastro usa nome completo com duas partes, NUSP numérico de até 32 dígitos e ano inteiro entre 1900 e o ano atual. Dados inválidos recebem 400; NUSP de outra conta recebe `409 USP_NUMBER_IN_USE`. Autor, conta e papel não são aceitos no corpo. Convites são exclusivos de ADMIN: `GuestInvitation` contém `id,email,invitedBy,createdAt,revokedAt,revokedBy`, sem conceder permissões acadêmicas. Convite inexistente recebe 404, e tentativa de revogar o próprio convite administrativo recebe `409 OWN_INVITATION`. Novos registros e revogações conservam histórico no PostgreSQL.
 
@@ -79,7 +79,7 @@ Exemplo de erro:
 - registra tamanho real e SHA-256 da versão;
 - apaga o arquivo recebido em qualquer recusa, inclusive se a entrega fechar durante o envio.
 
-Erros de formato do envio: `400 MULTIPART_REQUIRED`, `FILE_REQUIRED`, `UNEXPECTED_FILE`, `TOO_MANY_FILES`, `TOO_MANY_FIELDS`, `FIELD_TOO_LONG` e `INVALID_MULTIPART`.
+Erros de formato do envio: `400 MULTIPART_REQUIRED`, `FILE_REQUIRED`, `UNEXPECTED_FILE`, `TOO_MANY_FILES`, `TOO_MANY_FIELDS`, `FIELD_TOO_LONG` e `INVALID_MULTIPART`. No R2, capacidade excedida retorna `507 STORAGE_CAPACITY_LIMIT`, limite mensal de operações retorna `503 STORAGE_OPERATION_LIMIT` e falha remota retorna `503 STORAGE_UNAVAILABLE`. O envio não é confirmado na lista de versões se os bytes não forem gravados.
 
 Exemplo: `curl -b cookies.txt -H 'X-CSRF-Protection: 1' -F kind=RELATORIO -F 'file=@relatorio.pdf' http://localhost:3000/api/projects/2/materials`.
 
@@ -111,13 +111,13 @@ Envio: `{ "clientMessageId": "UUID", "body": "Texto de 1 a 5000 caracteres", "ma
 
 Projeto + autor + `clientMessageId` identificam uma tentativa lógica: criação retorna 201; repetição com mesmo texto normalizado e contexto retorna 200 com a mensagem original; payload diferente com a mesma chave retorna `409 MESSAGE_ID_CONFLICT`. Campos adicionais, UUID inválido, texto vazio/excessivo ou ID malformado recebem 400; contexto inexistente/de outro projeto recebe `404 MATERIAL_NOT_FOUND`. Falha de armazenamento retorna 500 sem atualizar o estado em memória.
 
-Persistência do servidor em `.data/projects-<modo>.json`, substituição atômica de snapshot, um processo escritor; `PROJECT_DATA_FILE` configura outro caminho. Não há alterações no schema PostgreSQL; os bytes dos materiais ficam em `UPLOAD_DIR`. Sessões do modo Google usam PostgreSQL; no modo local continuam em memória. Limites e roteiro em [docs/hu07.md](hu07.md).
+Persistência do servidor em `.data/projects-<modo>.json`, substituição atômica de snapshot, um processo escritor; `PROJECT_DATA_FILE` configura outro caminho. Não há alterações no schema PostgreSQL; os bytes dos materiais ficam em `UPLOAD_DIR` ou no bucket privado R2. Sessões do modo Google usam PostgreSQL; no modo local continuam em memória. Limites e roteiro em [docs/hu07.md](hu07.md).
 
 ## Login Google
 
-`GET /api/auth/google` emite cookie HttpOnly `labrary_google` SameSite=Lax com validade de dez minutos e redireciona para o Google. `GET /api/auth/google/callback` valida state/cookie, consome a tentativa de uso único, troca o código com PKCE, verifica o ID token e persiste a conta e a sessão. Retorna `302` para `/projetos`, ou `/login?authError=google|inactive|account_conflict`. Não aceita papel ou identidade enviados pelo navegador. O e-mail precisa ser verificado. Novas contas recebem `ALUNO`; papéis existentes são mantidos.
+`GET /api/auth/google` emite cookie HttpOnly `labrary_google` SameSite=Lax com validade de dez minutos e redireciona para o Google. `GET /api/auth/google/callback` valida state/cookie, consome a tentativa de uso único, troca o código com PKCE, verifica o ID token e persiste a conta e a sessão. Retorna `302` para `/cadastro` se o aluno precisa concluir os dados, para `/projetos` caso contrário, ou para `/login?authError=google|inactive|account_conflict|usp_only` em caso de recusa. Não aceita papel ou identidade enviados pelo navegador. O e-mail precisa ser verificado. Novas contas recebem `ALUNO`; papéis existentes são mantidos.
 
-O cookie `labrary_session` é HttpOnly, SameSite=Lax e Secure em produção; só seu SHA-256 fica no banco. A sessão é restaurada em `/auth/me`, tem expiração absoluta de oito horas, pode ser usada entre instâncias e é revogada no logout/desativação. `POST /auth/logout` mantém proteção CSRF e revogação idempotente. Tokens Google e segredos não são retornados nem persistidos. A API não oferece cadastro por senha no modo Google.
+O cookie `labrary_session` é HttpOnly, SameSite=Lax e Secure em produção; só seu SHA-256 fica no banco. A sessão é restaurada em `/auth/me`, tem expiração absoluta de oito horas, pode ser usada entre instâncias e é revogada no logout/desativação. `POST /auth/logout` mantém proteção CSRF e revogação idempotente. Tokens Google e segredos não são retornados nem persistidos. A API não oferece cadastro público por senha. As oito contas reservadas de desenvolvimento são provisionadas pelo CLI, sem criar identidades Google.
 
 ## Administração e visualização de perfis
 
@@ -127,7 +127,7 @@ O papel `ADMIN` é persistido em `app_user.role`, mantido pelos próximos logins
 
 Na visão administrativa, ADMIN vê todos os projetos, turmas e grupos e pode criar projetos para grupos existentes. Registro de materiais conserva as regras de aluno/grupo/estado: a administração não ignora essas regras. Mudar apenas a visualização não cria vínculos com turma, grupo ou projeto.
 
-Mudanças de papel usam transação com bloqueio para impedir que remoções concorrentes deixem zero administradores ativos. Remover o último ADMIN ativo retorna `409 LAST_ADMIN`. A transação limpa as prévias das sessões da conta alterada e registra autor, alvo, papel anterior, novo papel e data em `user_role_audit`. Um administrador destituído perde acesso administrativo na próxima requisição. O estado das contas e os vínculos acadêmicos são preservados.
+Mudanças de papel usam transação com bloqueio para impedir que remoções concorrentes deixem zero administradores ativos. Remover o último ADMIN real ativo retorna `409 LAST_ADMIN`; administradores dos endereços fictícios reservados não contam como substitutos dessa conta. A transação limpa as prévias das sessões da conta alterada e registra autor, alvo, papel anterior, novo papel e data em `user_role_audit`. Um administrador destituído perde acesso administrativo na próxima requisição. O estado das contas e os vínculos acadêmicos são preservados.
 
 
 ## Grupos e vínculos — HU02 / S5

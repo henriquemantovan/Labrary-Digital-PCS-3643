@@ -52,6 +52,38 @@ O administrador pode revogar o convite com confirmação. O histórico registra 
 
 O acervo continua público. A exigência de domínio e cadastro refere-se à área autenticada. No modo Google, os dados e convites ficam no PostgreSQL; a factory e o modo de demonstração local usam o adapter em memória. Testes de banco cobrem instalação nova e atualização com preservação das identidades antigas; testes de navegador usam o provedor OIDC de teste, sem comprovar uma execução no Google real.
 
+## Contas fictícias com senha no desenvolvimento Google/R2
+
+Para testar os papéis com o mesmo PostgreSQL e armazenamento configurados no `.env`, existe uma exceção optativa para oito endereços reservados. Ela não cria contas Google nem identidades verificadas: os usuários de teste têm `google_subject` nulo e senhas com hash scrypt. Os usuários reais continuam autenticando pelo Google, inclusive quando a exceção está ativa.
+
+```dotenv
+NODE_ENV=development
+DEV_TEST_LOGIN=true
+```
+
+Mantenha `AUTH_PROVIDER=google`, `AUTH_DEMO=false`, o cliente OAuth e a configuração R2 existentes. Execute `pnpm contas:teste` na raiz e reinicie `pnpm dev`. O comando cria somente as contas ausentes em uma transação; não substitui identidades, senhas ou papéis já existentes. Não exige nova migration.
+
+| E-mail fictício | Papel |
+| --- | --- |
+| `admin@labrary.test` | Administrador |
+| `professor@labrary.test` | Professor |
+| `avaliador@labrary.test` | Avaliador |
+| `aluno@labrary.test` | Aluno |
+| `aluno2@labrary.test` | Aluno |
+| `aluno3@labrary.test` | Aluno para demonstrar isolamento; vínculo próprio precisa ser preparado em banco novo |
+| `cadastro@labrary.test` | Aluno para demonstrar o primeiro cadastro |
+| `convidado@labrary.test` | Convidado fictício, dependente de convite ativo |
+
+A senha inicial dessas contas fictícias é **`LabraryTeste@2026`**. O formulário **E-mail da conta de teste** aparece ao lado do login Google apenas com a opção ativa. Somente esses oito endereços, sem identidade Google vinculada e com senha cadastrada, podem usar a exceção. Turmas, grupos, atribuições e materiais seguem as mesmas permissões da API; alunos de teste não recebem dados acadêmicos reais. Com a API em execução, `pnpm demonstracao:completa` prepara os cenários descritos no [manual](manual-de-uso.md#demonstração-completa-com-postgresql-e-r2). O comando cria os projetos ausentes e preserva o progresso dos que já existem.
+
+A opção exige `NODE_ENV=development` e `APP_ORIGIN` em `localhost` ou `127.0.0.1`; a API passa a escutar somente em `127.0.0.1`. Uma tentativa de ativá-la em produção ou em origem pública interrompe a inicialização. Para desligar, use `DEV_TEST_LOGIN=false` e reinicie a API. As contas permanecem no banco para preservar vínculos e histórico, mas não podem iniciar nem reutilizar sessões: a identificação dos endereços de teste é revalidada em cada requisição. Sessões normais Google não são revogadas por essa alteração. Um ADMIN fictício não conta como substituto do último administrador real: essa proteção continua válida mesmo com a exceção ativa.
+
+A conta `cadastro@labrary.test` é a única exceção de desenvolvimento ao cadastro reservado a alunos USP. Sem cadastro concluído, a API bloqueia a área acadêmica até salvar nome, NUSP fictício e ano de ingresso. A tela identifica expressamente a simulação; não é criada identidade Google nem confirmada matrícula USP. Os dados são persistidos no PostgreSQL e aparecem em Meu perfil. As outras contas de teste continuam prontas para os fluxos acadêmicos.
+
+A conta `convidado@labrary.test` só inicia e conserva sessão com convite ativo. O provisionamento inicial inclui esse convite; revogue e autorize novamente em **Administrar usuários → Convidados externos**. Repetir `pnpm contas:teste` não reativa um convite revogado. Os convidados reais continuam autenticando com seu Google; o teste por senha permanece limitado ao endereço fictício reservado.
+
+Essas contas são diferentes das contas `@labrary.local` da demonstração isolada. Aqui o PostgreSQL e os arquivos são os do ambiente configurado; com `STORAGE_PROVIDER=r2`, uploads e reprodução usam o bucket privado e suas cotas habituais.
+
 ## Identidade, perfis e contas antigas
 
 A chave da identidade é o `sub` estável e verificado do Google, persistido como `google_subject` único. O e-mail é sincronizado em cada login; o nome também, até a confirmação do cadastro acadêmico, quando passa a ser preservado. Não são armazenados access token, refresh token, ID token nem senha Google. Um e-mail não verificado, token adulterado/expirado ou conta desativada não cria sessão.
@@ -74,7 +106,11 @@ Os arquivos `schema.sql` são snapshots históricos. As migrations já aplicadas
 - `20261001000000_baseline`: as 20 tabelas iniciais.
 - `20261022000000_usp_identity`: identidade USP anterior.
 - `20261102000000_google_auth`: identidade Google, e-mail único sem distinguir maiúsculas, `auth_session` e `oauth_login_attempt`.
-- `20261102010000_admin_access`: papel ADMIN, visualização por sessão e `user_role_audit` (23 tabelas de domínio ao todo).
+- `20261102010000_admin_access`: papel ADMIN, visualização por sessão e `user_role_audit`.
+- `20261107000000_academic_links`: histórico de vínculos e associação lógica ao projeto persistido em JSON.
+- `20261122000000_academic_profile_guests`: cadastro acadêmico e convites externos.
+
+São seis migrations; o teste de banco existente verifica 25 tabelas de domínio ao final. Scripts das contas fictícias usam esse schema e não acrescentam migrations.
 
 A migration Google é transacional e preserva tabelas, chaves estrangeiras, contas, papéis, hashes e dados USP. E-mails antigos duplicados por diferença de maiúsculas precisam ser resolvidos administrativamente antes do deploy; a migration falha sem mesclá-los silenciosamente. As rotas e serviços USP foram removidos; suas colunas foram mantidas para preservar o histórico.
 
@@ -117,4 +153,4 @@ O login Google preserva ADMIN assim como os demais perfis. Rebaixar uma conta po
 
 A migration `20261107000000_academic_links` acrescenta auditoria de vínculos, permite participações explícitas em vários grupos e adapta a atribuição de avaliadores aos IDs dos projetos ainda persistidos em arquivo. Não altera migrations anteriores nem apaga vínculos existentes. Execute `pnpm db:deploy` antes de iniciar a API atualizada. O Prisma acompanha a mudança; os snapshots `schema.sql` continuam históricos.
 
-Em **Minhas turmas**, professor/ADMIN cria grupos e seleciona integrantes entre contas Google/ADMIN provisionadas. No detalhe do projeto, seleciona avaliadores. Turmas precisam estar provisionadas no banco. A API grava grupos/participações/atribuições e histórico no PostgreSQL; o diretório de autorização é recarregado a cada requisição, preservando alterações e revogações em sessões abertas e após reinício. `GROUP_DATA_FILE` só é usado no modo local. Decisões de adapter, backup e migração futura da FK estão na [HU02](hu02.md).
+Em **Minhas turmas**, professor/ADMIN cria grupos e seleciona integrantes entre contas ativas provisionadas com papel ALUNO/ADMIN. Avaliadores precisam de AVALIADOR/ADMIN. Isso inclui as contas fictícias quando habilitadas no desenvolvimento. No detalhe do projeto, seleciona avaliadores. Turmas precisam estar provisionadas no banco. A API grava grupos/participações/atribuições e histórico no PostgreSQL; o diretório de autorização é recarregado a cada requisição, preservando alterações e revogações em sessões abertas e após reinício. `GROUP_DATA_FILE` só é usado no modo local. Decisões de adapter, backup e migração futura da FK estão na [HU02](hu02.md).

@@ -1,6 +1,6 @@
 # Labrary Digital — apresentação final
 
-Roteiro preparado por Henrique em 22/11/2026 para #20/#42 e apresentação prevista em 26/11/2026. Os blocos abaixo são os slides e as falas sugeridas; a duração proposta é 10 minutos. A [validação da entrega](../README.md#6-testes-ci-e-evidências) descreve verificações e pendências. A participação/narração dos integrantes e o aceite do professor precisam de confirmação humana.
+Roteiro de Henrique para #20/#42, revisado em 26/11/2026 para o código integrado e as contas de desenvolvimento. Os blocos abaixo organizam as falas e a demonstração por assunto, com duração proposta de 10 minutos. O HTML agrupa entrega, notas e publicação em um único slide de demonstração, separando evidências e limites ao final. A [validação da entrega](../README.md#6-testes-ci-e-evidências) descreve verificações e pendências. A participação/narração dos integrantes e o aceite do professor precisam de confirmação humana.
 
 Abra [apresentacao-final.html](apresentacao-final.html) diretamente no navegador para exibir os slides, sem servidor ou dependência adicional. Use as setas ou os botões para avançar; **Imprimir / PDF** exporta todos os slides em paisagem. Este documento contém as falas, referências e preparação da demonstração.
 
@@ -34,8 +34,8 @@ React usa a API Express na mesma origem, com sessão HttpOnly e CSRF nas mutaç�
 
 ## Slide 4 — Entrega, feedback e avaliação · 2 min 15 s · Enzo, Dan e Yuhang
 
-1. No projeto 2 do Grupo 02, o professor atribui o avaliador e configura requisitos e rubrica com prazo futuro.
-2. O aluno envia vídeo, relatório e manual, confere o checklist e confirma a submissão.
+1. Use `aluno@labrary.test`, `avaliador@labrary.test` e `professor@labrary.test`, com senha `LabraryTeste@2026`. Escolha o projeto principal, se já provisionado, ou **Em ajustes — demonstração completa** para uma nova rodada. Professor confere atribuição e rubrica de pesos 50%/30%/20%.
+2. O aluno envia ou substitui os materiais, confere o checklist e confirma a submissão. A rodada anterior de um projeto em Ajustes permanece no histórico.
 3. A equipe registra feedback ligado ao projeto/versão. O avaliador abre a rodada congelada, salva um rascunho e finaliza todos os critérios.
 
 **Falas sugeridas:** Enzo explica o snapshot e o bloqueio de novos envios. Dan mostra a conversa privada e o contexto da versão. Yuhang mostra rubrica, preenchimento parcial, validação e histórico.
@@ -44,15 +44,15 @@ React usa a API Express na mesma origem, com sessão HttpOnly e CSRF nas mutaç�
 
 ## Slide 5 — Consolidação e resultado · 1 min · Kauê e Dan
 
-Mostre a tabela docente, o número de avaliadores previstos/recebidos e o CSV. No roteiro HU08 com pesos 60%/40% e notas 8/9, o resultado é 8,40. Libere o resultado e confira a visão do aluno. Demonstre que reabertura recolhe o resultado e exige nova liberação.
+Mostre a tabela docente, o número de avaliadores previstos/recebidos e o CSV. Nos cenários completos, Funcionamento 9 (50%), Documentação 10 (30%) e Apresentação 9 (20%) resultam em 9,30. O projeto **Resultado liberado — demonstração completa** já permite conferir a visão do aluno. Libere o resultado e confira a visão do aluno. Demonstre que reabertura recolhe o resultado e exige nova liberação.
 
 **Fala:** “Só avaliações finalizadas entram na média; uma nota zero não equivale a uma avaliação ausente. A liberação vale para o conteúdo exato da rodada. Ela não autoriza publicar os arquivos.”
 
-O [roteiro automatizado da publicação](../e2e/publication-flow.spec.ts) usa um critério de 100% com nota 9 e mantém o resultado bloqueado, para demonstrar a independência entre liberação de notas e divulgação. Não misturar os valores de dois roteiros na gravação.
+O [roteiro automatizado da publicação](../e2e/publication-flow.spec.ts) usa um critério de 100% com nota 9 e mantém o resultado bloqueado, para demonstrar a independência entre liberação de notas e divulgação. O roteiro local da HU08 usa 60%/40% e notas 8/9 (8,40). São exemplos separados do desenvolvimento completo (9,30); identifique o ambiente e a rubrica usados na gravação.
 
 ## Slide 6 — Publicação e retirada reais · 2 min 15 s · Henrique e Dan
 
-1. Como professor, finalize a rodada. Mostre que `/acervo/2` continua sem publicação.
+1. Como professor, finalize a rodada. Mostre que `/acervo/:projectId` ainda não responde como publicação; use o ID do projeto escolhido, não um ID fixo de outro ambiente.
 2. Selecione vídeo e relatório; deixe o manual desmarcado. Registre a autorização **demonstrativa** do grupo e publique.
 3. Saia da conta e abra o acervo como visitante. Reproduza o vídeo e mostre o download do relatório. Manual, nota e conversa continuam privados.
 4. Como professor, retire a publicação. Abra novamente o link público e mostre o bloqueio. Consulte o histórico privado com as três decisões e os materiais conservados.
@@ -77,6 +77,14 @@ Mostre o build, as suítes com cobertura mínima de 85% por métrica/pacote e o 
 **Limites declarados:** um escritor, disco persistente, consentimento docente por referência e mobile emulado. Instalação limpa Ubuntu 26.04, Google real, revisão cruzada, cinco vídeos finais e definição sobre assinaturas exigem registros próprios. HU13–HU14 não foram incluídas nesta entrega.
 
 **Fala:** “A evidência automatizada sustenta o comportamento técnico. Mantemos separado o que ainda depende de validação da equipe e do professor.”
+
+## Preparar as contas e os cenários da apresentação
+
+Com Google/PostgreSQL/R2 configurados no `.env` e a exceção local habilitada, execute `pnpm contas:teste`, inicie `pnpm dev` e use `pnpm demonstracao:completa` em outro terminal. O [manual](manual-de-uso.md#demonstração-completa-com-postgresql-e-r2) relaciona os projetos gerados a cada funcionalidade. IDs e dados privados não acompanham o clone; use a saída do comando e os títulos.
+
+As seis contas de papéis são `admin`, `professor`, `avaliador`, `aluno`, `aluno2` e `aluno3`, acrescidas de `cadastro` e `convidado`, todas em `@labrary.test` com senha inicial `LabraryTeste@2026`. ADMIN usa vínculos próprios para as prévias. `cadastro` demonstra nome/NUSP/ingresso fictícios; `convidado` exige autorização ativa e permite demonstrar revogação. Google e validação real do e-mail USP exigem uma conta Google real.
+
+Na configuração completa, o script já gera vídeo/PDFs dos cenários intermediários e finais. O projeto principal com vídeo de 12 segundos, imagem e versões e o grupo de isolamento de `aluno3` são dados preparados previamente neste ambiente; em outro banco, prepare-os pela interface conforme o manual. Repetir o comando preserva progresso, cadastros e revogações. Antes de apresentar, confira qual cenário foi alterado durante os ensaios.
 
 ## Preparação e plano de contingência
 

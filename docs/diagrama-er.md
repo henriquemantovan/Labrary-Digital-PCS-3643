@@ -1,6 +1,6 @@
 # Dados: relações físicas e lógicas
 
-Integração revisada em 25/11/2026. Este documento separa as tabelas efetivamente usadas pelos adapters PostgreSQL das relações lógicas persistidas em JSON. O [schema Prisma](../packages/api/prisma/schema.prisma) e o [SQL inicial](../db/schema.sql) descrevem um modelo relacional mais amplo; a presença de uma tabela não comprova seu uso pelo servidor.
+Código revisado em 26/11/2026. Este documento separa as tabelas efetivamente usadas pelos adapters PostgreSQL das relações lógicas persistidas em JSON. O [schema Prisma](../packages/api/prisma/schema.prisma) e o [SQL inicial](../db/schema.sql) descrevem um modelo relacional mais amplo; a presença de uma tabela não comprova seu uso pelo servidor.
 
 ## PostgreSQL ativo no modo Google
 
@@ -16,6 +16,8 @@ erDiagram
         bigint id PK
         varchar email
         varchar google_subject
+        text password_hash
+        boolean email_verified
         user_role role
         boolean active
         varchar usp_number
@@ -78,7 +80,7 @@ erDiagram
     }
 ```
 
-`project_evaluator.project_id` é uma referência lógica ao projeto do JSON privado. A migration `20261107000000_academic_links` removeu sua FK para a tabela `project` histórica; a aplicação valida projeto e turma. A FK para o avaliador permanece. Participações encerradas e auditoria preservam o histórico. O login usa Google com validação do e-mail USP ou convite vigente. NUSP, ano de ingresso e conclusão do cadastro ficam em `app_user`; convites conservam o histórico em `guest_invitation`. Não há integração com Senha Única USP.
+`project_evaluator.project_id` é uma referência lógica ao projeto do JSON privado. A migration `20261107000000_academic_links` removeu sua FK para a tabela `project` histórica; a aplicação valida projeto e turma. A FK para o avaliador permanece. Participações encerradas e auditoria preservam o histórico. O login usa Google com validação do e-mail USP ou convite vigente. NUSP, ano de ingresso e conclusão do cadastro ficam em `app_user`; convites conservam o histórico em `guest_invitation`. Não há integração com Senha Única USP. As oito contas fictícias do desenvolvimento usam estas mesmas tabelas, com hash scrypt e `google_subject` nulo, sem simular uma identidade Google verificada. O cadastro da conta reservada e o convite do convidado fictício não exigem novas tabelas/migrations.
 
 ## Domínio acadêmico persistido em JSON
 

@@ -1,6 +1,6 @@
 # Histórias de usuário e critérios de aceite
 
-Os critérios abaixo preservam a definição do produto. Os checkboxes e relatos locais foram escritos durante as sprints e não constituem aceite final. O estado consolidado de implementação e as evidências estão na [revisão final](revisao-final.md); a revisão humana continua nas issues de origem. Integração de 25/11/2026. HU13–HU14 foram excluídas do escopo pelo usuário em 22/11; seus critérios ficam preservados como histórico, sem compromisso de implementação nesta entrega.
+Estado técnico revisado em 26/11/2026. Nos critérios funcionais de HU01–HU12, `[x]` indica comportamento implementado no código e coberto pelas verificações registradas na [revisão final](revisao-final.md); não indica aceite humano nem fechamento da issue. A definição de concluído compartilhada continua dependente de revisão/demonstração da equipe. HU13–HU14 foram excluídas do escopo em 22/11 e ficam preservadas abaixo como histórico.
 
 
 As funcionalidades foram registradas como issues no formato **Como [papel], eu gostaria de [ação], de forma que [benefício]**, com tarefas, critérios de aceitação, responsável proposto, dependências, estimativa e definição de Done.
@@ -11,6 +11,7 @@ As funcionalidades foram registradas como issues no formato **Como [papel], eu g
 | Aluno | Materiais e feedback do próprio grupo; resultados liberados |
 | Avaliador | Projetos atribuídos, feedback e avaliações |
 | Professor | Grupos da turma, requisitos, rubrica, consolidação, liberação e publicação |
+| Administrador | Gestão de papéis/convidados e visão global; prévia acadêmica usa seus próprios vínculos |
 
 ### [HU01 — Autenticar usuários e controlar permissões](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/1)
 
@@ -26,7 +27,7 @@ As funcionalidades foram registradas como issues no formato **Como [papel], eu g
 - [x] Aluno acessa apenas seu grupo; avaliador apenas projetos atribuídos; professor gerencia sua turma.
 - [x] A API rejeita acesso indevido mesmo quando a URL é acessada diretamente.
 
-**Situação atual:** consulte a [revisão final](revisao-final.md#estado-funcional) para implementação, integração e aceite; os critérios abaixo continuam vinculados às issues.
+**Situação atual:** consulte a [revisão final](revisao-final.md#estado-funcional) para implementação, integração e aceite; os critérios continuam vinculados às issues.
 
 ### [HU02 — Cadastrar grupos e projetos](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/2)
 
@@ -42,7 +43,7 @@ As funcionalidades foram registradas como issues no formato **Como [papel], eu g
 - [x] Aluno vê somente projetos do próprio grupo na área de entrega.
 - [x] Alterações de vínculos preservam o histórico.
 
-**Situação atual:** consulte a [revisão final](revisao-final.md#estado-funcional) para implementação, integração e aceite; os critérios abaixo continuam vinculados às issues.
+**Situação atual:** consulte a [revisão final](revisao-final.md#estado-funcional) para implementação, integração e aceite; os critérios continuam vinculados às issues.
 
 ### [HU03 — Configurar requisitos e critérios de avaliação](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/3)
 
@@ -53,10 +54,10 @@ As funcionalidades foram registradas como issues no formato **Como [papel], eu g
 
 **Critérios de aceitação:**
 
-- [ ] Vídeo, relatório e manual são requisitos obrigatórios iniciais.
-- [ ] Cada requisito possui formatos, tamanho máximo e prazo definidos.
-- [ ] Rubrica define critérios, escala de 0 a 10 e pesos positivos cuja soma é 100%.
-- [ ] Mudanças após início de avaliações exigem nova versão explícita; avaliações preservam a rubrica utilizada.
+- [x] Vídeo, relatório e manual são requisitos obrigatórios iniciais.
+- [x] Cada requisito possui formatos, tamanho máximo e prazo definidos.
+- [x] Rubrica define critérios, escala de 0 a 10 e pesos positivos cuja soma é 100%.
+- [x] Mudanças após início de avaliações exigem nova versão explícita; avaliações preservam a rubrica utilizada.
 
 ### [HU04 — Enviar e substituir materiais](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/4)
 
@@ -72,7 +73,7 @@ As funcionalidades foram registradas como issues no formato **Como [papel], eu g
 - [x] Tela mostra progresso, data, autor e versão; substituição mantém histórico.
 - [x] Envio é permitido somente ao próprio grupo, enquanto a entrega está aberta.
 
-**Situação atual:** consulte a [revisão final](revisao-final.md#estado-funcional) para implementação, integração e aceite; os critérios abaixo continuam vinculados às issues.
+**Situação atual:** consulte a [revisão final](revisao-final.md#estado-funcional) para implementação, integração e aceite; os critérios continuam vinculados às issues.
 
 ### [HU05 — Concluir a entrega do projeto](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/5)
 
@@ -83,10 +84,10 @@ As funcionalidades foram registradas como issues no formato **Como [papel], eu g
 
 **Critérios de aceitação:**
 
-- [ ] Checklist mostra os materiais obrigatórios presentes e ausentes.
-- [ ] Submissão incompleta ou fora do prazo é bloqueada, salvo reabertura explícita pelo professor.
-- [ ] Submissão registra data e snapshot dos materiais e muda estado para Em avaliação.
-- [ ] Materiais submetidos ficam bloqueados; devolução para ajustes cria nova rodada e preserva a anterior.
+- [x] Checklist mostra os materiais obrigatórios presentes e ausentes.
+- [x] Submissão incompleta ou fora do prazo é bloqueada, salvo reabertura explícita pelo professor.
+- [x] Submissão registra data e snapshot dos materiais e muda estado para Em avaliação.
+- [x] Materiais submetidos ficam bloqueados; devolução para ajustes cria nova rodada e preserva a anterior.
 
 ### [HU06 — Acompanhar projetos em andamento](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/6)
 
@@ -98,11 +99,11 @@ As funcionalidades foram registradas como issues no formato **Como [papel], eu g
 **Critérios de aceitação:**
 
 - [x] Lista filtra por grupo, estado e pendências.
-- [ ] Detalhe permite visualizar materiais autorizados e versões.
+- [x] Detalhe permite visualizar materiais autorizados e versões.
 - [x] Projetos não atribuídos ficam inacessíveis ao avaliador.
-- [ ] Nenhuma nota ou comentário privado aparece na galeria pública.
+- [x] Nenhuma nota ou comentário privado aparece na galeria pública.
 
-**Situação atual:** consulte a [revisão final](revisao-final.md#estado-funcional) para implementação, integração e aceite; os critérios abaixo continuam vinculados às issues.
+**Situação atual:** consulte a [revisão final](revisao-final.md#estado-funcional) para implementação, integração e aceite; os critérios continuam vinculados às issues.
 
 ### [HU07 — Trocar feedback no projeto](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/7)
 
@@ -119,7 +120,7 @@ As funcionalidades foram registradas como issues no formato **Como [papel], eu g
 - [x] Erros de envio são indicados sem duplicar mensagens; conteúdo é escapado para prevenir scripts.
 - [x] MVP usa comentários com atualização manual, sem exigir chat em tempo real.
 
-**Situação atual:** consulte a [revisão final](revisao-final.md#estado-funcional) para implementação, integração e aceite; os critérios abaixo continuam vinculados às issues.
+**Situação atual:** consulte a [revisão final](revisao-final.md#estado-funcional) para implementação, integração e aceite; os critérios continuam vinculados às issues.
 
 ### [HU08 — Avaliar projetos por rubrica](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/8)
 
@@ -130,10 +131,10 @@ As funcionalidades foram registradas como issues no formato **Como [papel], eu g
 
 **Critérios de aceitação:**
 
-- [ ] Avaliador autorizado vê o snapshot submetido e a rubrica correspondente.
-- [ ] Notas fora da escala são rejeitadas; rascunho e avaliação final são diferenciados.
-- [ ] Finalização exige todos os critérios; registra autor, data e rodada.
-- [ ] Professor pode reabrir avaliação com justificativa; o histórico permanece auditável.
+- [x] Avaliador autorizado vê o snapshot submetido e a rubrica correspondente.
+- [x] Notas fora da escala são rejeitadas; rascunho e avaliação final são diferenciados.
+- [x] Finalização exige todos os critérios; registra autor, data e rodada.
+- [x] Professor pode reabrir avaliação com justificativa; o histórico permanece auditável.
 
 **Implementação para revisão (#39/#44):** [fluxo de avaliação e consolidação](hu08.md) sobre submissão real, com avaliações persistidas, reabertura auditável e consulta à rubrica de rodadas anteriores.
 
@@ -146,11 +147,11 @@ As funcionalidades foram registradas como issues no formato **Como [papel], eu g
 
 **Critérios de aceitação:**
 
-- [ ] Tabela exibe grupo, avaliadores previstos, recebidos, nota e situação.
-- [ ] Nota por avaliador = soma(nota do critério × peso/100); nota final = média das avaliações finalizadas previstas.
-- [ ] Avaliações ausentes não contam como zero; resultado parcial é identificado e nota final só existe com todas concluídas.
-- [ ] Cálculo preserva precisão interna e arredonda apenas exibição a duas casas; exportação CSV corresponde à tabela.
-- [ ] Somente professor da turma acessa a consolidação completa.
+- [x] Tabela exibe grupo, avaliadores previstos, recebidos, nota e situação.
+- [x] Nota por avaliador = soma(nota do critério × peso/100); nota final = média das avaliações finalizadas previstas.
+- [x] Avaliações ausentes não contam como zero; resultado parcial é identificado e nota final só existe com todas concluídas.
+- [x] Cálculo preserva precisão interna e arredonda apenas exibição a duas casas; exportação CSV corresponde à tabela.
+- [x] Somente professor da turma ou ADMIN autorizado acessa a consolidação completa; a prévia acadêmica segue os vínculos próprios.
 
 ### [HU10 — Consultar resultado do próprio grupo](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/10)
 
@@ -161,10 +162,10 @@ As funcionalidades foram registradas como issues no formato **Como [papel], eu g
 
 **Critérios de aceitação:**
 
-- [ ] Professor libera explicitamente os resultados da rodada.
-- [ ] Integrantes veem apenas o resultado de seu grupo.
-- [ ] Rubrica, notas por critério e comentários liberados são exibidos.
-- [ ] Resultados ainda não liberados mostram estado pendente.
+- [x] Professor libera explicitamente os resultados da rodada.
+- [x] Integrantes veem apenas o resultado de seu grupo.
+- [x] Rubrica, notas por critério e comentários liberados são exibidos.
+- [x] Resultados ainda não liberados mostram estado pendente.
 
 ### [HU11 — Finalizar e publicar projetos](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/11)
 
@@ -175,17 +176,17 @@ As funcionalidades foram registradas como issues no formato **Como [papel], eu g
 
 **Critérios de aceitação:**
 
-- [ ] Finalização exige materiais completos e avaliações concluídas; registra responsável e data.
-- [ ] Publicação é ação explícita posterior à finalização; projeto finalizado não é automaticamente público.
-- [ ] Professor seleciona os materiais autorizados para divulgação e registra autorização do grupo.
-- [ ] Somente metadados e materiais autorizados tornam-se públicos; notas e feedback continuam privados.
-- [ ] Professor pode retirar publicação preservando conteúdo e histórico privados.
+- [x] Finalização exige materiais completos e avaliações concluídas; registra responsável e data.
+- [x] Publicação é ação explícita posterior à finalização; projeto finalizado não é automaticamente público.
+- [x] Professor seleciona os materiais autorizados para divulgação e registra autorização do grupo.
+- [x] Somente metadados e materiais autorizados tornam-se públicos; notas e feedback continuam privados.
+- [x] Professor pode retirar publicação preservando conteúdo e histórico privados.
 
-**Situação atual:** consulte a [revisão final](revisao-final.md#estado-funcional) para implementação, integração e aceite; os critérios abaixo continuam vinculados às issues.
+**Situação atual:** consulte a [revisão final](revisao-final.md#estado-funcional) para implementação, integração e aceite; os critérios continuam vinculados às issues.
 
 ### [HU12 — Explorar projetos publicados](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/12)
 
-**Incremento S5 (#35):** catálogo/detalhe responsivos, busca e filtros combinados sobre C4, demonstráveis em `/demo/acervo` somente no servidor de desenvolvimento. Cliente HTTP separado, sem fallback de fixtures em produção. Publicação real e aceite permanecem na S6/S7. [Demonstração, regressão HU06 e evidências](arquitetura.md).
+**Implementação atual:** `/acervo` e `/acervo/:id` consomem o C4 real do servidor, com filtros, reprodução e retirada. `/demo/acervo` permanece uma demonstração de componentes apenas no desenvolvimento. A integração está implementada; revisão e aceite humano continuam pendentes quando não registrados. Ver [arquitetura](arquitetura.md).
 
 **Como visitante ou usuário, eu gostaria de buscar e visualizar projetos publicados, de forma que possa conhecer os trabalhos concluídos.**
 
@@ -194,11 +195,11 @@ As funcionalidades foram registradas como issues no formato **Como [papel], eu g
 
 **Critérios de aceitação:**
 
-- [ ] Galeria mostra apenas projetos Publicados.
-- [ ] Busca por título e filtros por ano, turma e categoria podem ser combinados.
-- [ ] Detalhe permite assistir ao vídeo e acessar relatório/manual autorizados.
-- [ ] Projeto despublicado deixa de aparecer e seu acesso público direto é bloqueado.
-- [ ] Galeria e detalhes funcionam em computadores e smartphones.
+- [x] Galeria mostra apenas projetos Publicados.
+- [x] Busca por título e filtros por ano, turma e categoria podem ser combinados.
+- [x] Detalhe permite assistir ao vídeo e acessar relatório/manual autorizados.
+- [x] Projeto despublicado deixa de aparecer e seu acesso público direto é bloqueado.
+- [x] Galeria e detalhes funcionam em computadores e smartphones.
 
 ### [HU13 — Consultar histórico de acessos e favoritos](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/13)
 

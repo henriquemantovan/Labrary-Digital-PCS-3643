@@ -1,6 +1,6 @@
 # Manual de uso e roteiro de demonstração
 
-Roteiro integrado após o merge de 25/11/2026. Use a [instalação](instalacao-e-aceitacao.md) antes deste roteiro. Publicação, cadastro USP, convidados, R2 e player privado estão conectados à aplicação.
+Roteiro revisado em 26/11/2026 após integração da main e das contas de desenvolvimento. Use a [instalação](instalacao-e-aceitacao.md) antes deste roteiro. Publicação, cadastro USP, convidados, R2 e player privado estão conectados à aplicação. Para as contas `@labrary.test` deste ambiente, consulte diretamente a [demonstração completa com PostgreSQL e R2](#demonstração-completa-com-postgresql-e-r2).
 
 ## Entrar e navegar
 
@@ -10,6 +10,8 @@ Roteiro integrado após o merge de 25/11/2026. Use a [instalação](instalacao-e
 4. Para trocar de perfil da demonstração, use **Sair da conta** e faça outro login. Atualizar a página conserva a sessão enquanto ela for válida; sair revoga a sessão.
 
 No modo Google, use seu e-mail `@usp.br`; contas externas exigem convite prévio do ADMIN. A conta nova recebe ALUNO, sem vínculo automático. Antes da área acadêmica, o aluno USP confirma nome completo, NUSP e ano de ingresso; o professor/ADMIN cadastra os vínculos separadamente. Convidados ficam dispensados dos campos acadêmicos. Os dados aparecem em **Meu perfil**. Login bem-sucedido sem projetos pode significar ausência de vínculo, não falha de autenticação.
+
+Para usar contas fictícias no ambiente Google/PostgreSQL/R2, siga o [provisionamento de desenvolvimento](login-google.md#contas-fictícias-com-senha-no-desenvolvimento-googler2). Elas usam os endereços `@labrary.test` no formulário **E-mail da conta de teste**, com seus próprios papéis e vínculos. Os arquivos seguem o provedor do `.env`; os usuários reais continuam no botão **Entrar com Google**.
 
 ## Preparar o projeto como professor
 
@@ -77,3 +79,43 @@ Pare com Ctrl+C. Para retomar a mesma demonstração, carregue o `environment.sh
 `pnpm dev` usa o `.env`: com `STORAGE_PROVIDER=r2`, os materiais ficam no bucket privado, enquanto o domínio acadêmico continua em JSON e as identidades Google no PostgreSQL. O servidor usa temporários limitados durante o envio e os remove após concluir ou tratar uma falha. Com `disk`, os bytes ficam em `UPLOAD_DIR`. `pnpm demo` força disco em uma pasta temporária `/tmp` e cria dados novos a cada execução.
 
 A migração de provedor não copia os arquivos antigos automaticamente. Não apague originais nem contadores de uso para liberar a franquia. O R2 possui cobrança por excedentes; as cotas conservadoras da aplicação não são garantia contratual de custo zero. [Configuração e limites do R2](arquitetura.md#cloudflare-r2-e-controle-da-franquia-gratuita).
+
+## Demonstração completa com PostgreSQL e R2
+
+No desenvolvimento configurado com Google, `NODE_ENV=development` e `DEV_TEST_LOGIN=true`, use as oito contas `@labrary.test` do [guia de login](login-google.md#contas-fictícias-com-senha-no-desenvolvimento-googler2). A senha inicial é `LabraryTeste@2026`. Elas usam os dados persistentes e o provedor de arquivos do `.env`; não dependem do botão Google para entrar.
+
+```sh
+pnpm contas:teste
+pnpm dev
+# Em outro terminal, na raiz, com a aplicação já em execução:
+pnpm demonstracao:completa
+```
+
+O último comando cadastra os cenários ausentes pelas rotas normais, com uploads reais, submissões, avaliações, liberação e decisões de publicação. Ele cria avaliação com rascunho, ajustes, resultado liberado, finalizado privado, publicado, retirado e prazo vencido; acrescenta projetos de primeiro acesso e uma turma de prévia ADMIN. Não cria automaticamente o projeto principal anterior nem o grupo de isolamento de `aluno3`. Não troca o estado de projetos já existentes nem reinicia seu progresso. Cria a turma das contas fictícias quando necessário; não altera turmas ou projetos de usuários reais. Os endereços dos projetos ficam em `.data/demonstracao-completa.json` e aparecem no terminal. Com `STORAGE_PROVIDER=r2`, os arquivos usam o bucket privado. O vídeo padrão é pequeno; `DEMO_VIDEO_FILE` pode indicar outro WebM local permitido pelas cotas.
+
+| Funcionalidade | Conta e cenário |
+| --- | --- |
+| Enviar/substituir arquivos, imagem, player e feedback | `aluno` e `aluno2`: **Em ajustes — demonstração completa** permite nova versão e material complementar. O projeto principal em preparação, quando já provisionado no ambiente, também pode ser usado |
+| Submeter e bloquear uploads | `aluno`: submeta a próxima rodada de **Em ajustes — demonstração completa**, ou use o projeto principal já provisionado |
+| Rascunho e finalização de avaliação | `avaliador`: **Em avaliação — demonstração completa**, já atribuído e com rascunho parcial |
+| Alterar material e fazer nova rodada | `aluno`: **Em ajustes — demonstração completa**, com submissão anterior devolvida |
+| Notas e resultado liberado | `professor`: **Consolidação de notas**; `aluno`: **Resultado liberado — demonstração completa**, média 9,30 |
+| Reabrir avaliação e conferir bloqueio do resultado | `professor`: projeto com resultado liberado; a ação preserva o histórico |
+| Finalizado ainda privado | `professor`: **Finalizado privado — demonstração completa**, pronto para autorizar/publicar; ainda fora do acervo |
+| Acervo público, vídeo e documentos autorizados | Visitante, sem login: **Publicado no acervo — demonstração completa**; manual, notas e mensagens continuam privados |
+| Retirada e histórico | `professor`: **Publicação retirada — demonstração completa**; o histórico conserva finalização/publicação/retirada |
+| Prazo vencido e reabertura com justificativa | `professor`: **Prazo vencido — demonstração completa** |
+| Criar projeto, editar integrantes, avaliadores e rubrica | `professor`: turma de demonstração; grupo **Criar novo projeto — demonstração**, inicialmente sem projeto |
+| Isolamento entre grupos | `aluno3` começa sem vínculos no provisionamento novo e não vê os projetos de `aluno`/`aluno2`. Para demonstrar um projeto próprio, o professor cria outro grupo, vincula `aluno3` e cria seu projeto; neste ambiente esse grupo já foi preparado |
+| Administração de papéis e convidados | `admin`: **Administrar usuários**; alterações de papéis são reais, inclusive nas contas de teste |
+| Visualizar como sem listas vazias | `admin`: **Prévia dos três perfis — administrador**, com vínculos próprios de aluno, avaliador e professor em uma turma separada |
+| Primeiro cadastro, validação e Meu perfil | `cadastro`: nome completo, NUSP fictício (ex.: `99000022`) e ingresso; a área acadêmica exige concluir o cadastro |
+| Acesso de convidado e revogação | `convidado`: projeto próprio, sem NUSP; o ADMIN revoga/autoriza novamente o convite pelo endereço completo |
+
+Nos endereços acima, acrescente `@labrary.test` ao nome da conta. Para trocar, use **Sair da conta**. Os projetos preparados são exemplos independentes: você pode começar em Ajustes, abrir diretamente uma etapa ou preparar um projeto novo em Preparação. Para o último caso, o professor usa o grupo inicialmente vazio, vincula os alunos, cria o projeto e define requisitos/rubrica antes dos uploads. Alterações permanecem após reiniciar; repetir a preparação preserva esse progresso.
+
+O vídeo de 12 segundos, o relatório com duas versões e a imagem do projeto principal, assim como o grupo de isolamento, foram preparados neste ambiente e ficam em dados privados. Eles não acompanham o clone nem são recriados por `pnpm demonstracao:completa`. O script usa por padrão o pequeno WebM versionado em `e2e/fixtures` e gera PDFs; para outra apresentação, informe `DEMO_VIDEO_FILE` ou envie seus próprios arquivos pela interface. Use os títulos e o arquivo de saída para encontrar projetos: os IDs variam conforme os dados já existentes.
+
+Depois de concluir o primeiro cadastro, a conta `cadastro@labrary.test` passa a entrar normalmente, sem repetir o formulário. O seed não apaga os dados preenchidos. Revogar o convite de `convidado@labrary.test` bloqueia as sessões e a senha até uma nova autorização; repetir o seed não desfaz a revogação. Desligar `DEV_TEST_LOGIN` bloqueia todas as oito contas.
+
+A entrada no Google, a checagem real de `@usp.br` e o consentimento OAuth exigem uma conta Google real. O cadastro fictício e o convidado por senha exercitam as telas, regras e persistência da aplicação; não comprovam autenticação Google nem vínculo com a USP.

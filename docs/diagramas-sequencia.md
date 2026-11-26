@@ -1,6 +1,6 @@
 # Diagramas de sequência
 
-Integração de `origin/main` em `d9f7d83` com os incrementos até `95a5148`, revisão de 25/11/2026. Diagramas de comportamento; validações de entrada e erros menores foram agrupados. As permissões são sempre decididas pela API.
+Comportamento revisado em 26/11/2026, incluindo as oito contas de desenvolvimento. Validações de entrada e erros menores foram agrupados. As permissões são sempre decididas pela API.
 
 ## Login e sessão local
 
@@ -24,6 +24,36 @@ sequenceDiagram
 ```
 
 No Google, `/api/auth/google` cria uma tentativa OAuth e redireciona ao provedor. O callback verifica state, nonce, PKCE e ID token, exige e-mail verificado `@usp.br` ou convite externo vigente e persiste identidade e sessão no PostgreSQL. Novos usuários são ALUNO sem vínculos automáticos. O aluno USP precisa concluir nome completo, NUSP e ano de ingresso antes das rotas privadas; convidados são dispensados desse cadastro. Revogar o convite encerra seu acesso. Ver [SSO](login-google.md).
+
+## Contas fictícias no desenvolvimento Google/PostgreSQL
+
+```mermaid
+sequenceDiagram
+    participant U as Navegador
+    participant A as API local
+    participant D as PostgreSQL
+    U->>A: GET /auth/providers
+    A-->>U: Google e formulário de teste se habilitado
+    U->>A: POST /auth/login com senha e CSRF
+    A->>D: Atualizar conta, vínculos e convite
+    A->>A: Verificar endereço reservado, hash e conta ativa
+    alt Convidado de teste sem convite ativo
+        A-->>U: 401 com erro genérico
+    else Conta de teste permitida
+        A->>D: Persistir hash de sessão
+        A-->>U: Cookie HttpOnly e developmentTest
+        alt Conta de cadastro ainda incompleta
+            A-->>U: Área acadêmica bloqueada até completar os dados
+            U->>A: POST /auth/profile com dados fictícios e CSRF
+            A->>D: Validar unicidade e persistir cadastro
+            A-->>U: Perfil completo e acesso conforme vínculos
+        else Outra conta de teste autorizada
+            A-->>U: Acesso conforme papel e vínculos
+        end
+    end
+```
+
+A opção é validada na inicialização: Google configurado, `NODE_ENV=development`, `DEV_TEST_LOGIN=true` e origem local. O callback Google permanece independente e autentica contas reais. Revogação do convite ou desativação bloqueia o convidado; desligar a opção bloqueia todas as sessões dos endereços reservados. As contas e o histórico permanecem no banco.
 
 ## Submissão e preservação de versões
 

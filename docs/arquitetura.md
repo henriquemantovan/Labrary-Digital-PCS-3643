@@ -1,4 +1,4 @@
-# Arquitetura integrada — revisão de 25/11/2026
+# Arquitetura integrada — revisão de 26/11/2026
 
 Arquitetura executável da aplicação. O DER descreve também funcionalidades planejadas; esta página identifica os componentes conectados, as fronteiras de autorização e a persistência efetiva.
 
@@ -50,31 +50,24 @@ Controllers validam schemas, sessão e CSRF; serviços aplicam regras; repositó
 | Vínculos e auditoria locais | `GROUP_DATA_FILE`, padrão `${PROJECT_DATA_FILE}.groups.json` |
 | Identidades, vínculos, auditoria, sessões e tentativas OAuth no modo Google | PostgreSQL; migrations anteriores preservadas |
 | Cadastro acadêmico dos alunos e autorizações/histórico de convidados | PostgreSQL no modo Google; adapter em memória na factory/local |
+| Oito contas de teste e seus vínculos/sessões | Mesmo PostgreSQL do desenvolvimento Google; login exige `DEV_TEST_LOGIN` habilitado |
 | Sessões locais | Memória; novo login após reiniciar |
 
 Os arquivos privados exigem um único escritor e disco persistente. O snapshot de finalização e o estado `FINALIZADO` são gravados juntos no arquivo de projetos. Avaliações e liberações estão em arquivos separados; para backup consistente, pare o escritor e conserve todo o conjunto, incluindo vínculos e bytes. Procedimento: [instalação e restauração](instalacao-e-aceitacao.md#backup-e-restauração-de-teste).
 
-## Evolução da persistência de vídeos e imagens
+## Persistência de vídeos, imagens e documentos
 
-Por padrão, os arquivos enviados ficam em `UPLOAD_DIR` (padrão `.uploads`), na máquina que executa a API. O armazenamento R2 é optativo e exige configuração explícita. O PostgreSQL guarda identidades e vínculos; os snapshots privados guardam os metadados dos materiais. Fazer backup apenas do banco não preserva os vídeos, imagens, projetos e avaliações. Os bytes são gravados por streaming, com limite de tamanho, SHA-256 e arquivo temporário antes da conclusão; não há conversão automática de qualidade de vídeo. Reiniciar a API com o mesmo disco conserva os arquivos, mas recriar uma hospedagem sem volume persistente pode perdê-los.
+Os dois adapters de `FileStorage` estão implementados. `.env.example` começa com `STORAGE_PROVIDER=disk`, que grava em `UPLOAD_DIR`; a escolha deste ambiente de desenvolvimento é `r2`, com bucket privado. `pnpm demo` e os servidores E2E forçam disco isolado, sem acessar o bucket real.
 
-| Alternativa | Benefício e compromisso | Adequação ao projeto |
-| --- | --- | --- |
-| Volume persistente fora da pasta de implantação, com backup em outro local | Evita perder arquivos ao substituir a aplicação; exige espaço, monitoramento e restauração sob responsabilidade da equipe | Melhoria imediata com pouca mudança; permanece dependente do servidor |
-| Armazenamento de objetos privado, como Amazon S3 ou Cloudflare R2 | Separa os arquivos da máquina da API; exige credenciais restritas, política de retenção e avaliação dos custos de armazenamento, operações e transferência | Recomendação para uma hospedagem duradoura; pode guardar vídeos, imagens e PDFs pelo mesmo contrato |
-| Serviço de vídeo, como Cloudflare Stream | Armazena, codifica e entrega vídeo com qualidade adaptativa; exige integrar processamento, player e autorização próprios do serviço | Considerar quando a reprodução em conexões diferentes justificar a complexidade; imagens e PDFs precisam de outro armazenamento |
+No R2, o servidor recebe o envio em temporário privado limitado, calcula assinatura/tamanho/SHA-256 e transmite o objeto pela API compatível com S3. Confirma os metadados somente depois da gravação completa e remove o temporário nas conclusões/falhas tratadas. O arquivo definitivo não depende do disco da máquina da API; projetos, rubricas, avaliações, liberações e contadores continuam em arquivos privados e exigem disco persistente.
 
-A recomendação acima é uma avaliação da arquitetura atual. O [R2 oferece API compatível com S3 e armazenamento replicado](https://developers.cloudflare.com/r2/how-r2-works/). O [Stream oferece armazenamento, codificação e reprodução adaptativa](https://developers.cloudflare.com/stream/); são serviços diferentes. Durabilidade do provedor não substitui proteção contra exclusão acidental nem uma política de backup e restauração. Nenhum serviço externo foi provisionado nesta alteração.
+Download e reprodução passam pela API: não há bucket público, domínio `r2.dev`, URL pré-assinada nem SDK de armazenamento no navegador. O player privado exige sessão e vínculo com o projeto; o catálogo só expõe versões selecionadas em uma publicação ativa. GET/HEAD/Range mantêm essas verificações. O vídeo é o arquivo enviado, sem transcodificação, processamento assíncrono ou qualidade adaptativa.
 
-O adapter `r2Storage` implementa a porta `FileStorage` (`save`, `open` e `remove`), com as mesmas chaves UUID, limites, validação da assinatura do arquivo, SHA-256 e leitura parcial `Range`. O bucket deve ser privado e a API continua autorizando GET, HEAD e Range. Essa escolha preserva a retirada de publicação: uma [URL pré-assinada do S3 pode ser reutilizada até expirar](https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-presigned-url.html), portanto retirar uma publicação na aplicação não invalida automaticamente um link já emitido. Um serviço de vídeo também exigiria configurar [acesso por tokens assinados](https://developers.cloudflare.com/stream/viewing-videos/securing-your-stream/) e definir explicitamente sua expiração e revogação.
-
-Uma migração dos arquivos deve inventariar as chaves referenciadas, copiar os bytes, verificar tamanho e SHA-256 de cada objeto e testar upload, reprodução parcial, download privado e retirada pública. A troca final deve ocorrer com o escritor parado ou com uma estratégia explícita para os uploads concorrentes. Conservar a cópia anterior para retorno até validar a restauração. Uploads interrompidos e objetos sem metadados precisam de limpeza controlada; os metadados só devem confirmar um arquivo após sua gravação completa.
-
-Mover os arquivos não elimina a exigência de um único escritor dos snapshots JSON. Para executar várias instâncias da API, seria necessário migrar também projetos, avaliações, rubricas e liberações para um armazenamento transacional compartilhado. Foi escolhido o armazenamento de objetos R2, sujeito à configuração privada e aos limites de orçamento descritos abaixo; não é necessário contratar processamento de vídeo para resolver apenas a persistência.
+Trocar `STORAGE_PROVIDER` não migra os objetos anteriores. Inventarie as chaves referenciadas, copie os bytes pelas mesmas chaves e confira tamanho/SHA-256 antes da troca. Pare o escritor na transição e conserve a cópia anterior até testar upload, reprodução parcial, download privado, retirada e restauração. Backup apenas SQL não preserva os projetos e seus arquivos.
 
 ## Cloudflare R2 e controle da franquia gratuita
 
-A opção escolhida é **Cloudflare R2 Standard**, com bucket privado. A [franquia publicada pela Cloudflare](https://developers.cloudflare.com/r2/pricing/) inclui 10 GB-mês, 1 milhão de operações A e 10 milhões B por mês; transferência de saída é gratuita. A franquia é da conta, compartilhada entre buckets, e não se aplica à classe Infrequent Access. Uso excedente é cobrado. **R2 não fornece, nessa configuração, uma garantia absoluta de custo zero: os limites abaixo pertencem à aplicação e não bloqueiam a cobrança da Cloudflare.** O [controle de gastos da Cloudflare](https://developers.cloudflare.com/billing/manage/spend-management/) oferece bloqueios para Workers e Durable Objects, que não incluem R2; alertas de orçamento apenas notificam e não interrompem o uso.
+A opção escolhida é **Cloudflare R2 Standard**, com bucket privado. A [franquia publicada pela Cloudflare](https://developers.cloudflare.com/r2/pricing/), consultada em 26/11/2026, inclui 10 GB-mês, 1 milhão de operações A e 10 milhões B por mês; transferência de saída é gratuita. A franquia é da conta, compartilhada entre buckets, e não se aplica à classe Infrequent Access. Uso excedente é cobrado. **R2 não fornece, nessa configuração, uma garantia absoluta de custo zero: os limites abaixo pertencem à aplicação e não bloqueiam a cobrança da Cloudflare.** A aplicação não configura um bloqueio de cobrança no provedor. Confira as condições da conta e o [controle de gastos da Cloudflare](https://developers.cloudflare.com/billing/manage/spend-management/); não trate alertas como garantia de interrupção.
 
 Para reduzir o risco, a integração limita este Labrary a **9.000.000.000 bytes no bucket**, **100.000 reservas A** e **1.000.000 reservas B por mês UTC**. Os valores têm margem abaixo da franquia. A capacidade é recalculada pela listagem paginada de todos os objetos antes de cada upload; uploads e remoções são serializados no único processo escritor. Isso inclui objetos sem metadados deixados por falhas, mas não mede outros buckets, uploads parciais criados por outras ferramentas ou alterações externas concorrentes.
 
@@ -104,7 +97,15 @@ R2_SECRET_ACCESS_KEY=preencher_no_ambiente_privado
 
 No modo R2, cada envio usa um arquivo temporário privado limitado ao tamanho da regra (e ao teto de 5 GB do upload simples) para calcular assinatura, tamanho e SHA-256 antes de transmitir. O temporário é removido no sucesso e nas falhas tratadas; a máquina da API ainda precisa de espaço temporário. Não há upload multipart remoto nem conversão de vídeo. Os metadados só confirmam a versão depois do envio completo. Leituras usam HEAD para o tamanho e GET sob demanda, com `If-Match` e Range; verificações de existência não baixam o vídeo inteiro.
 
-Os testes do adapter exercitam bytes reais pelo SDK S3 contra um servidor HTTP local, além de cotas, reinício do contador, concorrência, isolamento e retirada pública. Isso não comprova a configuração de privacidade, credenciais, cobrança ou disponibilidade de uma conta Cloudflare real.
+Os testes do adapter exercitam bytes reais pelo SDK S3 contra um servidor HTTP local, além de cotas, reinício do contador, concorrência, isolamento e retirada pública. A [revisão de 26/11](revisao-final.md#demonstração-completa--26112026) também registra uploads, downloads e reprodução com o R2 real deste ambiente. Esses testes não auditam cobrança nem garantem disponibilidade futura do provedor.
+
+## Contas fictícias de desenvolvimento
+
+`DEV_TEST_LOGIN` habilita oito endereços explícitos `@labrary.test`, com senha scrypt e sem `google_subject`, ao lado do Google real. A inicialização exige Google configurado, `NODE_ENV=development` e origem `localhost`/`127.0.0.1`; a API escuta só em loopback. Em produção a opção é recusada. Não é uma liberação de senha para todo o domínio ou para contas Google legadas.
+
+Os usuários, hashes, vínculos e sessões desse modo ficam no mesmo PostgreSQL configurado; materiais seguem `STORAGE_PROVIDER`. A conta `cadastro@labrary.test` permite demonstrar o cadastro e o bloqueio inicial, com indicação de dados fictícios. `convidado@labrary.test` exige convite vigente, inclusive nas requisições de uma sessão já aberta. Desligar a opção impede usar todas as contas reservadas, sem apagar histórico. ADMIN fictício não evita a proteção do último ADMIN real.
+
+`pnpm contas:teste` provisiona identidades ausentes, sem sobrescrever as existentes. `pnpm demonstracao:completa`, com a API ativa, usa rotas normais para criar cenários ausentes; não injeta contratos nem muda projetos já existentes de estado. Esses comandos são auxiliares de desenvolvimento, não migrations. A [matriz do manual](manual-de-uso.md#demonstração-completa-com-postgresql-e-r2) distingue o que é criado do que já existia neste ambiente.
 
 ## Exposição pública
 

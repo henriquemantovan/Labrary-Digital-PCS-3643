@@ -3,6 +3,8 @@
 Registro do planejamento das sete sprints. As tabelas e datas abaixo preservam o planejamento e as atualizações históricas; não substituem o estado atual das issues nem demonstram aceite. A [revisão final](revisao-final.md) reúne a situação da integração atual, os responsáveis e as pendências. O quadro da interface do produto organiza projetos acadêmicos; ele não é evidência do kanban de desenvolvimento da equipe.
 
 
+**Responsabilidade atual do código:** Henrique (HU01/HU02 e publicação), Enzo (materiais/submissão), Yuhang (rubricas/avaliação e redesign), Dan (acompanhamento/feedback/resultados/acervo) e Kauê (consolidação, instalação e CI). HU13–HU14 saíram do escopo; a tabela abaixo preserva a proposta inicial e seus papéis Scrum.
+
 **Divisão proposta**, baseada nas áreas do projeto; habilidades e disponibilidade ainda precisam ser validadas pelos cinco integrantes. Todos participam do desenvolvimento, planejamento, revisão e testes. Papéis de Scrum não excluem a contribuição técnica.
 
 | Integrante | Responsabilidade principal | Papel Scrum proposto | Itens sob responsabilidade |
@@ -95,7 +97,7 @@ Essa atualização documenta o estado no repositório e complementa a issue #21;
 
 ### Atualização local — HU06 (02/11/2026)
 
-Acompanhamento de metadados em revisão: filtros por grupo, estado e pendências, detalhe com histórico de versões e acesso restrito às atribuições. Pendências para concluir a história: conteúdo privado de arquivos (HU04), validação da futura galeria pública (HU11/HU12), revisão de outro integrante, refinamento com o grupo e demonstração. Detalhes em [docs/hu06.md](manual-de-uso.md). Este registro não fecha a issue #6 nem altera o backlog remoto #21.
+Acompanhamento de metadados em revisão: filtros por grupo, estado e pendências, detalhe com histórico de versões e acesso restrito às atribuições. A integração atual já inclui arquivos privados (HU04) e catálogo sem notas/feedback (HU11/HU12). Revisão de outro integrante, refinamento e demonstração continuam sujeitos ao aceite humano. Detalhes no [manual de uso](manual-de-uso.md). Este registro não fecha a issue #6 nem altera o backlog remoto #21.
 
 ### Atualização local — HU07 (02/11/2026)
 

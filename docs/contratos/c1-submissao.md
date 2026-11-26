@@ -56,7 +56,7 @@ Prefixo `/api`; sessão obrigatória; POST com `X-CSRF-Protection: 1`. Projeto f
 
 ## Persistência
 
-As rodadas ficam no campo `submissions` do mesmo arquivo privado de projetos (`PROJECT_DATA_FILE`); as reaberturas, no campo `reopenings`, gravado só quando existe alguma. Submeter e devolver gravam a rodada e o novo estado do projeto numa única escrita (arquivo temporário + renomeação), então uma falha não deixa rodada sem mudança de estado. Na carga, cada rodada é validada com `submissionSchema`; arquivo inválido impede a inicialização e não é sobrescrito. Arquivos anteriores à HU05, sem `submissions`, carregam com histórico vazio. O backup continua sendo o arquivo de projetos junto com grupos, rubricas e `UPLOAD_DIR`.
+As rodadas ficam no campo `submissions` do mesmo arquivo privado de projetos (`PROJECT_DATA_FILE`); as reaberturas, no campo `reopenings`, gravado só quando existe alguma. Submeter e devolver gravam a rodada e o novo estado do projeto numa única escrita (arquivo temporário + renomeação), então uma falha não deixa rodada sem mudança de estado. Na carga, cada rodada é validada com `submissionSchema`; arquivo inválido impede a inicialização e não é sobrescrito. Arquivos anteriores à HU05, sem `submissions`, carregam com histórico vazio. O backup inclui projetos, grupos locais, rubricas, avaliações, liberações e os bytes em disco/R2; no modo Google, PostgreSQL, e no R2, o contador privado. Veja o [procedimento conjunto](../instalacao-e-aceitacao.md#backup-e-restauração-de-teste).
 
 Observação para demonstrações: no seed local, o projeto 1 começa em `EM_AVALIACAO` sem nenhuma rodada. Use o projeto 2 (`PREPARACAO`) para o fluxo completo.
 
@@ -66,7 +66,7 @@ Observação para demonstrações: no seed local, o projeto 1 começa em `EM_AVA
 
 `services/submissionProvider.ts` exporta `createSubmissionProvider(repository)`, que implementa `PublicationProviders["submissions"]` ([HU11](../hu11.md)). `latest(projectId)` devolve uma cópia da rodada de maior número persistida, ou `undefined` se o projeto não tiver rodadas. Não filtra por estado: rodada `DEVOLVIDA` é entregue como está e o serviço da HU11 recusa finalizá-la (`409 PUBLICATION_NOT_READY`).
 
-O adapter ainda **não** é injetado em `server.ts`: a porta da HU11 exige também o provedor de completude das avaliações (Kauê, #41), e a composição no entrypoint é feita por Henrique (#42). `services/submissionProvider.test.ts` verifica o adapter e a finalização a partir de uma rodada real; nesse teste, só a completude C3 é dublê.
+O servidor injeta repositórios persistentes e a factory `createApp` compõe `createSubmissionProvider(repository)` com `createPublicationEvaluationProvider(evaluations, resultReleases)`. A finalização/publicação consome C1 e C3 reais, sem fixtures no entrypoint. `submissionProvider.test.ts` isola o adapter; `publicationIntegration.test.ts` e `e2e/publication-flow.spec.ts` verificam a composição com avaliação/consolidação reais.
 
 ## Interface
 

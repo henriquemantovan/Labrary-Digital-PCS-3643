@@ -5,10 +5,12 @@ Limites operacionais e pendências acadêmicas da aplicação. Os comandos estã
 | Limite | Consequência e acompanhamento |
 | --- | --- |
 | Um processo escritor nos arquivos privados | Não executar várias APIs sobre os mesmos snapshots. Escala horizontal requer armazenamento e coordenação próprios |
-| Avaliações/liberações/rubricas/vínculos em arquivos distintos | Backup consistente exige parar o escritor e copiar o conjunto com projetos e bytes; não há transação distribuída |
+| Domínio acadêmico em JSON e identidades/vínculos Google no PostgreSQL | Backup consistente exige parar o escritor e copiar projetos, rubricas, avaliações, liberações, bytes e banco; vínculos locais ficam em JSON. Não há transação distribuída |
 | Conteúdo em disco privado ou R2 optativo | Registrar metadados não garante existência dos arquivos. Restaurar snapshots exige conservar `UPLOAD_DIR` ou os objetos R2 correspondentes; trocar o provedor não migra os bytes |
 | R2 tem franquia gratuita e cobrança de excedentes | A API limita capacidade e operações com contador persistente, mas não controla uso externo ou cobranças da conta Cloudflare. Não garante custo zero absoluto; [configuração e limites](arquitetura.md#cloudflare-r2-e-controle-da-franquia-gratuita) |
-| Sessões locais em memória | Reinício exige novo login; sessões Google usam PostgreSQL |
+| Sessões dependem do ambiente | Local isolado usa memória; Google e contas `@labrary.test` do desenvolvimento usam PostgreSQL. Todas expiram em oito horas e respeitam revogação |
+| Oito contas de teste apenas no desenvolvimento local | Exigem opção explícita, Google configurado, origem local e `NODE_ENV=development`. Não comprovam OAuth Google real; cadastro é demonstrado apenas pela conta reservada |
+| Preparação preserva progresso | `pnpm demonstracao:completa` cria cenários ausentes; não reinicia projetos, cadastro já preenchido nem convite revogado. IDs e dados privados não acompanham o clone |
 | Consentimento registrado pelo docente | Há referência privada de autorização; não há assinatura eletrônica ou coleta automática da manifestação dos integrantes |
 | Retirada vale para novas requisições | `no-store` e revalidação bloqueiam URLs copiadas, HEAD e Range. Bytes já recebidos e streams iniciados podem permanecer com o visitante |
 | Finalização encerra a rodada | Avaliações e devolução não podem ser reabertas após `FINALIZADO`; retirar a publicação não reabre a avaliação |

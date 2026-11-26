@@ -4,7 +4,7 @@ Roteiro de Kauê para #41/#19, preparado em 12/11/2026. A execução final em in
 
 ## Preparar uma instalação Linux nova
 
-Revisão de 25/11/2026, integração de `origin/main` em `d9f7d83` com os incrementos até `95a5148`. O ambiente local desta integração é Ubuntu 26.04 LTS, x86_64; os comandos e resultados estão na [revisão final](revisao-final.md). Uma instalação independente, seguindo este roteiro em um sistema operacional recém-preparado, ainda precisa ser registrada em #46. O CI usa Ubuntu 24.04.
+Revisão documental de 26/11/2026, sobre a integração da main e os incrementos locais de cadastro, R2, contas de teste e demonstração completa. O ambiente local desta integração é Ubuntu 26.04 LTS, x86_64; os comandos e resultados estão na [revisão final](revisao-final.md). Uma instalação independente, seguindo este roteiro em um sistema operacional recém-preparado, ainda precisa ser registrada em #46. O CI usa Ubuntu 24.04.
 
 Instale Git, certificados, curl, tar/xz e ferramentas de compilação. Em uma máquina Ubuntu administrada pela equipe:
 
@@ -59,7 +59,17 @@ pnpm exec playwright install --with-deps chromium
 pnpm test:e2e
 ```
 
-API e web exigem no mínimo 85% nas quatro métricas. E2E inclui Chromium desktop e emulação mobile; não comprova Safari ou dispositivo físico. A suíte principal usa as portas 3002–3007 e 5179–5183 (servidores normais, OIDC de teste e publicação). A suíte de submissão roda em seguida com servidores novos nessas portas, preservando a cota de login por IP sem interferência dos demais cenários. Depois, a suíte de consolidação usa 3006/5182, primeiro desktop e depois mobile, com servidores novos para cada perfil. Por fim, avaliação usa APIs 3008/3009 e web 5184/5185. Isso limita o número de processos simultâneos e conserva os cenários e o isolamento. Não encerre processos de outras pessoas para liberar portas. `test-results/` e `packages/*/coverage/` são evidências locais ignoradas pelo Git. Em máquina com pouca memória, `VITEST_MAX_WORKERS=1 pnpm test` executa os mesmos testes e limites de cobertura com um worker.
+API e web exigem no mínimo 85% nas quatro métricas. E2E usa Chromium desktop e emulação mobile; não comprova Safari ou dispositivo físico. O script da raiz executa as suítes sequencialmente, com processos/dados novos para preservar o isolamento e a cota de login.
+
+| Suíte | Configuração | Portas API / web |
+| --- | --- | --- |
+| Geral e submissão | `playwright.config.ts`, `playwright.submission.config.ts` | 3002–3007 / 5179–5183; inclui o provedor OIDC de testes |
+| Notas, um perfil por execução | `playwright.grades.config.ts` | 3006 / 5182 |
+| Avaliação e publicação integrada | `playwright.evaluation.config.ts`, `playwright.publication.config.ts` | 3008–3009 / 5184–5185 |
+| Cadastro USP e convidados via OIDC de teste | `playwright.academic.config.ts` | 3004–3005 / 5181 |
+| Contas fictícias, primeiro cadastro e convite por senha | `playwright.test-accounts.config.ts` | 3010–3013 / 5186–5189 |
+
+Não encerre processos de outras pessoas para liberar portas. Em máquina com pouca memória, pause seus servidores extras enquanto valida e restaure-os depois. `test-results/` e `packages/*/coverage/` são artefatos privados ignorados. `VITEST_MAX_WORKERS=1 pnpm test` reduz o paralelismo sem mudar testes ou limites. Os resultados já executados, inclusive timeouts e repetições isoladas, constam da [revisão de 26/11](revisao-final.md#demonstração-completa--26112026).
 
 O CI fixa Ubuntu 24.04 para a versão atual do Playwright. A validação local desta integração usa Ubuntu 26.04; isso permite verificar a execução nessa distribuição, mas não comprova instalação autônoma por outra pessoa. Registre separadamente a preparação do sistema, o commit, os comandos e os resultados da aceitação da #46.
 
@@ -81,11 +91,25 @@ O [script](../scripts/demo.sh) confere as versões e cria um diretório privado 
 
 Abra <http://localhost:5173/login>; página inicial em `/`; API em <http://localhost:3000>. Encerre com Ctrl+C. O script informa o caminho de `environment.sh`; `source /caminho/informado/environment.sh && pnpm dev` reutiliza os mesmos dados para verificar reinício. Esse arquivo contém somente configuração local de demonstração. `pnpm demo --prepare-only` prepara e informa o comando sem iniciar servidores. Cada nova execução cria outro ambiente; não apaga o anterior nem altera `.env` existente. O diretório temporário pode ser limpo pelo sistema, portanto não o use para dados que precisem ser preservados.
 
-A demonstração fornece três perfis acadêmicos, sem conta ADMIN; o roteiro docente cobre a gestão de grupos/projetos. Para demonstrar administração de contas, é necessário provisionar ADMIN no modo Google conforme o guia de acesso.
+A demonstração fornece três perfis acadêmicos, sem conta ADMIN; o roteiro docente cobre a gestão de grupos/projetos. Para demonstrar administração, use um ADMIN provisionado conforme o guia de acesso ou `admin@labrary.test` no desenvolvimento Google/PostgreSQL explicitamente habilitado. Essa conta não pertence ao seed local isolado.
 
 No seed, a consolidação de um projeto começa em “Sem submissão”. O [roteiro HU08](hu08.md) prepara uma entrega, registra notas e valida a consolidação no servidor normal.
 
 Para contas próprias, siga [HU01](hu01.md); para Google, [login e migrations](login-google.md). Não habilite demonstração em produção. Não sobrescreva `.env` nem copie credenciais para logs/relatórios.
+
+## Desenvolvimento com Google, PostgreSQL e R2
+
+`pnpm dev` usa o `.env` existente; não executa migrations nem cria usuários, turmas ou projetos automaticamente. Se ainda não existir um `.env`, copie `.env.example` uma única vez e configure-o. Não copie credenciais de outra pessoa nem sobrescreva uma configuração existente.
+
+1. Configure o cliente OAuth e PostgreSQL conforme [login-google.md](login-google.md). Use `AUTH_PROVIDER=google`, `AUTH_DEMO=false` e remova `AUTH_USERS_FILE`.
+2. Faça backup quando houver dados e aplique apenas migrations pendentes com `pnpm db:deploy`; confira `pnpm db:status`.
+3. Para persistir bytes no R2, configure o bucket privado e o contador conforme a [arquitetura](arquitetura.md#cloudflare-r2-e-controle-da-franquia-gratuita). O modelo `.env.example` começa em disco; alterar o provedor não copia arquivos antigos.
+4. Para as oito contas fictícias, defina `NODE_ENV=development` e `DEV_TEST_LOGIN=true`, execute `pnpm contas:teste` e inicie `pnpm dev`.
+5. Em outro terminal, na raiz e com a API em execução, use `pnpm demonstracao:completa`. O comando usa o mesmo PostgreSQL e o provedor de arquivos configurado. O [roteiro completo](manual-de-uso.md#demonstração-completa-com-postgresql-e-r2) explica contas, estados e preparação complementar.
+
+Abra `http://localhost:5173/login`. Contas reais entram pelo Google; as oito contas reservadas usam o formulário de teste e senha inicial `LabraryTeste@2026`. A exceção exige origem local e é recusada em produção. Com ela ativa, a API escuta em `127.0.0.1`. Desligue com `DEV_TEST_LOGIN=false` e reinicie; as sessões fictícias deixam de autorizar acesso, conservando dados e histórico.
+
+O provisionamento cria contas ausentes sem substituir identidades, senhas ou papéis existentes. O convite inicial de `convidado@labrary.test` só é criado na primeira criação da conta. A preparação conserva o progresso dos projetos; cadastro concluído e convite revogado não são reiniciados. IDs e arquivos em `.data/` não acompanham o clone. Sem o `.env`, banco e bucket próprios, essas contas não existem automaticamente.
 
 ## PostgreSQL e migrations
 
@@ -108,7 +132,7 @@ O teste cria e remove bancos próprios para instalação limpa e adoção da bas
 
 ## Backup e restauração de teste
 
-Pare o único processo escritor e copie conjuntamente o arquivo `PROJECT_DATA_FILE`, `GROUP_DATA_FILE` (no modo local), `RUBRIC_DATA_FILE`, `EVALUATION_DATA_FILE`, `RESULT_RELEASE_DATA_FILE` e a pasta `UPLOAD_DIR`, conservando permissões privadas. No Google, inclua backup PostgreSQL de identidades, vínculos e sessões. Não publique essas pastas. Restaure em outro diretório de teste, configure os caminhos e verifique arquivos, versões, feedback, avaliações e decisões após reinício. O [procedimento HU04](hu04.md) trata snapshots antigos e materiais sem bytes; não remova snapshots como migração. Há testes de restauração conjunta em `backupRestore.test.ts` (C1) e `evaluationRoutes.test.ts` (C1, C2 e liberação C3).
+Pare o único processo escritor e copie conjuntamente o arquivo `PROJECT_DATA_FILE`, `GROUP_DATA_FILE` (no modo local), `RUBRIC_DATA_FILE`, `EVALUATION_DATA_FILE`, `RESULT_RELEASE_DATA_FILE` e, com `STORAGE_PROVIDER=disk`, a pasta `UPLOAD_DIR`, conservando permissões privadas. No R2, preserve os objetos pelas mesmas chaves e o arquivo `R2_USAGE_FILE`; não substitua o contador por zeros nem restaure uma cópia antiga para liberar uso. No Google, inclua backup PostgreSQL de identidades, cadastro, convites, vínculos e sessões. Não publique essas pastas. Restaure em outro diretório de teste, configure os caminhos e verifique arquivos, versões, feedback, avaliações e decisões após reinício. O [procedimento HU04](hu04.md) trata snapshots antigos e materiais sem bytes; não remova snapshots como migração. Há testes de restauração conjunta em `backupRestore.test.ts` (C1) e `evaluationRoutes.test.ts` (C1, C2 e liberação C3).
 
 ## Roteiro e divisão de evidências
 
@@ -131,7 +155,7 @@ Execute a suíte com gravação para obter os fluxos de navegador:
 RECORD_EVIDENCE=true pnpm test:e2e
 ```
 
-Os vídeos são artefatos em `test-results/`, ignorados pelo Git. A gravação longa da avaliação também pode ser feita com `RECORD_EVALUATION_DEMO=1 pnpm exec playwright test --config playwright.evaluation.config.ts --project desktop`. O limite de 90 segundos nesse modo acompanha a execução deliberadamente lenta de demonstração; o modo normal mantém o limite original.
+Os vídeos são artefatos em `test-results/`, ignorados pelo Git. A gravação longa da avaliação também pode ser feita com `RECORD_EVALUATION_DEMO=1 pnpm exec playwright test --config playwright.evaluation.config.ts --project desktop`. O limite de 90 segundos nesse modo acompanha a execução deliberadamente lenta; o modo normal usa 60 segundos por cenário de avaliação. Publicação normal usa 30 segundos, com modo de gravação de 90 segundos em `pnpm demo:publicacao`.
 
 Para entregar, selecione pelo menos cinco vídeos que demonstrem funcionalidades distintas, não apenas desktop e mobile do mesmo cenário. Proposta de índice: login/permissões; upload e substituição; submissão/devolução; feedback por versão; avaliação/consolidação/liberação. Inclua publicação/acervo integrado pelo servidor normal; a conexão real C1/C3 está implementada. Registre arquivo, funcionalidade, autor, data, commit, comandos e se há fixture. A existência do comando de gravação não comprova que a seleção final já tenha sido produzida.
 
@@ -152,7 +176,7 @@ Uma instalação de produção também exige servir `packages/web/dist` com fall
 
 ## Incrementos integrados nesta branch
 
-`pnpm test:e2e` também executa `playwright.publication.config.ts` no servidor normal e `playwright.academic.config.ts` com OIDC de teste. O primeiro valida o fluxo C0/C1/C2/C3/C4 real; o segundo valida domínio USP, cadastro, convidados e revogação, sem comprovar Google real. As suítes têm processos/dados isolados e preservam o limite de login.
+`pnpm test:e2e` também executa publicação integrada no servidor normal, cadastro USP/convidados com OIDC de teste e a exceção de contas de desenvolvimento com fixtures próprias. Publicação valida C0/C1/C2/C3/C4 reais; os testes de identidade e contas de desenvolvimento verificam suas regras sem comprovar Google real. As suítes têm processos/dados isolados e preservam o limite de login.
 
 No modo Google, execute `pnpm db:status` e aplique apenas migrations pendentes com `pnpm db:deploy`, após backup. A migration `20261122000000_academic_profile_guests` preserva identidades/NUSP e adiciona ano de ingresso, conclusão do cadastro e histórico de convidados. As migrations anteriores são imutáveis.
 
