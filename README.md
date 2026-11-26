@@ -1,155 +1,273 @@
 # Labrary Digital
 
-[![Build e testes da main](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/actions/workflows/ci.yml)
+[![Build e testes](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/actions/workflows/ci.yml)
+[![Cobertura mínima](https://img.shields.io/badge/cobertura_m%C3%ADnima-85%25-blue)](packages/api/vitest.config.ts)
 
-Plataforma de gestão, avaliação e divulgação de projetos acadêmicos de sistemas digitais. Reúne vídeo, relatório, manual, feedback privado, submissões versionadas, avaliação por rubrica e liberação de resultados.
+Plataforma de gestão, avaliação e divulgação de projetos acadêmicos, desenvolvida para **PCS3643 — Laboratório de Engenharia de Software I**.
 
-Projeto de **PCS3643 — Laboratório de Engenharia de Software I**. Estado documentado em **26/11/2026**: redesign integrado, cadastro USP/convidados, PostgreSQL, R2 privado, player e oito contas de desenvolvimento com cenários completos. A base inclui o merge da main (`d9f7d83`); a disponibilidade dos incrementos em outro clone depende de publicar os commits da branch. Verificações locais e pendências estão na [revisão final](docs/revisao-final.md). O badge acima acompanha a main remota, não os commits locais desta branch.
+[Instalação](#instalação-no-ubuntu-2604) · [Contas de teste](#contas-de-teste) · [Roteiro de avaliação](#roteiro-de-avaliação) · [Testes](#testes) · [Documentação](#documentação)
 
-## 1. Tema e escopo
+## Funcionalidades
 
-O tema é uma adaptação de plataforma de conteúdo digital para projetos acadêmicos. Nas decisões do usuário de 22/11/2026, o fluxo acadêmico atual foi aceito; restrição etária, funcionalidades financeiras e HU13–HU14 foram dispensadas. Essas decisões orientam a implementação e não substituem um registro de aprovação docente. Consulte a [matriz de critérios e pendências](docs/revisao-final.md).
+- Cadastro com Google USP ou convite, perfis de acesso e organização de turmas e grupos.
+- Envio de vídeos, imagens e documentos, histórico de versões e reprodução privada.
+- Requisitos de entrega, prazos, feedback, submissão e devolução para ajustes.
+- Avaliação por rubrica, consolidação de notas, exportação CSV e liberação do resultado.
+- Publicação autorizada de materiais no acervo público e retirada da publicação.
 
-| Área | Estado do código na base revisada |
+## Equipe
+
+| Integrante | GitHub |
 | --- | --- |
-| Autenticação e perfis | Google com e-mail USP ou convite, cadastro de aluno, sessões e administração; três contas locais ou oito contas de desenvolvimento no PostgreSQL |
-| Grupos e projetos | Cadastro docente, integrantes, atribuição de avaliadores e auditoria de vínculos |
-| Requisitos e rubricas | Versões por projeto, três materiais obrigatórios, prazos e pesos dos critérios |
-| Materiais | Upload real, versões, checksum, download e player privados; disco ou bucket R2 configurável |
-| Submissão | Checklist, snapshot da rubrica/materiais, bloqueios, devolução e reabertura |
-| Acompanhamento e feedback | Busca/filtros privados e conversa vinculada às versões |
-| Avaliações e notas | Rascunho, finalização, reabertura, consolidação, CSV e liberação ao grupo integrados |
-| Publicação e acervo | Finalização, publicação autorizada e retirada integradas aos produtores reais C1/C3; catálogo, vídeo e documentos autorizados |
-| Interface | Página inicial pública, login, quadro de projetos, turmas, perfil, notas e acervo; redesign do PR #58 integrado |
-| Complementos | Histórico de consumo, vistos, favoritos, recomendações e estatísticas fora do escopo desta entrega |
+| Henrique Mantovan | [henriquemantovan](https://github.com/henriquemantovan) |
+| Enzo Pimentel | [enplo](https://github.com/enplo) |
+| Dan Kiyochi | [kiyochii](https://github.com/kiyochii) |
+| Yuhang | [yuhangf2333](https://github.com/yuhangf2333) |
+| Kauê Barbosa | [kauebmr](https://github.com/kauebmr) |
 
-**Decisão em aberto:** dispensa ou adaptação das assinaturas individual/familiar e seus quatro acessos. Aluno, Avaliador, Professor e Administrador são papéis de permissão acadêmica, não planos de assinatura. O registro de aceite docente e as evidências humanas da entrega permanecem pendentes quando não comprovados.
+## Instalação no Ubuntu 26.04
 
-## 2. Sistema e equipe
+O frontend e a API executam no computador do professor. O ambiente fornecido utiliza **PostgreSQL remoto e Cloudflare R2 privado**; é necessário acesso à internet. Não é preciso instalar um servidor PostgreSQL local nem criar outro bucket.
 
-**Sistema:** Labrary Digital (lab + library). **Grupo:** Equipe Labrary Digital, nome proposto; número acadêmico a confirmar.
+Arquivos fornecidos pela equipe:
 
-| Integrante | GitHub | Área principal |
-| --- | --- | --- |
-| Henrique Mantovan | [henriquemantovan](https://github.com/henriquemantovan) | Integração, arquitetura, acesso e publicação |
-| Enzo Pimentel | [enplo](https://github.com/enplo) | Materiais, submissão e backup |
-| Dan Kiyochi | [kiyochii](https://github.com/kiyochii) | Acompanhamento, feedback, resultado e acervo |
-| Yuhang | [yuhangf2333](https://github.com/yuhangf2333) | Rubricas, avaliação e redesign da interface |
-| Kauê Barbosa | [kauebmr](https://github.com/kauebmr) | Consolidação, CSV, testes e instalação |
+- **`labrary-codigo.tar.gz`**: código do projeto.
+- **`labrary-dados-professor.tar.gz`**: `.env`, dados da demonstração e backups, enviado em privado.
 
-A divisão detalhada e o planejamento estão em [responsabilidades e sprints](docs/planejamento.md). O compartilhamento com `higoramario` e a adequação do nome do repositório ao padrão solicitado precisam ser confirmados pela equipe; não foram presumidos nesta revisão.
+**O `.env` sozinho não contém os projetos.** Extraia também os dados privados, pois projetos, avaliações e resultados utilizam arquivos JSON locais. O pacote privado contém credenciais e não deve ser publicado no Git.
 
-## 3. Crazy 8 e protótipos
+### 1. Dependências do sistema
 
-As [fotografias, autores, três ideias escolhidas e justificativas](docs/crazy8/README.md) estão registradas. Há folhas com menos de oito ideias e validação de protótipos ainda sem registro de conclusão. As [telas desktop](docs/prototipos) e suas [versões mobile](docs/prototipos/mobile) documentam o protótipo; não são capturas da interface atual.
-
-## 4. Histórias de usuários
-
-As [HU01–HU14, critérios e definição de Done](docs/historias-de-usuario.md) permanecem rastreáveis às issues. Código integrado, testes passando e história aceita são estados diferentes. A [revisão final](docs/revisao-final.md) identifica os incrementos existentes e as pendências de aceite.
-
-## 5. Instalação e execução
-
-Requer **Node.js 24.19.0** e **pnpm 11.25.0**. A instalação detalhada, inclusive preparação de uma máquina Linux nova, está em [instalação e aceitação](docs/instalacao-e-aceitacao.md). O requisito acadêmico é Ubuntu **26.04**: a integração foi validada nessa distribuição, incluindo dependências, build e preparação do seed em cópia limpa. A instalação autônoma por outra pessoa ainda depende de aceite. O CI usa **24.04**.
-
-Escolha o ambiente antes de iniciar. A demonstração isolada e o desenvolvimento usam as mesmas portas padrão; execute um deles por vez ou configure portas/origem separadas.
-
-| Modo | Comando | Autenticação e dados |
-| --- | --- | --- |
-| Demonstração isolada | `pnpm demo` | Três contas `@labrary.local`, arquivos locais novos em diretório temporário, sem Google/PostgreSQL/R2 |
-| Desenvolvimento | `pnpm dev` | Usa o `.env` existente: Google/PostgreSQL e disco ou R2, conforme configuração |
-| Cenários completos de desenvolvimento | `pnpm contas:teste`, `pnpm dev` e, em outro terminal, `pnpm demonstracao:completa` | Oito contas `@labrary.test`; exige Google configurado, `NODE_ENV=development` e `DEV_TEST_LOGIN=true`; cria cenários ausentes, preservando os existentes |
-
-Após preparar Git, Node e pnpm, para a demonstração isolada:
+Em um terminal Bash do Ubuntu 26.04, com uma conta que possa usar `sudo`:
 
 ```sh
-git clone https://github.com/henriquemantovan/Labrary-Digital-PCS-3643.git
-cd Labrary-Digital-PCS-3643
+sudo apt-get update
+sudo apt-get install -y git ca-certificates curl tar gzip xz-utils build-essential python3 openssl
+```
+
+Use um navegador Firefox ou Chrome/Chromium instalado no Ubuntu para abrir a aplicação. Playwright e suas bibliotecas de navegador são necessários somente para executar os testes automatizados, não para avaliar as telas manualmente.
+
+| Componente | Versão/configuração |
+| --- | --- |
+| Sistema operacional | Ubuntu 26.04 LTS; validação local em x86_64 |
+| Node.js | **24.19.0**, conforme `.nvmrc` |
+| pnpm | **11.25.0**, conforme `package.json`; não usar `latest` |
+| Backend/frontend/bibliotecas | Versões exatas nos manifests e em `pnpm-lock.yaml`; instalação automática pelo pnpm |
+| Banco fornecido | PostgreSQL remoto **17.6**, consultado neste ambiente; testes/CI também usam PostgreSQL 18 |
+| Arquivos | Cloudflare R2 privado, configurado no `.env`; snapshots e contador permanecem locais |
+| Rede | HTTPS para Node/npm/R2 e, se usado, Google; conexão ao host/porta PostgreSQL do `.env` |
+| Portas locais | API **3000** e interface **5173**, livres antes de iniciar |
+
+### 2. Instalar Node e pnpm nas versões do projeto
+
+Se as versões corretas já estiverem disponíveis, confira com `node --version` e `pnpm --version` e avance. Caso contrário, este bloco instala no diretório do usuário sem substituir o Node do Ubuntu. Os downloads vêm da [distribuição oficial do Node](https://nodejs.org/dist/v24.19.0/); o SHA-256 é conferido antes da extração.
+
+```sh
+case "$(uname -m)" in
+  x86_64) labrary_arch=x64 ;;
+  aarch64|arm64) labrary_arch=arm64 ;;
+  *) echo "Arquitetura não contemplada neste roteiro"; exit 1 ;;
+esac
+labrary_node="$HOME/.local/share/labrary/node-v24.19.0"
+labrary_download=$(mktemp -d)
+mkdir -p "$labrary_node" "$HOME/.local/bin"
+curl -fL "https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-${labrary_arch}.tar.xz" -o "$labrary_download/node.tar.xz"
+curl -fL "https://nodejs.org/dist/v24.19.0/SHASUMS256.txt" -o "$labrary_download/SHASUMS256.txt"
+mv "$labrary_download/node.tar.xz" "$labrary_download/node-v24.19.0-linux-${labrary_arch}.tar.xz"
+(cd "$labrary_download" && sha256sum --check --ignore-missing SHASUMS256.txt)
+tar -xJf "$labrary_download/node-v24.19.0-linux-${labrary_arch}.tar.xz" -C "$labrary_node" --strip-components=1
+export PATH="$labrary_node/bin:$HOME/.local/bin:$PATH"
+npm install --global --prefix "$HOME/.local" pnpm@11.25.0
 node --version
 pnpm --version
+```
+
+As duas últimas saídas devem ser `v24.19.0` e `11.25.0`. Em cada terminal novo, antes de usar o projeto, execute:
+
+```sh
+export PATH="$HOME/.local/share/labrary/node-v24.19.0/bin:$HOME/.local/bin:$PATH"
+```
+
+### 3. Extrair o código e a configuração recebidos
+
+O exemplo considera os dois arquivos em `Downloads`; ajuste somente essa pasta se necessário. Use uma pasta de instalação nova. `--keep-old-files` evita sobrescrever uma configuração ou dados já existentes.
+
+```sh
+mkdir -p "$HOME/labrary-entrega"
+tar -xzf "$HOME/Downloads/labrary-codigo.tar.gz" -C "$HOME/labrary-entrega"
+cd "$HOME/labrary-entrega/Labrary-Digital-PCS-3643"
+tar --keep-old-files -xzf "$HOME/Downloads/labrary-dados-professor.tar.gz"
+chmod 600 .env
+chmod 700 .data
+```
+
+O `.env` precisa ficar na **raiz**, ao lado de `package.json`; não em `packages/api` ou `packages/web`. Se ele foi enviado separadamente, conserve o arquivo recebido e extraia também os dados privados correspondentes. Não substitua por `.env.example` e não execute o conteúdo do `.env` como comando shell.
+
+Se o código foi recebido por clone, extraia o pacote privado na raiz do repositório.
+
+A configuração fornecida usa `AUTH_PROVIDER=google`, `AUTH_DEMO=false`, `NODE_ENV=development`, `DEV_TEST_LOGIN=true`, `STORAGE_PROVIDER=r2` e `APP_ORIGIN=http://localhost:5173`. As credenciais e o banco/bucket já estão provisionados. **Não rode `pnpm storage:init`**: o contador do bucket usado vem no pacote e não pode ser zerado. Não rode `pnpm demo` para avaliar esse conjunto: esse comando usa outros usuários e dados.
+
+### 4. Instalar, compilar e iniciar
+
+Na raiz do projeto:
+
+```sh
 pnpm install --frozen-lockfile
 pnpm build
+pnpm db:status
+pnpm dev
+```
+
+`pnpm db:status` somente verifica as migrations do banco remoto; o ambiente fornecido já possui as seis migrations. Não é preciso `db:generate`, reaplicar `schema.sql`, instalar um servidor SQL nem executar seed novamente. Se a equipe fornecer um banco novo, ela deve aplicar `pnpm db:deploy` antes da entrega; não use reset ou baseline no banco compartilhado.
+
+Mantenha o terminal aberto: `pnpm dev` inicia API Express e interface Vite juntas, com proxy `/api` na mesma origem. Abra **http://localhost:5173/login**. Para parar, pressione **Ctrl+C**; para continuar com os mesmos dados, execute `pnpm dev` novamente na mesma pasta, sem reextrair os dados privados.
+
+Em outro terminal, as verificações básicas são:
+
+```sh
+curl --fail http://localhost:5173/api/health
+curl --fail http://localhost:5173/api/auth/providers
+```
+
+A primeira resposta contém `"status":"ok"`; a segunda deve conter `"google":true`, `"local":true` e `"testLogin":true`. Os nomes dessas opções descrevem os métodos de login; os arquivos continuam no R2 neste ambiente.
+
+## Contas de teste
+
+Acesse **http://localhost:5173/login** e use o formulário **E-mail da conta de teste**. A senha inicial de todas as contas abaixo é **`LabraryTeste@2026`**.
+
+| E-mail | Papel | O que demonstrar |
+| --- | --- | --- |
+| `admin@labrary.test` | Administrador | Gestão de papéis, convidados e visualização dos perfis acadêmicos |
+| `professor@labrary.test` | Professor | Grupos, projetos, rubricas, notas/CSV, reabertura, publicação e retirada |
+| `avaliador@labrary.test` | Avaliador | Avaliações dos projetos atribuídos, rascunho, finalização e histórico |
+| `aluno@labrary.test` | Aluno | Envio e versões de materiais, player, feedback, submissão e resultado liberado |
+| `aluno2@labrary.test` | Aluno | Colaboração com o primeiro aluno nos grupos da demonstração |
+| `aluno3@labrary.test` | Aluno | Isolamento entre grupos e acesso restrito aos vínculos atribuídos |
+| `cadastro@labrary.test` | Aluno | Primeiro cadastro com nome completo, NUSP fictício e ano de ingresso |
+| `convidado@labrary.test` | Aluno convidado | Acesso sem NUSP mediante convite ativo e bloqueio após revogação |
+
+Essas contas funcionam somente no desenvolvimento local explicitamente habilitado. Não são contas Google: o login real continua pelo botão **Entrar com Google**. Para desabilitar os acessos fictícios, defina `DEV_TEST_LOGIN=false` e reinicie a API. O modo separado `pnpm demo` usa outras contas e outra senha, descritas abaixo.
+
+## Roteiro de avaliação
+
+Entre em **http://localhost:5173/login** com as contas acima. Use **Sair da conta** para trocar de perfil.
+
+| Conta | O que conferir |
+| --- | --- |
+| `aluno` ou `aluno2` | Materiais, versões, vídeo privado, feedback e submissão. **Em ajustes — demonstração completa** permite alterar materiais e enviar outra rodada |
+| `avaliador` | **Em avaliação — demonstração completa**: preencher critérios, salvar rascunho e finalizar a avaliação |
+| `professor` | Consolidação, CSV, liberação de notas e publicação. **Resultado liberado — demonstração completa** já apresenta média 9,30 |
+| `admin` | Contas, papéis, convidados e **Visualizar como**, que usa os vínculos da própria conta |
+| `cadastro` | Primeiro cadastro com nome completo, NUSP fictício e ano de ingresso |
+| `convidado` | Acesso externo autorizado; a revogação e nova autorização são feitas pelo administrador |
+| Sem login | `/acervo`: **Publicado no acervo — demonstração completa**, com vídeo e relatório; notas e feedback continuam privados |
+
+Os endereços completos das contas estão na tabela anterior. As alterações persistem: preencher o cadastro ou alterar um projeto não é desfeito ao sair. O [manual de uso](docs/manual-de-uso.md) detalha o fluxo e as permissões.
+
+## Demonstração local sem serviços externos
+
+Para experimentar com dados novos, sem usar o banco e o bucket fornecidos:
+
+```sh
 pnpm demo
 ```
 
-`pnpm demo` inicia frontend/API com dados locais isolados, sem PostgreSQL nem credenciais Google. Abra **http://localhost:5173/login**. A página inicial fica em `/`, projetos em `/projetos`, turmas em `/turmas`, notas em `/notas`, perfil em `/perfil` e acervo em `/acervo`.
+O comando usa disco e diretório temporário novos a cada execução. Esta demonstração oferece três contas, com senha **`Labrary@2026`**:
 
-| Conta de demonstração | Papel | Senha |
-| --- | --- | --- |
-| `aluno@labrary.local` | Aluno do Grupo 02 | `Labrary@2026` |
-| `avaliador@labrary.local` | Avaliador inicialmente atribuído ao projeto 1 | `Labrary@2026` |
-| `professor@labrary.local` | Professora da turma 1 | `Labrary@2026` |
+| Conta | Papel |
+| --- | --- |
+| `aluno@labrary.local` | Aluno |
+| `avaliador@labrary.local` | Avaliador |
+| `professor@labrary.local` | Professor |
 
-Essas contas são apenas locais. A demonstração padrão não inclui uma conta ADMIN. O [manual de uso](docs/manual-de-uso.md) explica a preparação dos vínculos e o fluxo completo de avaliação.
+Para avaliar as oito contas e os materiais já preparados no R2, utilize **`pnpm dev` com o pacote privado**, conforme a instalação acima.
 
-Para desenvolvimento com configuração persistente, copie `.env.example` para `.env` **apenas se ainda não existir**, ajuste as variáveis e execute `pnpm dev`. Para Google/PostgreSQL, siga [SSO e migrations](docs/login-google.md); usuários, papéis e turmas precisam ser provisionados conforme o guia. Não reutilize dados da demonstração em contas reais.
+## Problemas comuns
 
-Para testar oito contas fictícias com senha no mesmo PostgreSQL/R2 do desenvolvimento, habilite `DEV_TEST_LOGIN=true` com `NODE_ENV=development` e execute `pnpm contas:teste`. A exceção funciona somente em origem local; usuários reais continuam no Google. Endereços, senha inicial e desativação estão no [guia das contas de teste](docs/login-google.md#contas-fictícias-com-senha-no-desenvolvimento-googler2). Com o servidor em execução, `pnpm demonstracao:completa` prepara projetos nas diferentes etapas, sem reiniciar os já existentes; veja o [roteiro por funcionalidade](docs/manual-de-uso.md#demonstração-completa-com-postgresql-e-r2).
+| Sintoma | Correção |
+| --- | --- |
+| `node`/`pnpm` não encontrado ou versão diferente | Reaplicar o `export PATH` do passo 2 no terminal usado |
+| API informa configuração Google incompleta | Conferir se o `.env` recebido está na raiz; não usar o modelo vazio |
+| Controle R2 ausente ou de outra conta | Recolocar os dados privados correspondentes ao `.env`; não criar contador zerado |
+| Interface abre, mas login/API falham | Conferir mensagens da API no terminal e executar os dois `curl` acima |
+| Vite tenta abrir 5174 ou aparece erro de origem/OAuth | Liberar 5173 e 3000 antes de iniciar; a origem fornecida é `localhost:5173` |
+| Erro de conexão PostgreSQL/R2 | Verificar internet, acesso ao host/porta do banco e HTTPS do bucket |
+| Muitas tentativas de login (`429`) | Aguardar a janela indicada ou reiniciar a API local; limite de 20 tentativas/IP em 15 minutos |
+| Convidado bloqueado após revogação | Autorizar novamente seu endereço com a conta ADMIN; isso não é falha de senha |
 
-## 6. Testes, CI e evidências
+## Testes
+
+Build e testes unitários não precisam de outro banco nem acessam o bucket do professor:
 
 ```sh
 pnpm build
 pnpm test
-pnpm exec playwright install --with-deps chromium
+```
+
+Para os testes de navegador no **Ubuntu 26.04**, instale as bibliotecas explicitamente. O instalador `--with-deps` do Playwright 1.56.1 não reconhece essa distribuição; não é necessário trocar a versão do projeto.
+
+```sh
+sudo apt-get install -y \
+  xvfb fonts-noto-color-emoji fonts-unifont libfontconfig1 libfreetype6 \
+  xfonts-cyrillic xfonts-scalable fonts-liberation fonts-ipafont-gothic \
+  fonts-wqy-zenhei fonts-tlwg-loma-otf fonts-freefont-ttf \
+  libasound2t64 libatk-bridge2.0-0t64 libatk1.0-0t64 libatspi2.0-0t64 \
+  libcairo2 libcups2t64 libdbus-1-3 libdrm2 libgbm1 libglib2.0-0t64 \
+  libnspr4 libnss3 libpango-1.0-0 libx11-6 libxcb1 libxcomposite1 \
+  libxdamage1 libxext6 libxfixes3 libxkbcommon0 libxrandr2
+case "$(uname -m)" in
+  x86_64) labrary_playwright_platform=ubuntu24.04-x64 ;;
+  aarch64|arm64) labrary_playwright_platform=ubuntu24.04-arm64 ;;
+  *) echo "Arquitetura não contemplada nos testes de navegador"; exit 1 ;;
+esac
+PLAYWRIGHT_HOST_PLATFORM_OVERRIDE="$labrary_playwright_platform" pnpm exec playwright install chromium
 pnpm test:e2e
 ```
 
-- Vitest/Supertest: unidade e integração da API; Testing Library/jsdom: interação da interface.
-- Cobertura mínima de **85% em statements, branches, funções e linhas**, separadamente para API e web.
-- Playwright: Chromium desktop e emulação mobile, com servidores e dados de teste isolados.
-- O enunciado não fixa quantidade mínima de testes; exige tipos de teste, cobertura e **ao menos cinco vídeos de funcionalidades diferentes**.
-- `pnpm test:e2e` executa as suítes geral, submissão, notas (um perfil por processo), avaliação, publicação integrada, cadastro USP/convidados e contas fictícias de desenvolvimento.
-- O [workflow](.github/workflows/ci.yml) instala dependências, compila, testa cobertura, testa PostgreSQL/migrations e executa E2E; publica cobertura e resultados como artefatos.
-- Os testes com OIDC simulado não comprovam login com conta Google real. As evidências do sistema operacional e da cópia limpa são registradas separadamente na revisão final.
+O CI utiliza Ubuntu 24.04. No Ubuntu 26.04, a variável de plataforma acima permite baixar o Chromium compatível sem alterar as dependências do projeto.
 
-A [validação da demonstração completa em 26/11/2026](docs/revisao-final.md#demonstração-completa--26112026) registra 330 testes API, 140 web e 68 cenários E2E aprovados no conjunto das execuções, além de build e integração PostgreSQL aprovados. O comando completo de E2E teve timeout global na avaliação desktop; a repetição isolada e as suítes restantes passaram, conforme o relatório. Resultados anteriores estão identificados por etapa e data. As [gravações de Dan](docs/dan-semana7.md) distinguem fluxos reais de pré-requisitos de publicação simulados. A seleção final dos cinco vídeos permanece em revisão.
+- `pnpm test`: testes da API e da interface, com cobertura mínima de **85% nas quatro métricas de cada pacote**.
+- `pnpm test:e2e`: fluxos de navegador em desktop e celular emulado, com dados isolados.
+- `pnpm db:test`: integração com PostgreSQL descartável; exige banco próprio com permissão `CREATEDB`. Não utilizar o banco compartilhado da avaliação.
 
-`pnpm db:test` exige um PostgreSQL descartável com permissão CREATEDB; veja [instalação e aceitação](docs/instalacao-e-aceitacao.md). Não o execute contra infraestrutura de produção.
+Na validação de **26/11/2026**, em cópia separada no Ubuntu 26.04 x86_64, passaram instalação, build, **330 testes da API, 140 da interface e 68 cenários de navegador**. As oito contas e a reprodução privada/pública no R2 também foram conferidas. A validação usou um Ubuntu existente, não uma instalação nova do sistema operacional. O badge acompanha o CI da branch `main`.
 
-## 7. Tecnologias
+## Estrutura e persistência
 
-| Camada | Tecnologias e versões diretas principais |
-| --- | --- |
-| Runtime e pacotes | Node 24.19.0; pnpm 11.25.0; TypeScript 5.9.3 |
-| Interface | React/React DOM 19.3.1; Vite 8.3.4; Tailwind 4.3.5; Base UI 1.9.0; componentes coss ui copiados para `components/ui`; Lucide 1.73.0 |
-| API | Express 5.3.0; Zod 4.6.7; busboy 1.6.0; jose 6.2.14 |
-| Dados e arquivos | PostgreSQL (CI: imagem 18), pg 8.23.1; Prisma 7.10.0 para schema/migrations; JSON privado para o domínio; AWS SDK S3 3.1175.0 para Cloudflare R2 |
-| Testes | Vitest/coverage-v8 5.0.5; Supertest 7.3.1; Testing Library React 16.3.0; Playwright 1.56.1 |
+Monorepo pnpm com **Node 24.19.0**, **pnpm 11.25.0**, API Express/TypeScript e interface React/Vite. As versões das bibliotecas estão nos manifests e em `pnpm-lock.yaml`.
 
-Todas as dependências diretas e transitivas estão nos manifests da [raiz](package.json), [API](packages/api/package.json), [web](packages/web/package.json) e no [lockfile](pnpm-lock.yaml). Use instalação congelada. Não há Docker Compose ou script de lint versionado nesta base.
-
-## 8. Arquitetura e diagramas
-
-A implementação usa View React, controllers/rotas Express, serviços de domínio e repositórios. **A persistência é híbrida**: PostgreSQL para identidades/sessões/vínculos no modo Google, JSON privado para projetos, rubricas, avaliações e liberações, e disco ou R2 privado para os arquivos enviados. A API usa consultas `pg`; a existência do model Prisma não significa que todo o domínio seja persistido pelo Prisma.
-
-```mermaid
-flowchart TB
-    V["View: React"] -->|"HTTP /api"| C["Controllers: Express"]
-    C --> S["Serviços e autorização"]
-    S --> M["Model e repositórios"]
-    M --> P["PostgreSQL: identidade e vínculos Google"]
-    M --> J["JSON: domínio acadêmico"]
-    M --> F["Disco privado ou R2: arquivos"]
+```text
+packages/api/       API, regras de negócio e persistência
+packages/web/       Interface React
+packages/api/prisma/  Schema e migrations PostgreSQL
+e2e/                Testes de navegador
+docs/               Documentação, protótipos e evidências
 ```
 
-- [Arquitetura e componentes atuais](docs/arquitetura.md).
-- [Classes e tipos do domínio implementado](docs/diagrama-classes.md).
-- [DER físico ativo e relações lógicas](docs/diagrama-er.md).
-- [Sequências de autenticação, submissão, avaliação e publicação](docs/diagramas-sequencia.md).
-- [Estados do projeto e publicação](docs/estados-do-projeto.md).
-- [Contratos REST](docs/api-inicial.md) e [contratos C0–C4](docs/contratos).
-
-O [SQL inicial](db/schema.sql) e o [schema Prisma](packages/api/prisma/schema.prisma) incluem o modelo relacional alvo. Instalações novas usam `pnpm db:deploy`; não reaplique o SQL histórico em banco já migrado. Backup completo inclui JSON, uploads e PostgreSQL quando utilizado.
-
-## 9. Entrega e rastreabilidade
-
-| Documento | Finalidade |
+| Dados | Onde ficam no ambiente fornecido |
 | --- | --- |
-| [Manual de uso](docs/manual-de-uso.md) | Passos por perfil e roteiro de demonstração |
-| [Instalação e aceitação](docs/instalacao-e-aceitacao.md) | Ambiente, banco, seed, backup, testes e evidências |
-| [Revisão final](docs/revisao-final.md) | Matriz de requisitos, verificações e pendências por responsável |
-| [Escopo da entrega](#1-tema-e-escopo) | Decisões do usuário e definição de assinaturas ainda pendente |
-| [Planejamento](docs/planejamento.md) | Responsabilidades, backlog e histórico de sprints |
-| [Uso de IA](docs/desenvolvimento-com-ia.md) | Orientações e registro dos prompts conhecidos |
+| Contas, vínculos, convidados e sessões | PostgreSQL remoto |
+| Projetos, materiais, mensagens, rubricas, avaliações e resultados | Arquivos privados em `.data/` |
+| Vídeos, imagens e documentos enviados | Bucket privado Cloudflare R2 |
+| Controle de uso do R2 | Arquivo privado em `.data/`, preservado entre reinícios |
 
-A apresentação final está prevista para **26/11/2026**. Ainda faltam instalação autônoma com aceite independente, revisão cruzada, seleção das cinco gravações finais e fechamento das decisões/aceites acadêmicos. A integração real de publicação está implementada e a execução local no Ubuntu 26.04 foi verificada; esta atualização não fecha issues nem presume aprovações humanas.
+Execute **uma única API** sobre esse conjunto de dados. Durante a avaliação, a equipe deve manter sua cópia parada. Não apague nem restaure um contador antigo do R2. A franquia gratuita possui limites; os controles da aplicação não garantem bloqueio de cobrança pelo provedor.
+
+Para continuar depois de parar a aplicação, execute `pnpm dev` na mesma pasta, sem extrair os dados novamente. Procedimentos para um ambiente próprio e backups estão em [configuração e backup](docs/instalacao-e-aceitacao.md).
+
+## Documentação
+
+| Documento | Conteúdo |
+| --- | --- |
+| [Manual de uso](docs/manual-de-uso.md) | Permissões, materiais, entrega, avaliação e publicação |
+| [Configuração e backup](docs/instalacao-e-aceitacao.md) | Banco novo, preparação de dados e preservação da instalação |
+| [Login Google](docs/login-google.md) | Configuração OAuth, cadastro USP e convidados |
+| [Arquitetura](docs/arquitetura.md) e [API REST](docs/api-inicial.md) | Componentes, persistência e endpoints |
+| [Classes](docs/diagrama-classes.md), [DER](docs/diagrama-er.md), [sequências](docs/diagramas-sequencia.md) e [estados](docs/estados-do-projeto.md) | Diagramas do sistema |
+| [Histórias de usuário](docs/historias-de-usuario.md) e [planejamento](docs/planejamento.md) | Requisitos e organização do desenvolvimento |
+| [Crazy 8](docs/crazy8/README.md) e [protótipos](docs/prototipos) | Ideação e telas desktop/mobile |
+| [Vídeos e capturas](docs/evidencias/dan-semana7) | Gravações e capturas disponíveis |
+| [Apresentação](docs/apresentacao-final.html) | Slides de demonstração |
+| [Uso de IA](docs/ia/README.md) | Declaração de auxílio no desenvolvimento e na revisão |
+
+As instruções de desenvolvimento estão em [AGENTS.md](AGENTS.md), com as skills compartilhadas em [.agents/skills](.agents/skills).

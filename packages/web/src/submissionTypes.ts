@@ -47,7 +47,7 @@ export interface SubmittedMaterial {
   checksumSha256: string | null;
 }
 
-/** Rodada C1 (docs/contratos/c1-submissao.md). */
+/** Rodada C1 (docs/api-inicial.md). */
 export interface Submission {
   id: number;
   projectId: number;

@@ -47,84 +47,79 @@
   </style>
   <main>
     <section aria-labelledby="titulo-1">
-      <div class="eyebrow">PCS3643 · Equipe Labrary Digital · 26/11/2026</div>
+      <div class="eyebrow">PCS3643 · Labrary Digital</div>
       <h1 id="titulo-1">Da entrega privada ao acervo autorizado.</h1>
       <p>Gestão, avaliação e divulgação de projetos acadêmicos de sistemas digitais.</p>
       <p class="muted">Henrique · Enzo · Yuhang · Dan · Kauê</p>
-      <small>Semana 7, documentação revisada em 26/11/2026. Aceite humano e acadêmico pendentes.</small>
     </section>
     <section aria-labelledby="titulo-2" hidden>
-      <div class="eyebrow">01 · O problema e a entrega</div>
-      <h2 id="titulo-2">Um fluxo para arquivos, avaliação e divulgação.</h2>
+      <div class="eyebrow">01 · O projeto</div>
+      <h2 id="titulo-2">Arquivos, avaliação e divulgação em um só fluxo.</h2>
       <div class="cards">
-        <div class="card"><strong>Mesma versão</strong><p>Entrega congela arquivos e rubrica; a avaliação referencia essa rodada.</p></div>
-        <div class="card"><strong>Acesso por vínculo</strong><p>Grupo, avaliador atribuído e docente têm escopos verificados pela API.</p></div>
-        <div class="card"><strong>Divulgação explícita</strong><p>Professor registra autorização e escolhe as versões que chegam ao visitante.</p></div>
+        <div class="card"><strong>Entrega organizada</strong><p>Materiais, prazos e versões reunidos no projeto do grupo.</p></div>
+        <div class="card"><strong>Avaliação por rubrica</strong><p>Critérios definidos pelo professor e resultado liberado ao aluno.</p></div>
+        <div class="card"><strong>Publicação autorizada</strong><p>Apenas materiais selecionados chegam ao acervo público.</p></div>
       </div>
-      <p>Finalizar avaliação, liberar resultado e publicar materiais são decisões separadas.</p>
     </section>
     <section aria-labelledby="titulo-3" hidden>
-      <div class="eyebrow">02 · As cinco contribuições</div>
-      <h2 id="titulo-3">Responsabilidades conectadas por contratos.</h2>
+      <div class="eyebrow">02 · Perfis de acesso</div>
+      <h2 id="titulo-3">Cada perfil atua no seu contexto.</h2>
       <table>
-        <thead><tr><th>Integrante</th><th>Contribuição</th></tr></thead>
+        <thead><tr><th>Perfil</th><th>Uso principal</th></tr></thead>
         <tbody>
-          <tr><td>Henrique</td><td>Grupos, autorização, finalização, publicação e retirada</td></tr>
-          <tr><td>Enzo</td><td>Upload, histórico de versões e submissão imutável</td></tr>
-          <tr><td>Yuhang</td><td>Requisitos, rubricas, avaliações e reabertura</td></tr>
-          <tr><td>Dan</td><td>Acompanhamento, feedback, resultados e catálogo</td></tr>
-          <tr><td>Kauê</td><td>Consolidação, CSV, liberação, instalação e CI</td></tr>
+          <tr><td>Aluno</td><td>Materiais, feedback, entrega e resultado do próprio grupo.</td></tr>
+          <tr><td>Avaliador</td><td>Avaliação dos projetos atribuídos.</td></tr>
+          <tr><td>Professor</td><td>Turmas, rubricas, notas e publicação.</td></tr>
+          <tr><td>Administrador</td><td>Contas, papéis e convidados.</td></tr>
+          <tr><td>Visitante</td><td>Acervo e materiais públicos autorizados.</td></tr>
         </tbody>
       </table>
-      <p class="muted">Autoria preservada no histórico. Contribuições e falas por autor no <a href="apresentacao-final.md">roteiro da apresentação</a>.</p>
     </section>
     <section aria-labelledby="titulo-4" hidden>
-      <div class="eyebrow">03 · Arquitetura executável</div>
-      <h2 id="titulo-4">React → API Express → domínio e armazenamento privado.</h2>
-      <div class="pipeline">
-        <div class="card"><strong>C1 · Entrega</strong><p>Versões e rubrica congeladas na submissão.</p></div>
-        <div class="card"><strong>C2 · Avaliação</strong><p>Notas, revisões e histórico por rodada.</p></div>
-        <div class="card"><strong>C3 · Consolidação</strong><p>Completude e liberação do resultado.</p></div>
-        <div class="card"><strong>C4 · Publicação</strong><p>Somente metadados e versões autorizadas.</p></div>
+      <div class="eyebrow">03 · Arquitetura</div>
+      <h2 id="titulo-4">React, API Express e armazenamento privado.</h2>
+      <div class="cards">
+        <div class="card"><strong>Interface React/Vite</strong><p>Telas, formulários e reprodução de vídeo.</p></div>
+        <div class="card"><strong>API Express/TypeScript</strong><p>Sessões, permissões e regras de negócio.</p></div>
+        <div class="card"><strong>Persistência</strong><p>PostgreSQL para contas, JSON para o domínio acadêmico e R2 para arquivos.</p></div>
       </div>
-      <p>Sessão HttpOnly, CSRF e verificação de escopo no backend. Metadados em arquivos privados com um processo escritor; vídeos e documentos em disco ou R2 privado. Identidades, cadastro, convites e sessões Google/desenvolvimento em PostgreSQL.</p>
-      <small><a href="arquitetura.md">Arquitetura atual</a> · <a href="contratos/c4-publicacao.md">Contrato público C4</a></small>
+      <p><a href="arquitetura.md">Arquitetura e diagramas</a></p>
     </section>
     <section aria-labelledby="titulo-5" hidden>
-      <div class="eyebrow">04 · Demonstração integrada</div>
-      <h2 id="titulo-5">Da submissão à retirada, com os adapters reais.</h2>
+      <div class="eyebrow">04 · Demonstração</div>
+      <h2 id="titulo-5">Do envio dos materiais ao acervo.</h2>
       <ol>
-        <li>Aluno envia três materiais e submete a rodada.</li>
-        <li>Avaliador finaliza os critérios; professor confere a consolidação.</li>
-        <li>Professor finaliza: o projeto continua privado.</li>
-        <li>Professor autoriza vídeo e relatório; visitante abre o acervo.</li>
-        <li>Retirada bloqueia URLs copiadas, HEAD e novas requisições Range.</li>
+        <li>Aluno envia arquivos, assiste ao vídeo e registra feedback.</li>
+        <li>Grupo submete os materiais para avaliação.</li>
+        <li>Avaliador preenche a rubrica e finaliza.</li>
+        <li>Professor confere a nota e libera o resultado.</li>
+        <li>Professor finaliza e publica os materiais autorizados.</li>
+        <li>Visitante acessa o acervo; a retirada bloqueia novos acessos públicos.</li>
       </ol>
-      <p><code>pnpm demonstracao:completa</code> prepara cenários no desenvolvimento já configurado; <code>pnpm demo:publicacao</code> grava o percurso automatizado isolado.</p>
-      <small>Oito contas de teste incluem cadastro e convidado. A demonstração completa usa pesos 50/30/20 e nota 9,30; a gravação automatizada usa outro exemplo. Dados e autorização são fictícios. <a href="manual-de-uso.md#demonstração-completa-com-postgresql-e-r2">Roteiro completo</a>.</small>
+      <small><a href="manual-de-uso.md">Manual e cenários de demonstração</a></small>
     </section>
     <section aria-labelledby="titulo-6" hidden>
-      <div class="eyebrow">05 · Evidência técnica</div>
-      <h2 id="titulo-6">Verificações reproduzíveis e falhas corrigidas.</h2>
+      <div class="eyebrow">05 · Verificação</div>
+      <h2 id="titulo-6">Testes e privacidade.</h2>
       <div class="cards">
-        <div class="card"><strong>Build e cobertura</strong><p>330 testes API e 140 web aprovados na execução de 26/11; as quatro métricas de cada pacote superam 85%.</p></div>
-        <div class="card"><strong>Persistência e privacidade</strong><p>C1/C2/C3/C4 conservados após reinício dos repositórios. Notas e feedback fora do acervo.</p></div>
-        <div class="card"><strong>Navegador real</strong><p>68 cenários aprovados em execuções complementares; timeout global da avaliação desktop passou na repetição isolada.</p></div>
+        <div class="card"><strong>470 testes</strong><p>330 da API e 140 da interface aprovados.</p></div>
+        <div class="card"><strong>68 cenários de navegador</strong><p>Fluxos desktop e celular emulado aprovados.</p></div>
+        <div class="card"><strong>Dados privados</strong><p>Notas e feedback ficam fora do acervo público.</p></div>
       </div>
-      <p>Regressão corrigida: avaliação reaberta durante a leitura dos arquivos impede a finalização.</p>
-      <small>Comandos e pendências na <a href="../README.md#6-testes-ci-e-evidências">validação da entrega</a>.</small>
+      <p>Validação realizada em 26/11/2026 no Ubuntu 26.04 x86_64. Cobertura acima de 85% nas quatro métricas de cada pacote.</p>
+      <small><a href="../README.md#testes">Comandos de teste</a> · <a href="evidencias/dan-semana7/">Vídeos e capturas</a></small>
     </section>
     <section aria-labelledby="titulo-7" hidden>
-      <div class="eyebrow">06 · Limites e fechamento</div>
-      <h2 id="titulo-7">O que a equipe ainda precisa validar.</h2>
-      <ul>
-        <li>Revisão cruzada e cinco vídeos finais identificados por autor e versão.</li>
-        <li>Instalação limpa Ubuntu 26.04 e login com Google real.</li>
-        <li>Definição sobre assinaturas e seus perfis, ainda pendente.</li>
-        <li>Um escritor e disco persistente; retirada não recolhe bytes já recebidos.</li>
-      </ul>
-      <p>Manual, contratos, arquitetura e roteiro estão disponíveis no repositório.</p>
-      <small><a href="manual-usuario.md">Manual</a> · <a href="limitacoes.md">Limitações</a> · <a href="../README.md#1-tema-e-escopo">Escopo acadêmico</a> · <a href="apresentacao-final.md">Falas e roteiro detalhado</a></small>
+      <div class="eyebrow">06 · Execução</div>
+      <h2 id="titulo-7">Instalação e demonstração no Ubuntu 26.04.</h2>
+      <ol>
+        <li>Instalar Node e pnpm nas versões indicadas.</li>
+        <li>Extrair o código e os dados privados fornecidos pela equipe.</li>
+        <li>Instalar dependências e iniciar com <code>pnpm dev</code>.</li>
+        <li>Abrir <code>http://localhost:5173/login</code>.</li>
+      </ol>
+      <p>O ambiente fornecido usa PostgreSQL remoto e R2 privado.</p>
+      <small><a href="../README.md#instalação-no-ubuntu-2604">Instalação completa</a> · <a href="../README.md#contas-de-teste">Contas de teste</a></small>
     </section>
   </main>
   <nav aria-label="Navegação da apresentação">

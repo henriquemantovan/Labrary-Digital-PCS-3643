@@ -4,8 +4,8 @@
 
 - Monorepo pnpm com API Express/TypeScript em `packages/api` e interface React/Vite em `packages/web`.
 - Consulte os critérios da HU no `README.md` e o código atual antes de implementar. O README também contém funcionalidades planejadas: não as trate como prontas.
-- Contratos atuais: `docs/api-inicial.md`. Sessões e permissões: `docs/hu01.md`.
-- Desde a HU07, o entrypoint persiste projetos, metadados e mensagens em arquivo privado (`PROJECT_DATA_FILE`), para um processo escritor. A factory de testes e o modo local continuam em memória. No modo Google, usuários, vínculos, sessões e tentativas OAuth usam PostgreSQL; veja `docs/login-google.md`. As migrations anteriores são imutáveis; registrar metadados não equivale a persistir arquivos. Veja `docs/hu07.md`.
+- Contratos atuais: `docs/api-inicial.md`. Sessões: `docs/login-google.md`; permissões: `docs/manual-de-uso.md`.
+- Desde a HU07, o entrypoint persiste projetos, metadados e mensagens em arquivo privado (`PROJECT_DATA_FILE`), para um processo escritor. A factory de testes e o modo local continuam em memória. No modo Google, usuários, vínculos, sessões e tentativas OAuth usam PostgreSQL; veja `docs/login-google.md`. As migrations anteriores são imutáveis; registrar metadados não equivale a persistir arquivos. Veja `docs/arquitetura.md`.
 - Use as versões de `.nvmrc` e `package.json`, pnpm e o lockfile existente. Não troque dependências para contornar falhas de ambiente.
 
 ## Código acompanhado de testes executados pela IA
@@ -29,4 +29,4 @@ As skills estão versionadas em `.agents/skills/` para serem compartilhadas com 
 - [labrary-api-rest](.agents/skills/labrary-api-rest/SKILL.md): implementar rotas, regras e permissões da API.
 - [labrary-interface-react](.agents/skills/labrary-interface-react/SKILL.md): implementar telas e integração HTTP acessíveis e responsivas.
 
-Leia a skill correspondente antes de atuar na área. Instruções de uso e exemplos estão em [docs/desenvolvimento-com-ia.md](docs/desenvolvimento-com-ia.md).
+Leia a skill correspondente antes de atuar na área. A declaração de uso de IA está em [docs/ia/README.md](docs/ia/README.md).

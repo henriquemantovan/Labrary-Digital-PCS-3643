@@ -46,4 +46,4 @@ Continue enquanto houver correções concretas a fazer dentro da tarefa. Não pu
 
 ## Relatar o resultado
 
-Informe de forma curta o comportamento entregue e os testes acrescentados ou ajustados. Liste os comandos realmente executados com resultado **passou**, **falhou** ou **bloqueado**. Cite a falha e a correção quando houver. Informe contagens e métricas a partir da saída atual, sem reaproveitar números históricos de `docs/hu01.md`. Se uma verificação necessária não rodou, diga por quê e não declare a tarefa totalmente validada. Testes aprovados não substituem a revisão e o aceite humano da história.
+Informe de forma curta o comportamento entregue e os testes acrescentados ou ajustados. Liste os comandos realmente executados com resultado **passou**, **falhou** ou **bloqueado**. Cite a falha e a correção quando houver. Informe contagens e métricas a partir da saída atual, sem reaproveitar números históricos de outras execuções. Se uma verificação necessária não rodou, diga por quê e não declare a tarefa totalmente validada. Testes aprovados não substituem a revisão e o aceite humano da história.

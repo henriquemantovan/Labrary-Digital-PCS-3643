@@ -1,6 +1,6 @@
 # Classes e tipos do domínio implementado
 
-Código revisado em 26/11/2026. O backend usa interfaces TypeScript, schemas Zod e factories; os blocos UML abaixo representam tipos e relações, não classes ORM instanciadas. IDs do domínio em execução são `number`; os tipos SQL do modelo relacional são tratados no [DER](diagrama-er.md).
+O backend usa interfaces TypeScript, schemas Zod e factories; os blocos UML abaixo representam tipos e relações, não classes ORM instanciadas. IDs do domínio em execução são `number`; os tipos SQL do modelo relacional são tratados no [DER](diagrama-er.md).
 
 ## Identidade, sessão e acesso
 

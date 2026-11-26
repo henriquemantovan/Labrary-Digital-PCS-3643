@@ -1,6 +1,6 @@
 # Dados: relações físicas e lógicas
 
-Código revisado em 26/11/2026. Este documento separa as tabelas efetivamente usadas pelos adapters PostgreSQL das relações lógicas persistidas em JSON. O [schema Prisma](../packages/api/prisma/schema.prisma) e o [SQL inicial](../db/schema.sql) descrevem um modelo relacional mais amplo; a presença de uma tabela não comprova seu uso pelo servidor.
+Este documento separa as tabelas efetivamente usadas pelos adapters PostgreSQL das relações lógicas persistidas em JSON. O [schema Prisma](../packages/api/prisma/schema.prisma) e o [SQL inicial](../db/schema.sql) descrevem um modelo relacional mais amplo; a presença de uma tabela não comprova seu uso pelo servidor.
 
 ## PostgreSQL ativo no modo Google
 
