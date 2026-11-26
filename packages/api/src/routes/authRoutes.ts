@@ -23,7 +23,8 @@ export function createAuthRouter(auth: AuthRepository, options: AuthOptions) {
     response.json({
       data: {
         google: Boolean(options.google),
-        local: options.localLogin !== false,
+        local: options.localLogin !== false || auth.developmentTestLogin === true,
+        ...(auth.developmentTestLogin ? { testLogin: true } : {}),
       },
     }),
   );
@@ -57,7 +58,7 @@ export function createAuthRouter(auth: AuthRepository, options: AuthOptions) {
           "Sua sessão terminou. Entre novamente.",
         );
       response.json({
-        data: publicUser(response.locals.accountUser, role ?? undefined),
+        data: publicUser(response.locals.accountUser, role ?? undefined, auth.developmentTestLogin),
       });
     },
   );

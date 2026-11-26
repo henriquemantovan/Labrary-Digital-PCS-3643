@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "storage:init": "tsx src/scripts/initializeR2Usage.ts",
+    "contas:teste": "tsx src/scripts/provisionDevelopmentTestAccounts.ts",
     "dev": "tsx watch src/server.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
@@ -13,7 +14,8 @@
     "db:deploy": "prisma migrate deploy",
     "db:baseline": "prisma migrate resolve --applied 20261001000000_baseline",
     "db:status": "prisma migrate status",
-    "db:test": "tsx integration/database.ts"
+    "db:test": "tsx integration/database.ts",
+    "demonstracao:completa": "tsx src/scripts/prepareDevelopmentDemo.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.1175.0",

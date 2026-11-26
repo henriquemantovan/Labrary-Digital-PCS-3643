@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { User } from "./auth.js";
+import { isDevelopmentProfileAccount } from "../services/developmentTestAccounts.js";
 
 export const guestEmailSchema = z
   .email()
@@ -7,9 +8,9 @@ export const guestEmailSchema = z
   .transform((value) => value.toLowerCase());
 export const isUspEmail = (email: string) =>
   email.toLowerCase().endsWith("@usp.br");
-export const requiresAcademicProfile = (user: User) =>
+export const requiresAcademicProfile = (user: User, developmentTestLogin = false) =>
   Boolean(
-    user.googleLinked &&
+    (user.googleLinked || (developmentTestLogin && isDevelopmentProfileAccount(user))) &&
       user.role === "ALUNO" &&
       !user.guest &&
       !user.academicProfileCompleted,

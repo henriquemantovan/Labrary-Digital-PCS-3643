@@ -33,6 +33,7 @@ const lockedUser = async (client: PoolClient, id: number) => {
 };
 export function createPostgresAcademicAccessRepository(
   pool: Pool,
+  developmentTestLogin = false,
 ): AcademicAccessRepository {
   async function transaction<T>(action: (client: PoolClient) => Promise<T>) {
     const client = await pool.connect();
@@ -65,7 +66,7 @@ export function createPostgresAcademicAccessRepository(
       const parsed = academicProfileInputSchema(now).parse(input);
       try {
         await transaction(async (client) => {
-          assertAcademicStudent(await lockedUser(client, userId));
+          assertAcademicStudent(await lockedUser(client, userId), developmentTestLogin);
           await client.query(
             "UPDATE app_user SET full_name=$1,usp_number=$2,entry_year=$3,academic_profile_completed_at=$4 WHERE id=$5",
             [

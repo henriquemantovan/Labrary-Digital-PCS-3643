@@ -32,13 +32,14 @@ export function Login({
   const [providers, setProviders] = useState<{
     google: boolean;
     local: boolean;
+    testLogin?: boolean;
   } | null>(null);
   const [providerError, setProviderError] = useState("");
   async function loadProviders() {
     setProviderError("");
     try {
       setProviders(
-        await api<{ google: boolean; local: boolean }>("/auth/providers"),
+        await api<{ google: boolean; local: boolean; testLogin?: boolean }>("/auth/providers"),
       );
     } catch (error) {
       setProviderError((error as Error).message);
@@ -177,12 +178,18 @@ export function Login({
                 aria-label="Entrar na conta"
                 className="grid gap-4"
               >
+                {providers.testLogin && (
+                  <p className="rounded-lg border bg-muted p-3 text-sm text-muted-foreground">
+                    Contas de teste do desenvolvimento: use um e-mail @labrary.test
+                    e a senha fornecida. Sua conta pessoal continua usando o Google.
+                  </p>
+                )}
                 <Field>
-                  <FieldLabel>E-mail institucional</FieldLabel>
+                  <FieldLabel>{providers.testLogin ? "E-mail da conta de teste" : "E-mail institucional"}</FieldLabel>
                   <Input
                     type="email"
                     autoComplete="username"
-                    placeholder="seu.nome@instituicao.br"
+                    placeholder={providers.testLogin ? "aluno@labrary.test" : "seu.nome@instituicao.br"}
                     required
                     maxLength={254}
                     value={email}

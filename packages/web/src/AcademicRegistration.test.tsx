@@ -120,3 +120,16 @@ it("bloqueia a navegação direta pelo App até concluir os dados", async () => 
   expect(fetch.mock.calls.every(([url]) => url === "/api/auth/me")).toBe(true);
   expect(screen.queryByRole("button", { name: "Meu projeto" })).toBeNull();
 });
+
+it("identifica o cadastro fictício sem anunciar uma identidade Google ou USP verificada", async () => {
+  const onSaved = vi.fn();
+  const fake = { ...student, email: "cadastro@labrary.test", googleLinked: false, developmentTest: true };
+  const saved = { ...fake, uspNumber: "90000002", entryYear: 2024, requiresAcademicProfile: false };
+  vi.stubGlobal("fetch", vi.fn(async () => response(saved)));
+  render(<AcademicRegistration user={fake} onSaved={onSaved} expired={vi.fn()} logout={async () => {}} logoutBusy={false} logoutError="" />);
+  expect(screen.getByText(/Conta fictícia de desenvolvimento/).textContent).toContain("não valida uma identidade USP");
+  expect(screen.queryByText(/Seu acesso Google foi confirmado/)).toBeNull();
+  const user = await fill();
+  await user.click(screen.getByRole("button", { name: "Salvar e continuar" }));
+  await waitFor(() => expect(onSaved).toHaveBeenCalledWith(saved));
+});

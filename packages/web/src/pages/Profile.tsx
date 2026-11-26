@@ -39,6 +39,7 @@ export function Profile({ user }: { user: User }) {
             <div className="flex flex-wrap gap-1.5">
               <Badge variant="outline">{roleLabels[user.role]}</Badge>
               {user.googleLinked && <Badge variant="info">Google</Badge>}
+              {user.developmentTest && <Badge variant="outline">Conta de teste</Badge>}
             </div>
           </div>
         </CardHeader>

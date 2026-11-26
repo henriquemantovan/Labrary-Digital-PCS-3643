@@ -23,7 +23,7 @@ export function createAcademicAccessRouter(
       await access.saveProfile(response.locals.accountUser.id, input, now());
       await auth.refresh?.();
       response.json({
-        data: publicUser(auth.findById(response.locals.accountUser.id)!),
+        data: publicUser(auth.findById(response.locals.accountUser.id)!, undefined, auth.developmentTestLogin),
       });
     },
   );

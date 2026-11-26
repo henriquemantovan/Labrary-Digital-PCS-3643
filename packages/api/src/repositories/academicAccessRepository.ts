@@ -8,6 +8,7 @@ import {
 } from "../models/academicAccess.js";
 import type { User } from "../models/auth.js";
 import type { AuthRepository } from "./authRepository.js";
+import { isDevelopmentProfileAccount } from "../services/developmentTestAccounts.js";
 
 export interface AcademicAccessRepository {
   isGuest(email: string): Promise<boolean>;
@@ -32,13 +33,13 @@ export function assertGuestAdministrator(user: User | undefined) {
       "Apenas administradores podem autorizar convidados.",
     );
 }
-export function assertAcademicStudent(user: User | undefined) {
+export function assertAcademicStudent(user: User | undefined, developmentTestLogin = false) {
   if (
     !user?.active ||
-    !user.googleLinked ||
     user.role !== "ALUNO" ||
     user.guest ||
-    !isUspEmail(user.email)
+    !((user.googleLinked && isUspEmail(user.email)) ||
+      (developmentTestLogin && isDevelopmentProfileAccount(user)))
   )
     throw new ApiError(
       403,
@@ -64,7 +65,7 @@ export function createMemoryAcademicAccessRepository(
     },
     async saveProfile(userId, input, now) {
       const user = auth.findById(userId);
-      assertAcademicStudent(user);
+      assertAcademicStudent(user, auth.developmentTestLogin);
       const parsed = academicProfileInputSchema(now).parse(input);
       if (
         auth.directory.users.some(

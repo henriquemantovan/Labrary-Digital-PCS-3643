@@ -9,6 +9,7 @@ export interface User {
   uspNumber?: string | null;
   entryYear?: number | null;
   requiresAcademicProfile?: boolean;
+  developmentTest?: boolean;
 }
 export interface ManagedUser {
   id: number;

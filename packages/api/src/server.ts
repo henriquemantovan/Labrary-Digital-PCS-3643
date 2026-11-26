@@ -19,6 +19,7 @@ import {
   createPostgresOAuthAttempts,
 } from "./repositories/postgresAuthRepository.js";
 import { loadGoogleConfig } from "./services/googleConfiguration.js";
+import { loadDevelopmentTestLogin } from "./services/developmentTestAccounts.js";
 import {
   AuthRepository,
   createAuthRepository,
@@ -40,6 +41,11 @@ if (
   throw new Error("APP_ORIGIN deve usar HTTPS em produção.");
 }
 const googleConfig = loadGoogleConfig(process.env, origin);
+const developmentTestLogin = loadDevelopmentTestLogin(
+  process.env,
+  Boolean(googleConfig),
+  origin,
+);
 let auth: AuthRepository;
 let google;
 let admin;
@@ -47,7 +53,7 @@ let groups;
 let academicAccess;
 if (googleConfig) {
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-  academicAccess = createPostgresAcademicAccessRepository(pool);
+  academicAccess = createPostgresAcademicAccessRepository(pool, developmentTestLogin);
   const identity = createPostgresIdentityRepository(pool);
   admin = createPostgresAdminRepository(pool);
   groups = createPostgresGroupRepository(pool);
@@ -62,6 +68,7 @@ if (googleConfig) {
 } else {
   auth = createAuthRepository(await loadDirectory(process.env));
 }
+auth.developmentTestLogin = developmentTestLogin;
 const dataFile =
   process.env.PROJECT_DATA_FILE ??
   resolve(
@@ -78,7 +85,7 @@ groups ??= createMemoryGroupRepository(
     process.env.GROUP_DATA_FILE ?? `${dataFile}.groups.json`,
   ),
 );
-createApp({
+const app = createApp({
   academicAccess,
   evaluationRepository: createEvaluationRepository(
     process.env.EVALUATION_DATA_FILE ?? `${dataFile}.evaluations.json`,
@@ -100,6 +107,9 @@ createApp({
   origin,
   secureCookies: process.env.NODE_ENV === "production",
   storage: createConfiguredStorage(process.env, repositoryRoot, dataFile),
-}).listen(port, () => {
-  console.log(`Labrary API listening on http://localhost:${port}`);
 });
+const listening = () => {
+  console.log(`Labrary API listening on http://localhost:${port}`);
+};
+if (developmentTestLogin) app.listen(port, "127.0.0.1", listening);
+else app.listen(port, listening);

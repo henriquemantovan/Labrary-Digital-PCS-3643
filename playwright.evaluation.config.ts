@@ -48,6 +48,7 @@ export default defineConfig({
           API_PORT: String(apiPort),
           AUTH_DEMO: "true",
           AUTH_PROVIDER: "local",
+          DEV_TEST_LOGIN: "false",
           AUTH_USERS_FILE: "",
           APP_ORIGIN: `http://localhost:${webPort}`,
           PROJECT_DATA_FILE: `${data}/projects.json`,

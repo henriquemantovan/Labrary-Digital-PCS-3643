@@ -1,5 +1,6 @@
 import { verifyGroups } from "./groups.js";
 import { verifyAcademicAccess } from "./academicAccess.js";
+import { verifyDevelopmentTestAccounts } from "./developmentTestAccounts.js";
 // Disposable cluster only: this test creates and removes its own databases.
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
@@ -364,6 +365,7 @@ try {
       );
       await verifyGroups(pool, url.toString());
       await verifyAcademicAccess(pool);
+      await verifyDevelopmentTestAccounts(pool, url.toString());
       console.log(
         `PASS: ${index === 0 ? "banco vazio" : "banco existente com identidade USP preservada"}; 25 tabelas, administrador com auditoria, proteção concorrente do último admin, visualização por sessão, migrations idempotentes, identidade Google, perfis, sessão entre processos, expiração, logout, desativação e tentativa OAuth de uso único.`,
       );

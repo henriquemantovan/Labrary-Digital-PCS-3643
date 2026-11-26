@@ -1,5 +1,9 @@
 import { Pool } from "pg";
 import {
+  developmentTestAccounts,
+  isDevelopmentTestEmail,
+} from "../services/developmentTestAccounts.js";
+import {
   AdminRepository,
   assertRoleChange,
   ManagedUser,
@@ -40,7 +44,11 @@ export function createPostgresAdminRepository(pool: Pool): AdminRepository {
         const activeAdmins = Number(
           (
             await client.query(
-              "SELECT count(*) AS count FROM app_user WHERE active AND role='ADMIN'",
+              "SELECT count(*) AS count FROM app_user WHERE active AND role='ADMIN' AND ($1::boolean OR NOT(email=ANY($2::text[])))",
+              [
+                isDevelopmentTestEmail(target?.email ?? ""),
+                developmentTestAccounts.map(({ email }) => email),
+              ],
             )
           ).rows[0].count,
         );

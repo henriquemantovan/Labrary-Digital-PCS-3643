@@ -56,8 +56,9 @@ export function AcademicRegistration({
           Complete seu cadastro
         </h1>
         <p>
-          Seu acesso Google foi confirmado com {user.email}. Confirme seu nome
-          completo e informe seus dados acadêmicos para continuar.
+          {user.developmentTest
+            ? `Conta fictícia de desenvolvimento: ${user.email}. Use nome, NUSP e ano de ingresso fictícios para demonstrar o cadastro. Este acesso não valida uma identidade USP.`
+            : `Seu acesso Google foi confirmado com ${user.email}. Confirme seu nome completo e informe seus dados acadêmicos para continuar.`}
         </p>
         <p>O preenchimento não atribui uma turma ou grupo automaticamente.</p>
         {(error || logoutError) && (

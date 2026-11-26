@@ -3,6 +3,11 @@ import { ApiError } from "../errors.js";
 import { AcademicRole, User } from "../models/auth.js";
 import { AuthRepository } from "../repositories/authRepository.js";
 import {
+  isDevelopmentTestAccount,
+  isDevelopmentTestEmail,
+  isDevelopmentGuestAccount,
+} from "../services/developmentTestAccounts.js";
+import {
   isUspEmail,
   requiresAcademicProfile,
 } from "../models/academicAccess.js";
@@ -13,6 +18,7 @@ declare global {
       user: User;
       accountUser: User;
       viewRole?: AcademicRole;
+      developmentTestLogin?: boolean;
     }
   }
 }
@@ -37,6 +43,9 @@ export function requireAuth(
     const user = session && auth.findById(session.userId);
     if (
       !user?.active ||
+      (isDevelopmentTestEmail(user.email) &&
+        (!auth.developmentTestLogin || !isDevelopmentTestAccount(user) ||
+          (isDevelopmentGuestAccount(user) && !user.guest))) ||
       (user.googleLinked && !isUspEmail(user.email) && !user.guest)
     ) {
       await auth.deleteSession(token);
@@ -47,6 +56,7 @@ export function requireAuth(
       );
     }
     response.locals.accountUser = user;
+    response.locals.developmentTestLogin = auth.developmentTestLogin;
     const viewRole = user.role === "ADMIN" ? session?.viewRole : undefined;
     response.locals.viewRole = viewRole;
     response.locals.user = viewRole ? { ...user, role: viewRole } : user;
@@ -58,7 +68,7 @@ export const requireCompleteAcademicProfile: RequestHandler = (
   response,
   next,
 ) => {
-  if (requiresAcademicProfile(response.locals.accountUser))
+  if (requiresAcademicProfile(response.locals.accountUser, response.locals.developmentTestLogin))
     throw new ApiError(
       403,
       "ACADEMIC_PROFILE_REQUIRED",
