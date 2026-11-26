@@ -34,7 +34,7 @@ const features: { icon: LucideIcon; title: string; text: string }[] = [
   },
   {
     icon: ClipboardCheck,
-    title: "Avaliação por rubrica",
+    title: "Avaliação por critérios",
     text: "O professor define requisitos e critérios; cada avaliador registra notas e comentários por rodada.",
   },
   {
@@ -52,7 +52,7 @@ const features: { icon: LucideIcon; title: string; text: string }[] = [
 const steps = [
   { title: "Preparação", text: "O grupo envia vídeo, relatório e manual e acompanha o que falta." },
   { title: "Entrega", text: "Com o checklist completo, o grupo submete a rodada para avaliação." },
-  { title: "Avaliação", text: "Avaliadores aplicam a rubrica; o professor consolida e libera as notas." },
+  { title: "Avaliação", text: "Avaliadores aplicam os critérios de avaliação; o professor consolida e libera as notas." },
   { title: "Publicação", text: "Com a autorização do grupo, o projeto entra no acervo público." },
 ];
 
@@ -63,11 +63,11 @@ const roles = [
   },
   {
     title: "Avaliador",
-    items: ["Vê só os projetos atribuídos", "Avalia por critérios da rubrica", "Comenta cada rodada"],
+    items: ["Vê só os projetos atribuídos", "Avalia por critérios de avaliação", "Comenta cada rodada"],
   },
   {
     title: "Professor",
-    items: ["Organiza turmas e grupos", "Define requisitos e rubrica", "Libera notas e publica projetos"],
+    items: ["Organiza turmas e grupos", "Define requisitos e critérios de avaliação", "Libera notas e publica projetos"],
   },
 ];
 
@@ -128,7 +128,7 @@ export function Landing() {
               </span>
             </h1>
             <p className="mt-6 max-w-2xl text-base text-balance text-muted-foreground md:text-lg">
-              Entregas, feedback, avaliação por rubrica e um acervo público dos
+              Entregas, feedback, avaliação por critérios e um acervo público dos
               projetos de laboratório — tudo em um só lugar, para alunos,
               avaliadores e professores.
             </p>

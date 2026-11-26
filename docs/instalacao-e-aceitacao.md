@@ -44,7 +44,7 @@ Para uma demonstração nova sem serviços externos, use `pnpm demo`. O terminal
 ## Backup e restauração
 
 1. Pare a única API que escreve nos dados.
-2. Copie juntos projetos, vínculos locais quando usados, rubricas, avaliações, liberações e os arquivos enviados.
+2. Copie juntos projetos, vínculos locais quando usados, critérios de avaliação, avaliações, liberações e os arquivos enviados.
 3. No modo Google, inclua o backup PostgreSQL de identidades, vínculos, convidados e sessões.
 4. No R2, preserve os objetos pelas mesmas chaves e o contador atualizado. No modo disco, preserve `UPLOAD_DIR`.
 5. Guarde o `.env` separadamente com acesso restrito. Não publique configuração, dumps ou dados privados no Git.

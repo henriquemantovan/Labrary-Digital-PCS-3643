@@ -26,14 +26,14 @@ Requisitos do fluxo acadêmico implementado. As histórias descrevem os objetivo
 
 ## Configurar requisitos e critérios de avaliação
 
-**Como professor, eu gostaria de definir materiais obrigatórios, prazo e rubrica, de forma que possa padronizar a entrega e a avaliação.**
+**Como professor, eu gostaria de definir materiais obrigatórios, prazo e critérios de avaliação, de forma que possa padronizar a entrega e a avaliação.**
 
 **Critérios de aceitação:**
 
 - Vídeo, relatório e manual são requisitos obrigatórios iniciais.
 - Cada requisito possui formatos, tamanho máximo e prazo definidos.
-- Rubrica define critérios, escala de 0 a 10 e pesos positivos cuja soma é 100%.
-- Mudanças após início de avaliações exigem nova versão explícita; avaliações preservam a rubrica utilizada.
+- Os critérios de avaliação definem escala de 0 a 10 e pesos positivos cuja soma é 100%.
+- Mudanças após início de avaliações exigem nova versão explícita; avaliações preservam os critérios de avaliação utilizados.
 
 ## Enviar e substituir materiais
 
@@ -80,13 +80,13 @@ Requisitos do fluxo acadêmico implementado. As histórias descrevem os objetivo
 - Erros de envio são indicados sem duplicar mensagens; conteúdo é escapado para prevenir scripts.
 - MVP usa comentários com atualização manual, sem exigir chat em tempo real.
 
-## Avaliar projetos por rubrica
+## Avaliar projetos por critérios de avaliação
 
 **Como avaliador, eu gostaria de registrar notas e comentários por critério, de forma que possa avaliar os projetos de maneira consistente.**
 
 **Critérios de aceitação:**
 
-- Avaliador autorizado vê o snapshot submetido e a rubrica correspondente.
+- Avaliador autorizado vê o snapshot submetido e os critérios de avaliação correspondentes.
 - Notas fora da escala são rejeitadas; rascunho e avaliação final são diferenciados.
 - Finalização exige todos os critérios; registra autor, data e rodada.
 - Professor pode reabrir avaliação com justificativa; o histórico permanece auditável.
@@ -111,7 +111,7 @@ Requisitos do fluxo acadêmico implementado. As histórias descrevem os objetivo
 
 - Professor libera explicitamente os resultados da rodada.
 - Integrantes veem apenas o resultado de seu grupo.
-- Rubrica, notas por critério e comentários liberados são exibidos.
+- Critérios de avaliação, notas por critério e comentários liberados são exibidos.
 - Resultados ainda não liberados mostram estado pendente.
 
 ## Finalizar e publicar projetos

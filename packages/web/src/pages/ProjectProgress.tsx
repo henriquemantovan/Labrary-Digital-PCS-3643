@@ -97,11 +97,11 @@ export function nextStep(
       ? { text: "Entrega em avaliação. Acompanhe o feedback da equipe.", target: goTo("secao-feedback", "Ir para feedback") }
       : role === "AVALIADOR"
         ? { text: "Próximo passo: avaliar a rodada submetida.", target: goTo("secao-avaliacao", "Ir para avaliação") }
-        : { text: "Rodada em avaliação. Acompanhe as avaliações por rubrica.", target: goTo("secao-avaliacao", "Ir para avaliação") };
+        : { text: "Rodada em avaliação. Acompanhe as avaliações por critérios.", target: goTo("secao-avaliacao", "Ir para avaliação") };
   if (role === "AVALIADOR") return { text: "Aguardando a submissão do grupo." };
   const staff = role !== "ALUNO";
   if (staff && block === "RUBRIC_NOT_CONFIGURED")
-    return { text: "Próximo passo: configurar os requisitos e a rubrica da entrega.", target: goTo("secao-avaliacao", "Configurar") };
+    return { text: "Próximo passo: configurar os requisitos e os critérios de avaliação da entrega.", target: goTo("secao-avaliacao", "Configurar") };
   if (missing.length)
     return staff
       ? { text: `Aguardando o grupo enviar ${plural(missing.length)}.`, target: goTo("secao-materiais", "Ver materiais") }

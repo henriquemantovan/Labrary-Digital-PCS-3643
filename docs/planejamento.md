@@ -6,7 +6,7 @@
 | --- | --- |
 | Henrique | Integração, arquitetura, autenticação e publicação |
 | Enzo | Materiais, submissão e backup |
-| Yuhang | Requisitos, rubricas, avaliação e interface |
+| Yuhang | Requisitos, critérios de avaliação, avaliação e interface |
 | Dan | Acompanhamento, feedback, resultado e acervo |
 | Kauê | Consolidação de notas, instalação e testes |
 

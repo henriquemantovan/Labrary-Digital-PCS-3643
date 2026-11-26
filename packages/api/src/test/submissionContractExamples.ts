@@ -3,7 +3,7 @@ import { createMemoryProjectRepository } from "../repositories/projectRepository
 import { prepareSubmission } from "../services/submissionRules.js";
 import { evaluationContractExamples } from "./evaluationContractExamples.js";
 
-/** Exemplos C1 de teste: materiais com IDs do repositório e a rubrica dos exemplos C2. */
+/** Exemplos C1 de teste: materiais com IDs do repositório e os critérios de avaliação dos exemplos C2. */
 export function submissionContractExamples(): Record<"submitted" | "returned" | "resubmitted", Submission> {
   const repository = createMemoryProjectRepository();
   const project = { ...repository.get(1)!, status: "PREPARACAO" as const };

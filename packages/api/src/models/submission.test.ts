@@ -11,14 +11,14 @@ describe("S5: contrato C1 de submissão", () => {
     expect(resubmitted.materials.find((item) => item.kind === "MANUAL")?.versionNumber).toBe(2);
     expect(returned.materials).toEqual(submitted.materials);
   });
-  it("usa a mesma submissão, rodada e rubrica dos exemplos C2", () => {
+  it("usa a mesma submissão, rodada e critérios de avaliação dos exemplos C2", () => {
     const { submitted } = submissionContractExamples();
     const { pending } = evaluationContractExamples();
     expect([submitted.projectId, submitted.id, submitted.round, submitted.rubricVersionId])
       .toEqual([pending.projectId, pending.submissionId, pending.round, pending.rubricVersionId]);
     expect(submitted.rubric).toEqual(pending.rubric);
   });
-  it("rejeita rubrica incompatível, devolução inconsistente e materiais repetidos ou ausentes", () => {
+  it("rejeitos critérios de avaliação incompatível, devolução inconsistente e materiais repetidos ou ausentes", () => {
     const { submitted } = submissionContractExamples();
     const invalid = (change: object) => submissionSchema.safeParse({ ...submitted, ...change }).success;
     expect(invalid({ rubricVersionId: 2 })).toBe(false);

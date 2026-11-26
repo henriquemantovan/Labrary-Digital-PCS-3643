@@ -62,7 +62,7 @@ export const rubricSnapshotSchema = z.object({
     const expectedVersion = (counters.get(item.projectId) ?? 0) + 1;
     const expectedClass = classes.get(item.projectId) ?? item.classId;
     if (ids.has(item.id) || item.versionNumber !== expectedVersion || item.classId !== expectedClass) {
-      ctx.addIssue({ code: "custom", message: "Histórico de rubricas inválido." });
+      ctx.addIssue({ code: "custom", message: "Histórico de critérios de avaliação inválido." });
     }
     ids.add(item.id);
     counters.set(item.projectId, item.versionNumber);

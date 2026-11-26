@@ -35,7 +35,7 @@ function openAs(user: User) {
   const expired = vi.fn();
   render(<ProjectAssessment projectId={1} user={user} expired={expired} />);
   const browser = userEvent.setup();
-  return { expired, browser, open: () => browser.click(screen.getByRole("button", { name: "Avaliações por rubrica" })) };
+  return { expired, browser, open: () => browser.click(screen.getByRole("button", { name: "Avaliações por critérios" })) };
 }
 
 afterEach(() => vi.unstubAllGlobals());

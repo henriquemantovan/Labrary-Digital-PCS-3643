@@ -49,7 +49,7 @@ export const evaluationContractSchema = z.object({
   evaluations: z.array(evaluationSchema),
 }).strict().superRefine((value, ctx) => {
   if (value.rubricVersionId !== value.rubric.id || value.projectId !== value.rubric.projectId)
-    ctx.addIssue({ code: "custom", message: "Referência de rubrica incompatível com C0." });
+    ctx.addIssue({ code: "custom", message: "Referência dos critérios de avaliação incompatível com C0." });
   if (new Set(value.evaluations.map((item) => item.evaluatorId)).size !== value.evaluations.length ||
     value.evaluations.some((item) => !value.expectedEvaluatorIds.includes(item.evaluatorId)))
     ctx.addIssue({ code: "custom", message: "Avaliadores duplicados ou fora da lista prevista." });

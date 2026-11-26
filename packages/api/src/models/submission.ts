@@ -16,7 +16,7 @@ export const submittedMaterialSchema = z.object({
   checksumSha256: z.string().nullable(),
 }).strict();
 
-/** C1: rodada submetida com snapshot imutável dos materiais e da rubrica. */
+/** C1: rodada submetida com snapshot imutável dos materiais e dos critérios de avaliação. */
 export const submissionSchema = z.object({
   id,
   projectId: id,
@@ -31,7 +31,7 @@ export const submissionSchema = z.object({
   materials: z.array(submittedMaterialSchema).min(1),
 }).strict().superRefine((value, ctx) => {
   if (value.rubricVersionId !== value.rubric.id || value.projectId !== value.rubric.projectId)
-    ctx.addIssue({ code: "custom", message: "Referência de rubrica incompatível com C0." });
+    ctx.addIssue({ code: "custom", message: "Referência dos critérios de avaliação incompatível com C0." });
   if ((value.status === "DEVOLVIDA") !== (value.returnedAt !== null))
     ctx.addIssue({ code: "custom", message: "Data de devolução incompatível com o estado." });
   if (new Set(value.materials.map((item) => item.materialId)).size !== value.materials.length)

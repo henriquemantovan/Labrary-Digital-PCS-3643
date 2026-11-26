@@ -32,7 +32,7 @@ export function SubmissionPanel({ project, user, materials, refreshKey, expired,
   project: Pick<Project, "id" | "status">;
   user: User;
   materials: Material[];
-  /** Qualquer mudança (novo material, nova rubrica) recarrega o checklist. */
+  /** Qualquer mudança (novo material, novos critérios de avaliação) recarrega o checklist. */
   refreshKey?: unknown;
   expired: () => void;
   onStatusChanged: (status: string) => void;
@@ -283,7 +283,7 @@ export function SubmissionPanel({ project, user, materials, refreshKey, expired,
                     Submetida em {formatDate(round.submittedAt)}
                     {round.submittedBy === user.id ? " por você" : ` pela conta ${round.submittedBy}`}
                     {round.returnedAt && ` · devolvida em ${formatDate(round.returnedAt)}`}
-                    {` · rubrica versão ${round.rubric.versionNumber}`}
+                    {` · critérios de avaliação versão ${round.rubric.versionNumber}`}
                   </p>
                   <ul>
                     {round.materials.map((item) => (

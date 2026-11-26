@@ -39,7 +39,7 @@ test("tabela, CSV e confirmação de liberação com C2 injetado somente no serv
   const resultPanel = page.getByRole("region", { name: "Resultado do grupo" });
   await expect(resultPanel).toContainText("Resultado liberado");
   await expect(resultPanel).toContainText("Nota: 8.40");
-  await expect(resultPanel).toContainText("Rubrica:");
+  await expect(resultPanel).toContainText("Critérios de avaliação:");
   await expect(resultPanel).toContainText("Funcionamento");
   await expect(resultPanel).toContainText("Peso: 60% · Nota: 8.00");
   await expect(resultPanel).toContainText("Atende aos requisitos.");

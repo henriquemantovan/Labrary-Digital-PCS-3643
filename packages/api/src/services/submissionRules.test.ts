@@ -33,7 +33,7 @@ const error = (change: Partial<SubmissionInput>) => {
 };
 
 describe("S5: checklist de submissão", () => {
-  it("indica obrigatórios presentes, ausentes e incompatíveis com a rubrica", () => {
+  it("indica obrigatórios presentes, ausentes e incompatíveis com os critérios de avaliação", () => {
     const checklist = submissionChecklist(rubric.requirements, [
       material(1, "VIDEO", "video/mp4"),
       material(2, "RELATORIO", "video/mp4"),
@@ -49,7 +49,7 @@ describe("S5: checklist de submissão", () => {
 });
 
 describe("S5: regras de submissão", () => {
-  it("monta snapshot da primeira rodada com versões atuais e cópia da rubrica", () => {
+  it("monta snapshot da primeira rodada com versões atuais e cópia dos critérios de avaliação", () => {
     const result = prepareSubmission(input());
     expect(result.repeated).toBe(false);
     expect(result.submission).toMatchObject({
@@ -60,7 +60,7 @@ describe("S5: regras de submissão", () => {
     expect(result.submission.rubric).toEqual(rubric);
     expect(result.submission.rubric).not.toBe(rubric);
   });
-  it("bloqueia sem rubrica, fora de Preparação/Ajustes, após prazo ou incompleta", () => {
+  it("bloqueia sem critérios de avaliação, fora de Preparação/Ajustes, após prazo ou incompleta", () => {
     expect(error({ rubric: null })).toMatchObject({ status: 409, code: "RUBRIC_NOT_CONFIGURED" });
     for (const status of ["EM_AVALIACAO", "FINALIZADO"] as const)
       expect(error({ project: { ...project, status } })).toMatchObject({ code: "SUBMISSION_LOCKED" });

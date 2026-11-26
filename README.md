@@ -12,7 +12,7 @@ Plataforma de gestão, avaliação e divulgação de projetos acadêmicos, desen
 - Cadastro com Google USP ou convite, perfis de acesso e organização de turmas e grupos.
 - Envio de vídeos, imagens e documentos, histórico de versões e reprodução privada.
 - Requisitos de entrega, prazos, feedback, submissão e devolução para ajustes.
-- Avaliação por rubrica, consolidação de notas, exportação CSV e liberação do resultado.
+- Avaliação por critérios, consolidação de notas, exportação CSV e liberação do resultado.
 - Publicação autorizada de materiais no acervo público e retirada da publicação.
 
 ## Equipe
@@ -138,7 +138,7 @@ Acesse **http://localhost:5173/login** e use o formulário **E-mail da conta de 
 | E-mail | Papel | O que demonstrar |
 | --- | --- | --- |
 | `admin@labrary.test` | Administrador | Gestão de papéis, convidados e visualização dos perfis acadêmicos |
-| `professor@labrary.test` | Professor | Grupos, projetos, rubricas, notas/CSV, reabertura, publicação e retirada |
+| `professor@labrary.test` | Professor | Grupos, projetos, critérios de avaliação, notas/CSV, reabertura, publicação e retirada |
 | `avaliador@labrary.test` | Avaliador | Avaliações dos projetos atribuídos, rascunho, finalização e histórico |
 | `aluno@labrary.test` | Aluno | Envio e versões de materiais, player, feedback, submissão e resultado liberado |
 | `aluno2@labrary.test` | Aluno | Colaboração com o primeiro aluno nos grupos da demonstração |
@@ -230,7 +230,9 @@ O CI utiliza Ubuntu 24.04. No Ubuntu 26.04, a variável de plataforma acima perm
 - `pnpm test:e2e`: fluxos de navegador em desktop e celular emulado, com dados isolados.
 - `pnpm db:test`: integração com PostgreSQL descartável; exige banco próprio com permissão `CREATEDB`. Não utilizar o banco compartilhado da avaliação.
 
-Na validação de **26/11/2026**, em cópia separada no Ubuntu 26.04 x86_64, passaram instalação, build, **330 testes da API, 140 da interface e 68 cenários de navegador**. As oito contas e a reprodução privada/pública no R2 também foram conferidas. A validação usou um Ubuntu existente, não uma instalação nova do sistema operacional. O badge acompanha o CI da branch `main`.
+Validação local em **26/11/2026**, no Ubuntu 26.04 x86_64: build, **330 testes da API e 141 da interface** aprovados, com cobertura acima de 85% nas quatro métricas de cada pacote. Os **68 cenários de navegador** passaram no conjunto das execuções; o comando integral atingiu o limite global de 60 segundos na avaliação desktop, que passou na repetição isolada. As demais suítes foram concluídas separadamente.
+
+A instalação em cópia separada, as oito contas e a reprodução privada/pública no R2 também foram conferidas. A validação utilizou um Ubuntu existente, não uma instalação nova do sistema operacional. O badge acompanha o CI da branch `main`.
 
 ## Estrutura e persistência
 
@@ -247,7 +249,7 @@ docs/               Documentação, protótipos e evidências
 | Dados | Onde ficam no ambiente fornecido |
 | --- | --- |
 | Contas, vínculos, convidados e sessões | PostgreSQL remoto |
-| Projetos, materiais, mensagens, rubricas, avaliações e resultados | Arquivos privados em `.data/` |
+| Projetos, materiais, mensagens, critérios de avaliação, avaliações e resultados | Arquivos privados em `.data/` |
 | Vídeos, imagens e documentos enviados | Bucket privado Cloudflare R2 |
 | Controle de uso do R2 | Arquivo privado em `.data/`, preservado entre reinícios |
 
@@ -267,7 +269,15 @@ Para continuar depois de parar a aplicação, execute `pnpm dev` na mesma pasta,
 | [Histórias de usuário](docs/historias-de-usuario.md) e [planejamento](docs/planejamento.md) | Requisitos e organização do desenvolvimento |
 | [Crazy 8](docs/crazy8/README.md) e [protótipos](docs/prototipos) | Ideação e telas desktop/mobile |
 | [Vídeos e capturas](docs/evidencias/dan-semana7) | Gravações e capturas disponíveis |
-| [Apresentação](docs/apresentacao-final.html) | Slides de demonstração |
+| [Apresentação](docs/apresentacao-final.html) e [PDF](docs/apresentacao-final.pdf) | Introdução ao projeto, seguida das telas e funcionalidades capturadas com `pnpm dev` |
 | [Uso de IA](docs/ia/README.md) | Declaração de auxílio no desenvolvimento e na revisão |
+
+Para abrir a apresentação de telas no navegador:
+
+```sh
+xdg-open docs/apresentacao-final.html
+```
+
+Use as setas para navegar, **Sumário** para escolher um assunto e **Foco na tela** para ocultar as legendas dos prints. A abertura apresenta objetivo, equipe, perfis e arquitetura; depois vêm as 19 telas do sistema. As capturas acompanham o HTML em `docs/evidencias/apresentacao/`; a versão PDF reúne os 24 slides em um único arquivo. A apresentação pode ser consultada sem iniciar o servidor.
 
 As instruções de desenvolvimento estão em [AGENTS.md](AGENTS.md), com as skills compartilhadas em [.agents/skills](.agents/skills).

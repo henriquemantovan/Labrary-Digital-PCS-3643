@@ -104,9 +104,9 @@ classDiagram
     SubmittedMaterial --> MaterialVersion : referência por ID
 ```
 
-`Submission` também contém a cópia da rubrica usada na entrega. Não há alteração retroativa de uma rodada ao substituir um arquivo ou criar outra rubrica. Mensagens (`ProjectMessage`) têm projeto, autor e contexto opcional de versão; ficam no snapshot privado de projetos.
+`Submission` também contém a cópia dos critérios de avaliação usados na entrega. Não há alteração retroativa de uma rodada ao substituir um arquivo ou criar outros critérios de avaliação. Mensagens (`ProjectMessage`) têm projeto, autor e contexto opcional de versão; ficam no snapshot privado de projetos.
 
-## Rubrica e avaliação
+## Critérios de avaliação
 
 ```mermaid
 classDiagram
@@ -150,7 +150,7 @@ classDiagram
     CriterionScore --> RubricCriterion : criterionId
 ```
 
-Rubricas são versionadas **por projeto**, com contexto de turma. Os três requisitos obrigatórios são vídeo, relatório e manual. Pesos somam 100%; notas variam de 0 a 10. Avaliações usam `PENDENTE`, `RASCUNHO`, `FINALIZADA` ou `REABERTA`, com revisão e histórico. A reabertura exige justificativa; não há campo `isFinal` no tipo C2 atual.
+Os critérios de avaliação são versionados **por projeto**, com contexto de turma. Os três requisitos obrigatórios são vídeo, relatório e manual. Pesos somam 100%; notas variam de 0 a 10. Avaliações usam `PENDENTE`, `RASCUNHO`, `FINALIZADA` ou `REABERTA`, com revisão e histórico. A reabertura exige justificativa; não há campo `isFinal` no tipo C2 atual.
 
 ## Consolidação e decisões
 

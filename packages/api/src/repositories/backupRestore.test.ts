@@ -14,7 +14,7 @@ import { createMemoryProjectRepository } from "./projectRepository.js";
 import { createFileRubricStorage } from "./fileRubricStorage.js";
 import { createMemoryRubricRepository } from "./rubricRepository.js";
 
-// Procedimento de docs/instalacao-e-aceitacao.md: copiar juntos metadados, rubricas e bytes,
+// Procedimento de docs/instalacao-e-aceitacao.md: copiar juntos metadados, critérios de avaliação e bytes,
 // restaurar em outro diretório e conferir o estado após o reinício.
 const dirs: string[] = [];
 afterEach(() => {

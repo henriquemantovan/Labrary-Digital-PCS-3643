@@ -18,8 +18,8 @@ async function login(page: Page, role: "aluno" | "professor" | "avaliador") {
 }
 
 async function openEvaluations(page: Page) {
-  await page.getByRole("button", { name: "Avaliações por rubrica", exact: true }).click();
-  return page.getByRole("region", { name: "Avaliações por rubrica" });
+  await page.getByRole("button", { name: "Avaliações por critérios", exact: true }).click();
+  return page.getByRole("region", { name: "Avaliações por critérios" });
 }
 
 async function configureRubric(page: Page, version: 1 | 2) {
@@ -87,7 +87,7 @@ test("HU08 integra entrega, rascunho, finalização, consolidação e reabertura
     .setInputFiles(pdf("manual.pdf", "Manual da primeira rodada"));
   const firstSubmission = await submit(page, 1);
   expect((await page.request.get(`${projectApi}/submissions/${firstSubmission}/evaluations`)).status()).toBe(403);
-  await expect(page.getByRole("button", { name: "Avaliações por rubrica" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Avaliações por critérios" })).toHaveCount(0);
 
   await login(page, "avaliador");
   const panel = await openEvaluations(page);

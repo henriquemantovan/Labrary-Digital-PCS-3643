@@ -61,10 +61,10 @@ A opção é validada na inicialização: Google configurado, `NODE_ENV=developm
 sequenceDiagram
     participant U as Aluno
     participant A as Rotas de submissão
-    participant R as Projetos e rubricas
+    participant R as Projetos e critérios de avaliação
     participant F as Storage privado
     U->>A: GET submission-checklist
-    A->>R: Ler estado, prazo, rubrica e versões
+    A->>R: Ler estado, prazo, critérios de avaliação e versões
     R-->>A: Checklist e bloqueios
     A-->>U: Itens obrigatórios e canSubmit
     U->>A: POST submissions com clientSubmissionId
@@ -93,7 +93,7 @@ sequenceDiagram
     participant E as Avaliações C2
     participant C as Consolidação C3
     U->>A: Avaliador salva rascunho ou finaliza com expectedRevision
-    A->>E: Autorizar atribuição e validar rubrica da rodada
+    A->>E: Autorizar atribuição e validar critérios de avaliação da rodada
     E-->>A: C2 persistido e histórico
     A-->>U: Avaliação atualizada
     U->>A: Professor consulta notas da turma

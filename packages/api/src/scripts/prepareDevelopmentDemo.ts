@@ -106,7 +106,7 @@ async function main() {
       const path = `/projects/${project.id}`;
       await json("professor", `${path}/evaluators`, "PUT", { evaluatorIds: [people.avaliador.id] });
       await json("professor", `${path}/configuration/versions`, "POST", {
-        baseVersionId: 0, title: "Rubrica de demonstração — pesos 50/30/20",
+        baseVersionId: 0, title: "Critérios de avaliação de demonstração — pesos 50/30/20",
         requirements: [
           { kind: "VIDEO", label: "Vídeo de apresentação", allowedMimeTypes: ["video/webm"] },
           { kind: "RELATORIO", label: "Relatório do projeto", allowedMimeTypes: ["application/pdf"] },

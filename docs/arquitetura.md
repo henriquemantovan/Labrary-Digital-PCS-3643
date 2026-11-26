@@ -16,7 +16,7 @@ C4Component
         Component(storage, "Armazenamento de arquivos", "FileStorage", "Uploads e leitura autorizada")
     }
     ContainerDb(postgres, "PostgreSQL", "Banco relacional", "Contas, vínculos, convites e sessões")
-    ContainerDb(json, "Arquivos privados", "JSON", "Projetos, rubricas, avaliações, resultados e controle R2")
+    ContainerDb(json, "Arquivos privados", "JSON", "Projetos, critérios de avaliação, avaliações, resultados e controle R2")
     ContainerDb(r2, "Cloudflare R2", "Bucket privado", "Vídeos, imagens e documentos")
     Rel(usuario, web, "Usa")
     Rel(web, controller, "Chama", "HTTP /api")
@@ -36,7 +36,7 @@ C4Component
 | --- | --- |
 | Identidades, dados acadêmicos, vínculos, auditoria, convites e sessões Google | PostgreSQL |
 | Projetos, versões de materiais, mensagens, submissões e publicações | `PROJECT_DATA_FILE` |
-| Requisitos e rubricas | `RUBRIC_DATA_FILE` |
+| Requisitos e critérios de avaliação | `RUBRIC_DATA_FILE` |
 | Avaliações | `EVALUATION_DATA_FILE` |
 | Liberações de resultado | `RESULT_RELEASE_DATA_FILE` |
 | Controle de uso do R2 | `R2_USAGE_FILE` |
@@ -51,7 +51,7 @@ O schema SQL inclui tabelas para um modelo mais amplo que os adapters ativos. A 
 
 A API usa sessão em cookie HttpOnly e verifica origem e proteção CSRF nas alterações. Papéis e vínculos são conferidos no servidor: aluno acessa os próprios grupos; avaliador, os projetos atribuídos; professor, suas turmas. O administrador em prévia usa os vínculos da própria conta.
 
-Uma submissão conserva as versões dos materiais e da rubrica. A avaliação pertence à rodada submetida. Reabrir ou alterar a avaliação invalida a liberação anterior do resultado. Finalizar o projeto não publica os materiais; a publicação exige seleção e autorização próprias.
+Uma submissão conserva as versões dos materiais e dos critérios de avaliação. A avaliação pertence à rodada submetida. Reabrir ou alterar a avaliação invalida a liberação anterior do resultado. Finalizar o projeto não publica os materiais; a publicação exige seleção e autorização próprias.
 
 O catálogo expõe somente publicações ativas e os materiais selecionados. Notas, feedback, integrantes e chaves de armazenamento continuam privados. A retirada bloqueia novas consultas e leituras públicas, incluindo HEAD e Range; arquivos já recebidos pelo visitante não podem ser recolhidos.
 

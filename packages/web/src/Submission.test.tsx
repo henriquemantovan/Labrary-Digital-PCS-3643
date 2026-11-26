@@ -80,7 +80,7 @@ it("mostra presentes, ausentes e incompatíveis e explica o bloqueio sem oferece
   expect(screen.getByText("Nenhuma rodada submetida ainda.")).toBeDefined();
 });
 
-it("explica rubrica ausente, prazo vencido e projeto em avaliação", async () => {
+it("explicos critérios de avaliação ausente, prazo vencido e projeto em avaliação", async () => {
   state.checklist = checklist({ rubricVersionId: null, items: [], blockedBy: "RUBRIC_NOT_CONFIGURED" });
   const view = panel();
   expect(await screen.findByText(/ainda não configurou os requisitos/)).toBeDefined();

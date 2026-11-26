@@ -8,7 +8,7 @@ export function evaluationContractExamples(): Record<"pending" | "draft" | "fina
     expectedEvaluatorIds: [2],
     rubric: {
       id: 1, projectId: 1, classId: 1, versionNumber: 1,
-      title: "Rubrica do projeto", createdBy: 3, createdAt: "2026-11-05T12:00:00.000Z",
+      title: "Critérios de avaliação do projeto", createdBy: 3, createdAt: "2026-11-05T12:00:00.000Z",
       requirements: defaultRequirements("2026-11-25T23:59:00.000Z"),
       criteria: [
         { id: "funcionamento", title: "Funcionamento", description: "Atendimento aos requisitos", weight: 60, minScore: 0, maxScore: 10 },

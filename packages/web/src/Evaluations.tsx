@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { evaluationCriteriaTitle } from "./lib/evaluationCriteria";
 import { Success } from "./components/Feedback";
 import type { FormEvent } from "react";
 import type { CriterionScore, Evaluation } from "../../api/src/models/evaluation";
@@ -91,8 +92,8 @@ export function Evaluations({ projectId, projectStatus, user, expired }: {
 
   const selectedRound = round?.submission.id === selection ? round : null;
   const evaluatorView = user.role === "AVALIADOR";
-  return <section className={panelClass} aria-label="Avaliações por rubrica">
-    <h2>Avaliações por rubrica</h2>
+  return <section className={panelClass} aria-label="Avaliações por critérios">
+    <h2>Avaliações por critérios</h2>
     {success && <Success>{success}</Success>}
     {error && <p role="alert">{error}</p>}
     <button type="button" className={buttonVariants({ variant: "ghost", size: "sm" })} disabled={busy} onClick={() => {
@@ -141,10 +142,10 @@ export function Evaluations({ projectId, projectStatus, user, expired }: {
 function SubmissionSnapshot({ submission }: { submission: Submission }) {
   const { materials, projectId, rubric } = submission;
   return <div className={blockClass}>
-    <h3>{rubric.title} · Versão {rubric.versionNumber}</h3>
+    <h3>{evaluationCriteriaTitle(rubric.title)} · Versão {rubric.versionNumber}</h3>
     <p className={mutedText}>Rodada {submission.round} · Submetida em {dateTime(submission.submittedAt)}</p>
     <details>
-      <summary>Critérios da rubrica</summary>
+      <summary>Critérios de avaliação</summary>
       <ul>{rubric.criteria.map((criterion) => <li key={criterion.id}>
         <strong>{criterion.title}</strong> · Peso {criterion.weight}% · Escala de {criterion.minScore} a {criterion.maxScore}
         {criterion.description && <p>{criterion.description}</p>}
