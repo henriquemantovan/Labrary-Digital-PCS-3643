@@ -1,6 +1,50 @@
-# Instalação e preparação da aceitação
+# Instalação e aceitação
 
 Roteiro de Kauê para #41/#19, preparado em 12/11/2026. A execução final em instalação limpa Ubuntu 26.04 e os cinco vídeos pertencem à #46, de 19–25/11; este documento não declara essa aceitação concluída.
+
+## Preparar uma instalação Linux nova
+
+Revisão de 25/11/2026, base `c2dbb7f`. Os comandos abaixo documentam a preparação; a execução limpa no Ubuntu 26.04 **ainda precisa ser registrada** em #46. O CI aprovado usa Ubuntu 24.04. O fato de os testes passarem não comprova o ambiente 26.04.
+
+Instale Git, certificados, curl, tar/xz e ferramentas de compilação. Em uma máquina Ubuntu administrada pela equipe:
+
+```sh
+sudo apt-get update
+sudo apt-get install -y git ca-certificates curl xz-utils build-essential
+```
+
+Se já possui gerenciador de Node, instale a versão de `.nvmrc` e pnpm 11.25.0. Como alternativa, os comandos abaixo instalam o binário oficial Node em um diretório do usuário, sem substituir o Node do sistema. Requer Linux x86_64 ou ARM64; escolha outra distribuição oficial se a arquitetura for diferente.
+
+```sh
+case "$(uname -m)" in
+  x86_64) labrary_arch=x64 ;;
+  aarch64|arm64) labrary_arch=arm64 ;;
+  *) echo "Arquitetura não prevista neste roteiro"; exit 1 ;;
+esac
+labrary_tools="$HOME/.local/labrary-tools"
+labrary_node="$HOME/.local/labrary-node-24.19.0"
+labrary_download=$(mktemp -d)
+mkdir -p "$labrary_node" "$labrary_tools"
+curl -fL "https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-${labrary_arch}.tar.xz" -o "$labrary_download/node.tar.xz"
+tar -xJf "$labrary_download/node.tar.xz" -C "$labrary_node" --strip-components=1
+export PATH="$labrary_node/bin:$labrary_tools/bin:$PATH"
+npm install --global --prefix "$labrary_tools" pnpm@11.25.0
+node --version
+pnpm --version
+```
+
+Mantenha o `export PATH` no shell das próximas etapas. O download fica no diretório temporário informado por `labrary_download`; não contém dados da aplicação.
+
+```sh
+git clone https://github.com/henriquemantovan/Labrary-Digital-PCS-3643.git
+cd Labrary-Digital-PCS-3643
+git switch revisao-final
+pnpm install --frozen-lockfile
+pnpm build
+pnpm demo
+```
+
+Abra `http://localhost:5173/login`. `/` é a página inicial pública. O seed local não requer PostgreSQL nem Google. Para instalar exatamente a mesma revisão em outra máquina, registre o commit de `git rev-parse HEAD` e a saída de `cat /etc/os-release`, `node --version` e `pnpm --version` no relatório de aceitação. A branch `revisao-final` contém somente documentação nesta revisão.
 
 ## Ambiente e instalação
 
@@ -16,7 +60,7 @@ pnpm exec playwright install --with-deps chromium
 pnpm test:e2e
 ```
 
-API e web exigem no mínimo 85% nas quatro métricas. E2E inclui Chromium desktop e emulação mobile; não comprova Safari ou dispositivo físico. A suíte principal usa as portas 3002–3005 e 5179–5181. A suíte de submissão roda em seguida com servidores novos nessas portas, preservando a cota de login por IP sem interferência dos demais cenários. Depois, a suíte de consolidação usa 3006/5182, primeiro desktop e depois mobile, com servidores novos para cada perfil. Isso limita o número de processos simultâneos e conserva os cenários e o isolamento. Não encerre processos de outras pessoas para liberar portas. `test-results/` e `packages/*/coverage/` são evidências locais ignoradas pelo Git. Em máquina com pouca memória, `VITEST_MAX_WORKERS=1 pnpm test` executa os mesmos testes e limites de cobertura com um worker.
+API e web exigem no mínimo 85% nas quatro métricas. E2E inclui Chromium desktop e emulação mobile; não comprova Safari ou dispositivo físico. A suíte principal usa as portas 3002–3007 e 5179–5183 (servidores normais, OIDC de teste e publicação). A suíte de submissão roda em seguida com servidores novos nessas portas, preservando a cota de login por IP sem interferência dos demais cenários. Depois, a suíte de consolidação usa 3006/5182, primeiro desktop e depois mobile, com servidores novos para cada perfil. Por fim, avaliação usa APIs 3008/3009 e web 5184/5185. Isso limita o número de processos simultâneos e conserva os cenários e o isolamento. Não encerre processos de outras pessoas para liberar portas. `test-results/` e `packages/*/coverage/` são evidências locais ignoradas pelo Git. Em máquina com pouca memória, `VITEST_MAX_WORKERS=1 pnpm test` executa os mesmos testes e limites de cobertura com um worker.
 
 O CI fixa Ubuntu 24.04 para a versão atual do Playwright. A exigência acadêmica de Ubuntu 26.04 permanece: rodar a instalação nessa distribuição na #46, registrar versão do SO, comandos e resultados. CI 24.04 e uma máquina 24.04 não demonstram equivalência; qualquer mudança de requisito depende de decisão explícita acompanhada por Henrique (#20).
 
@@ -36,7 +80,9 @@ O [script](../scripts/demo.sh) confere as versões e cria um diretório privado 
 | `avaliador@labrary.local` | Avaliador do projeto 1 |
 | `professor@labrary.local` | Professora da turma 1 |
 
-Abra <http://localhost:5173>; API em <http://localhost:3000>. Encerre com Ctrl+C. O script informa o caminho de `environment.sh`; `source /caminho/informado/environment.sh && pnpm dev` reutiliza os mesmos dados para verificar reinício. Esse arquivo contém somente configuração local de demonstração. `pnpm demo --prepare-only` prepara e informa o comando sem iniciar servidores. Cada nova execução cria outro ambiente; não apaga o anterior nem altera `.env` existente. O diretório temporário pode ser limpo pelo sistema, portanto não o use para dados que precisem ser preservados.
+Abra <http://localhost:5173/login>; página inicial em `/`; API em <http://localhost:3000>. Encerre com Ctrl+C. O script informa o caminho de `environment.sh`; `source /caminho/informado/environment.sh && pnpm dev` reutiliza os mesmos dados para verificar reinício. Esse arquivo contém somente configuração local de demonstração. `pnpm demo --prepare-only` prepara e informa o comando sem iniciar servidores. Cada nova execução cria outro ambiente; não apaga o anterior nem altera `.env` existente. O diretório temporário pode ser limpo pelo sistema, portanto não o use para dados que precisem ser preservados.
+
+A demonstração fornece três perfis acadêmicos, sem conta ADMIN; o roteiro docente cobre a gestão de grupos/projetos. Para demonstrar administração de contas, é necessário provisionar ADMIN no modo Google conforme o guia de acesso.
 
 No seed, a consolidação de um projeto começa em “Sem submissão”. O [roteiro HU08](hu08.md) prepara uma entrega, registra notas e valida a consolidação no servidor normal.
 
@@ -76,3 +122,31 @@ Pare o único processo escritor e copie conjuntamente o arquivo `PROJECT_DATA_FI
 | Publicação e catálogo | Henrique #42 + Dan #45 | Autorização explícita, bytes, filtros e despublicação |
 
 Fluxos integrados: alvo 23/11; cinco vídeos: alvo 24/11; relatório e entrega a Henrique: 25/11. Até haver revisão e evidência real, manter os critérios correspondentes pendentes. Não gravar vídeo de fixture como demonstração do fluxo integrado.
+
+
+## Gravação e seleção dos cinco vídeos
+
+Execute a suíte com gravação para obter os fluxos de navegador:
+
+```sh
+RECORD_EVIDENCE=true pnpm test:e2e
+```
+
+Os vídeos são artefatos em `test-results/`, ignorados pelo Git. A gravação longa da avaliação também pode ser feita com `RECORD_EVALUATION_DEMO=1 pnpm exec playwright test --config playwright.evaluation.config.ts --project desktop`. O limite de 90 segundos nesse modo acompanha a execução deliberadamente lenta de demonstração; o modo normal mantém o limite original.
+
+Para entregar, selecione pelo menos cinco vídeos que demonstrem funcionalidades distintas, não apenas desktop e mobile do mesmo cenário. Proposta de índice: login/permissões; upload e substituição; submissão/devolução; feedback por versão; avaliação/consolidação/liberação. Acrescente publicação/acervo integrado quando a conexão real estiver pronta. Registre arquivo, funcionalidade, autor, data, commit, comandos e se há fixture. A existência do comando de gravação não comprova que a seleção final já tenha sido produzida.
+
+Os [oito clipes existentes](dan-semana7.md) e suas limitações continuam disponíveis; não foram regenerados por esta alteração documental. O [manual](manual-de-uso.md) orienta a demonstração ao vivo.
+
+## Checklist de aceitação em máquina nova
+
+- [ ] Registrar SO Ubuntu 26.04, arquitetura, Node, pnpm e commit instalado.
+- [ ] Instalar pelo roteiro sem ajuda dos autores e preservar o lockfile.
+- [ ] Executar build, cobertura e E2E; guardar comandos, saídas e artefatos.
+- [ ] No modo Google, configurar cliente real, banco, migrations, contas e turmas; distinguir de OIDC simulado.
+- [ ] Demonstrar dados, arquivos e vínculos necessários sem depender de um diretório temporário perdido.
+- [ ] Validar backup/restauração conjunta, mantendo dados privados fora do repositório.
+- [ ] Validar publicação com provedores reais depois da integração; enquanto ausentes, registrar o bloqueio.
+- [ ] Indexar os cinco vídeos e registrar revisão cruzada, aceite e pendências.
+
+Uma instalação de produção também exige servir `packages/web/dist` com fallback das rotas da SPA e encaminhar `/api` à API na mesma origem. `pnpm build` não inicia um servidor web de produção. Este roteiro não declara um deploy público existente.

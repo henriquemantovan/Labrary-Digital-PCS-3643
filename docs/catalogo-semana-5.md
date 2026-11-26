@@ -1,5 +1,7 @@
 # Semana 5 — catálogo e regressão do acompanhamento
 
+> Registro histórico da semana 5. O catálogo atual usa `/api/catalog`; a integração de decisão de publicação continua pendente conforme a [arquitetura atual](arquitetura.md).
+
 Entrega de Dan (@kiyochii) para [#35](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/35), relacionada a [#12](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/12), [#6](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/6) e ao [plano #21](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/21). Base: main `8e311b1`, incluindo materiais #31 e grupos #47. Incremento preparado para revisão; não representa aceite do catálogo público real.
 
 ## Demonstração local
