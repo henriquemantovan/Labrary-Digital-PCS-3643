@@ -1,3 +1,7 @@
+import { Button } from "./components/ui/button";
+import { Input } from "./components/ui/input";
+import { panelClass } from "./components/Panel";
+import { noticeClass } from "./components/Feedback";
 import { useState, type FormEvent } from "react";
 import { api, ApiError, type User } from "./api";
 
@@ -43,21 +47,32 @@ export function AcademicRegistration({
     }
   }
   return (
-    <main className="academic-registration">
-      <section className="create-panel">
-        <p className="eyebrow">CADASTRO ACADÊMICO</p>
-        <h1>Complete seu cadastro</h1>
+    <main className="grid min-h-dvh place-items-center bg-sidebar px-4 py-8">
+      <section className={`${panelClass} w-full max-w-xl`}>
+        <p className="text-xs font-semibold tracking-widest text-muted-foreground">
+          CADASTRO ACADÊMICO
+        </p>
+        <h1 className="font-heading text-2xl font-semibold">
+          Complete seu cadastro
+        </h1>
         <p>
           Seu acesso Google foi confirmado com {user.email}. Confirme seu nome
           completo e informe seus dados acadêmicos para continuar.
         </p>
         <p>O preenchimento não atribui uma turma ou grupo automaticamente.</p>
-        {(error || logoutError) && <p role="alert">{error || logoutError}</p>}
-        <form onSubmit={(event) => void submit(event)}>
-          <fieldset disabled={busy || logoutBusy}>
-            <label>
+        {(error || logoutError) && (
+          <p className={noticeClass} role="alert">
+            {error || logoutError}
+          </p>
+        )}
+        <form className="my-3" onSubmit={(event) => void submit(event)}>
+          <fieldset
+            className="grid min-w-0 gap-4"
+            disabled={busy || logoutBusy}
+          >
+            <label className="grid min-w-0 gap-2 text-sm font-medium">
               Nome completo
-              <input
+              <Input
                 name="fullName"
                 autoComplete="name"
                 defaultValue={user.fullName}
@@ -66,9 +81,9 @@ export function AcademicRegistration({
                 maxLength={160}
               />
             </label>
-            <label>
+            <label className="grid min-w-0 gap-2 text-sm font-medium">
               NUSP
-              <input
+              <Input
                 name="uspNumber"
                 inputMode="numeric"
                 pattern="[0-9]+"
@@ -77,9 +92,9 @@ export function AcademicRegistration({
                 required
               />
             </label>
-            <label>
+            <label className="grid min-w-0 gap-2 text-sm font-medium">
               Ano de ingresso
-              <input
+              <Input
                 name="entryYear"
                 type="number"
                 min={1900}
@@ -89,18 +104,18 @@ export function AcademicRegistration({
                 required
               />
             </label>
-            <button className="primary" type="submit">
+            <Button className="w-full" type="submit">
               {busy ? "Salvando cadastro…" : "Salvar e continuar"}
-            </button>
+            </Button>
           </fieldset>
         </form>
-        <button
-          className="secondary"
+        <Button
+          variant="outline"
           disabled={busy || logoutBusy}
           onClick={() => void logout()}
         >
           Sair da conta
-        </button>
+        </Button>
       </section>
     </main>
   );

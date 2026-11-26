@@ -1,3 +1,7 @@
+import { Button } from "./components/ui/button";
+import { Input } from "./components/ui/input";
+import { panelClass } from "./components/Panel";
+import { noticeClass } from "./components/Feedback";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { api, ApiError } from "./api";
 import type { GuestInvitation } from "../../api/src/models/academicAccess";
@@ -68,34 +72,33 @@ export function GuestInvitations({ expired }: { expired: () => void }) {
     }
   }
   return (
-    <section
-      className="create-panel guest-invitations"
-      aria-label="Convidados externos"
-    >
-      <h2>Convidados externos</h2>
+    <section className={`${panelClass} mt-6`} aria-label="Convidados externos">
+      <h2 className="font-heading text-lg font-semibold">
+        Convidados externos
+      </h2>
       <p>
         Autorize o e-mail Google do convidado antes do primeiro acesso. O
         convite dispensa o domínio USP e os dados de aluno; o perfil e os
         vínculos são definidos separadamente.
       </p>
       {error && (
-        <div role="alert">
+        <div className={noticeClass} role="alert">
           {error}{" "}
-          <button
-            className="secondary"
-            disabled={busy}
-            onClick={() => void load()}
-          >
+          <Button variant="outline" disabled={busy} onClick={() => void load()}>
             Recarregar convidados
-          </button>
+          </Button>
         </div>
       )}
-      {success && <p role="status">{success}</p>}
-      <form onSubmit={(event) => void invite(event)}>
-        <fieldset disabled={busy}>
-          <label>
+      {success && (
+        <p className="text-sm text-success-foreground" role="status">
+          {success}
+        </p>
+      )}
+      <form className="my-3" onSubmit={(event) => void invite(event)}>
+        <fieldset className="grid min-w-0 gap-4" disabled={busy}>
+          <label className="grid min-w-0 gap-2 text-sm font-medium">
             E-mail Google do convidado
-            <input
+            <Input
               type="email"
               autoComplete="email"
               value={email}
@@ -104,7 +107,7 @@ export function GuestInvitations({ expired }: { expired: () => void }) {
               required
             />
           </label>
-          <button className="primary">Autorizar convidado</button>
+          <Button type="submit">Autorizar convidado</Button>
         </fieldset>
       </form>
       {items === null ? (
@@ -112,21 +115,24 @@ export function GuestInvitations({ expired }: { expired: () => void }) {
       ) : !items.length ? (
         <p>Nenhum convidado cadastrado.</p>
       ) : (
-        <ul>
+        <ul className="divide-y rounded-xl border">
           {items.map((item) => (
-            <li key={item.id}>
+            <li
+              className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm [overflow-wrap:anywhere]"
+              key={item.id}
+            >
               <span>
                 {item.email} · {item.revokedAt ? "Revogado" : "Autorizado"}
               </span>
               {!item.revokedAt && (
-                <button
-                  className="secondary"
+                <Button
+                  variant="outline"
                   disabled={busy}
                   onClick={() => setConfirmation(item)}
                   aria-label={`Revogar acesso de ${item.email}`}
                 >
                   Revogar acesso
-                </button>
+                </Button>
               )}
             </li>
           ))}
@@ -134,7 +140,7 @@ export function GuestInvitations({ expired }: { expired: () => void }) {
       )}
       {confirmation && (
         <div
-          className="notice"
+          className={noticeClass}
           role="group"
           aria-label="Confirmar revogação de convidado"
         >
@@ -142,20 +148,16 @@ export function GuestInvitations({ expired }: { expired: () => void }) {
             Revogar o acesso de {confirmation.email}? As próximas requisições e
             novos logins serão bloqueados.
           </p>
-          <button
-            className="secondary"
+          <Button
+            variant="outline"
             disabled={busy}
             onClick={() => setConfirmation(null)}
           >
             Cancelar revogação
-          </button>
-          <button
-            className="primary"
-            disabled={busy}
-            onClick={() => void revoke()}
-          >
+          </Button>
+          <Button type="submit" disabled={busy} onClick={() => void revoke()}>
             Confirmar revogação
-          </button>
+          </Button>
         </div>
       )}
     </section>

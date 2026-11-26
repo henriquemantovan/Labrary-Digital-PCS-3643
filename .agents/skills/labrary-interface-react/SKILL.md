@@ -5,11 +5,11 @@ description: Implementar telas, formulários, navegação e integração HTTP em
 
 # Desenvolver a interface do Labrary
 
-Consulte a HU no `README.md`, os contratos em `docs/api-inicial.md` e os componentes atuais antes de alterar a tela. `docs/prototipos/` e `docs/prototipos/mobile/` contêm referências estáticas de histórias que podem ainda não estar implementadas. Preserve a linguagem visual atual em `packages/web/src/styles.css`, os ícones em `Icons.tsx` e os textos em português.
+Consulte a HU no `README.md`, os contratos em `docs/api-inicial.md` e os componentes atuais antes de alterar a tela. `docs/prototipos/` e `docs/prototipos/mobile/` contêm referências estáticas de histórias que podem ainda não estar implementadas. Preserve a linguagem visual Tailwind em `packages/web/src/index.css`, os componentes coss ui/Base UI em `components/ui/`, os ícones Lucide e os textos em português.
 
 ## Implementar dentro da estrutura existente
 
-- `packages/web/src/App.tsx` concentra sessão, navegação e telas atuais; `src/api.ts` contém tipos, `ApiError` e o cliente `api<T>()`. Reaproveite esses pontos e extraia componentes quando a mudança justificar; não acrescente roteador, biblioteca de UI ou estado global sem necessidade da tarefa.
+- `packages/web/src/App.tsx` concentra sessão e navegação; as páginas estão em `pages/`, o shell em `layout/AppShell.tsx`; `src/api.ts` contém tipos, `ApiError` e o cliente `api<T>()`. Reaproveite esses pontos e extraia componentes quando a mudança justificar; não acrescente roteador, biblioteca de UI ou estado global sem necessidade da tarefa.
 - O cliente recebe caminhos sem o prefixo `/api`, inclui cookies da mesma origem e o cabeçalho de proteção CSRF, desempacota `data` e trata `204`. Adapte esse cliente explicitamente caso a tarefa passe a enviar arquivos; o comportamento atual usa JSON.
 - Trate carregamento, lista vazia, sucesso, erro recuperável e envio em andamento conforme o fluxo. Preserve retorno ao login em `401`, restauração de sessão e feedback real de logout; falha de revogação não significa que o usuário saiu.
 - Não armazene sessão em localStorage nem decida autorização só escondendo controles. O papel exibido vem do servidor e a API precisa negar requisições fora do escopo.

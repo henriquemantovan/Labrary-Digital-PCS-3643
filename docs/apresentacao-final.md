@@ -1,6 +1,6 @@
 # Labrary Digital — apresentação final
 
-Roteiro preparado por Henrique em 22/11/2026 para #20/#42 e apresentação prevista em 26/11/2026. Os blocos abaixo são os slides e as falas sugeridas; a duração proposta é 10 minutos. A [validação da entrega](../README.md#validação-da-entrega) descreve verificações e pendências. A participação/narração dos integrantes e o aceite do professor precisam de confirmação humana.
+Roteiro preparado por Henrique em 22/11/2026 para #20/#42 e apresentação prevista em 26/11/2026. Os blocos abaixo são os slides e as falas sugeridas; a duração proposta é 10 minutos. A [validação da entrega](../README.md#6-testes-ci-e-evidências) descreve verificações e pendências. A participação/narração dos integrantes e o aceite do professor precisam de confirmação humana.
 
 Abra [apresentacao-final.html](apresentacao-final.html) diretamente no navegador para exibir os slides, sem servidor ou dependência adicional. Use as setas ou os botões para avançar; **Imprimir / PDF** exporta todos os slides em paisagem. Este documento contém as falas, referências e preparação da demonstração.
 
@@ -30,7 +30,7 @@ Abra [apresentacao-final.html](apresentacao-final.html) diretamente no navegador
 
 React usa a API Express na mesma origem, com sessão HttpOnly e CSRF nas mutações. A API verifica vínculos em cada operação. C1 congela materiais/rubrica; C2 registra notas por rodada; C3 calcula e libera o resultado; C4 expõe somente os campos e versões autorizados.
 
-**Fala:** “Concluir avaliação, liberar nota e publicar são três decisões diferentes. Os dados privados ficam em arquivos e disco privados; Google usa PostgreSQL para identidades, vínculos e sessões. A instalação atual exige um único processo escritor.”
+**Fala:** “Concluir avaliação, liberar nota e publicar são três decisões diferentes. Os metadados acadêmicos ficam em arquivos privados; os vídeos e documentos usam disco ou bucket R2 privado, conforme a configuração. Google usa PostgreSQL para identidades, vínculos e sessões. A instalação atual exige um único processo escritor.”
 
 ## Slide 4 — Entrega, feedback e avaliação · 2 min 15 s · Enzo, Dan e Yuhang
 
@@ -70,7 +70,7 @@ O WebM fica sob `test-results/publication/`, junto às capturas. O vídeo mostra
 
 ## Slide 7 — Evidência e limites · 1 min · Henrique e Kauê
 
-**Tela:** [comandos de validação e pendências](../README.md#validação-da-entrega).
+**Tela:** [comandos de validação e pendências](../README.md#6-testes-ci-e-evidências).
 
 Mostre o build, as suítes com cobertura mínima de 85% por métrica/pacote e o navegador desktop/celular. Destaque a regressão de concorrência: reabrir uma avaliação durante a verificação de arquivos bloqueia a finalização.
 
@@ -82,4 +82,4 @@ Mostre o build, as suítes com cobertura mínima de 85% por métrica/pacote e o 
 
 Antes de apresentar, cada autor deve conferir seu trecho com o [manual](manual-usuario.md), identificar commit/ambiente da gravação e reunir as referências junto ao [roteiro de aceitação](instalacao-e-aceitacao.md#roteiro-e-divisão-de-evidências). Henrique consolida o material; Kauê coordena a aceitação/instalação. Revisar os cinco fluxos até 24/11 e registrar a revisão e retrospectiva até 25/11, conforme alvos do plano #21.
 
-Para demonstração ao vivo, prepare os vínculos e a rubrica antes, confira os três arquivos e mantenha um único ambiente ativo. Se houver falha externa, use a gravação revisada do fluxo real identificando sua versão/ambiente. Não apresente `/demo/acervo` nem servidores com provedores fabricados como substitutos da integração. Se faltar aprovação acadêmica, mostre o [requisitos acadêmicos pendentes](../README.md#alinhamento-com-o-enunciado-geral) e apresente os limites como pendências.
+Para demonstração ao vivo, prepare os vínculos e a rubrica antes, confira os três arquivos e mantenha um único ambiente ativo. Se houver falha externa, use a gravação revisada do fluxo real identificando sua versão/ambiente. Não apresente `/demo/acervo` nem servidores com provedores fabricados como substitutos da integração. Se faltar aprovação acadêmica, mostre o [requisitos acadêmicos pendentes](../README.md#1-tema-e-escopo) e apresente os limites como pendências.

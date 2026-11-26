@@ -35,13 +35,11 @@ Execute os testes pertinentes e informe os resultados.
 
 Se outro assistente não descobrir skills automaticamente, peça explicitamente que leia `AGENTS.md` e o `SKILL.md` correspondente antes de trabalhar. Ele precisa ter acesso ao terminal e permissão para executar os comandos locais para realizar o ciclo completo.
 
-## O que a análise do repositório encontrou
+## Implementação atual e rastreabilidade
 
-- API Express/TypeScript e interface React/Vite organizadas em workspaces pnpm. As versões de referência estão em `.nvmrc` e nos manifests.
-- API com Supertest e Vitest; web com Testing Library, jsdom e Vitest. Cada pacote exige cobertura de pelo menos 85% em linhas, statements, funções e branches.
-- Playwright usa API real e executa os fluxos em desktop e emulação mobile com Chromium. O CI executa build, cobertura e E2E.
-- Projetos, metadados e sessões ainda estão em memória. O modelo Prisma e o SQL não significam que PostgreSQL esteja conectado. O endpoint de materiais registra metadados, sem upload de bytes.
-- O README mistura definição do produto, histórias futuras e estado da implementação. Para os endpoints atuais, consulte [o contrato da API](api-inicial.md); para sessão e permissões, consulte [HU01](hu01.md).
+A [arquitetura atual](arquitetura.md) descreve os adapters do servidor normal. Identidades, sessões e vínculos Google usam PostgreSQL; projetos, materiais, mensagens, submissões, rubricas, avaliações e liberações usam arquivos privados, além de bytes em `UPLOAD_DIR`. O servidor já realiza uploads reais. A integração pendente é a dos provedores reais da finalização/publicação.
+
+O [registro de prompts](ia/README.md) reúne solicitações conhecidas e identifica o agente, a versão quando disponível, a base, o resultado e a validação. Este guia e as instruções de agente não substituem registrar os prompts efetivamente usados. Não reconstrua conversas nem invente modelos/versões; cada integrante deve fornecer seus registros anteriores.
 
 ## Comandos e resultado esperado
 

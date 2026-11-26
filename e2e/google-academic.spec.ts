@@ -2,7 +2,7 @@ import { test, expect, type Page } from "@playwright/test";
 const origin = "http://localhost:5181";
 const csrf = { "X-CSRF-Protection": "1" };
 async function login(page: Page, choice: string) {
-  await page.goto(origin);
+  await page.goto(`${origin}/login`);
   await expect(page.getByText(/Entre com seu e-mail USP/)).toBeVisible();
   await page.getByRole("link", { name: "Entrar com Google" }).click();
   await page.getByRole("link", { name: choice, exact: true }).click();

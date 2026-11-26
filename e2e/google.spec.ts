@@ -4,7 +4,7 @@ for (const role of ["aluno", "professor"]) {
     page,
     context,
   }) => {
-    await page.goto("http://localhost:5181/");
+    await page.goto("http://localhost:5181/login");
     await expect(
       page.getByRole("link", { name: "Entrar com Google" }),
     ).toBeVisible();
@@ -67,7 +67,7 @@ for (const role of ["aluno", "professor"]) {
 }
 for (const choice of ["Selecionar e-mail não verificado", "Cancelar"]) {
   test(`Google: erro recuperável em ${choice}`, async ({ page, context }) => {
-    await page.goto("http://localhost:5181/");
+    await page.goto("http://localhost:5181/login");
     await page.getByRole("link", { name: "Entrar com Google" }).click();
     await page.getByRole("link", { name: choice, exact: true }).click();
     await expect(page.getByRole("alert")).toContainText(

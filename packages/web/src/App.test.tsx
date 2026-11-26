@@ -81,7 +81,7 @@ const response = (data: unknown, status = 200) =>
     { status, headers: { "Content-Type": "application/json" } },
   );
 beforeEach(() => {
-  window.history.replaceState(null, "", "/");
+  window.history.replaceState(null, "", "/login");
   session = student;
   available = [projects[1]];
   override = () => undefined;
@@ -165,6 +165,34 @@ const loginForm = async () => {
   return user;
 };
 
+describe("página inicial", () => {
+  it("apresenta a plataforma em / sem consultar a sessão", () => {
+    window.history.replaceState(null, "", "/");
+    render(<App />);
+    expect(
+      screen.getByRole("heading", {
+        level: 1,
+        name: "Do primeiro circuito à última entrega.",
+      }),
+    ).toBeDefined();
+    expect(
+      screen.getByRole("link", { name: "Entrar no meu espaço" }).getAttribute("href"),
+    ).toBe("/login");
+    expect(
+      screen.getByRole("link", { name: "Explorar o acervo" }).getAttribute("href"),
+    ).toBe("/acervo");
+    expect(screen.getByRole("heading", { name: "Quatro etapas, um só fluxo." })).toBeDefined();
+    expect(fetch).not.toHaveBeenCalled();
+  });
+  it("leva a sessão ativa de /login direto aos projetos e sai para /login", async () => {
+    render(<App />);
+    await screen.findByRole("heading", { name: "Olá, Marina." });
+    expect(window.location.pathname).toBe("/projetos");
+    await userEvent.click(screen.getByRole("button", { name: "Sair da conta" }));
+    await screen.findByRole("button", { name: "Entrar no meu espaço" });
+    expect(window.location.pathname).toBe("/login");
+  });
+});
 describe("HU01: interface", () => {
   it("faz login, alterna visibilidade da senha e sai da conta", async () => {
     session = null;

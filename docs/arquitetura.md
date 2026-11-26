@@ -1,4 +1,4 @@
-# Arquitetura integrada — semana 7
+# Arquitetura integrada — revisão de 25/11/2026
 
 Arquitetura executável da aplicação. O DER descreve também funcionalidades planejadas; esta página identifica os componentes conectados, as fronteiras de autorização e a persistência efetiva.
 
@@ -19,6 +19,12 @@ flowchart TD
     VIS[Visitante: acervo React] --> C4
     C4 --> BYTES[Bytes privados: autorização em GET, HEAD e Range]
 ```
+
+## Interface e implantação
+
+`App.tsx` seleciona a página inicial pública, o acervo e a área autenticada. As telas ficam em `pages/`; `layout/AppShell.tsx` reúne a navegação. A interface usa componentes coss ui/Base UI, Lucide e tokens Tailwind de `index.css`. O cadastro USP pendente antecede a navegação privada; convites são administrados pelo ADMIN. O player privado usa sessão e Range e só carrega ao apertar Play.
+
+Vite encaminha `/api` à API durante o desenvolvimento. Em produção, servir `packages/web/dist` com fallback de SPA e encaminhar `/api` à API na mesma origem; `NODE_ENV=production` exige `APP_ORIGIN` HTTPS. O build não publica nem inicia um servidor web de produção.
 
 ## Composição e fronteiras
 
@@ -108,4 +114,4 @@ Cada abertura de bytes verifica a seleção autorizada e a publicação ativa, n
 
 ## Verificação e revisão
 
-[publicationIntegration.test.ts](../packages/api/src/routes/publicationIntegration.test.ts) exercita C1/C2/C3/C4, reinício dos repositórios, isolamento, nova rodada e concorrência com arquivos reais. [publication-flow.spec.ts](../e2e/publication-flow.spec.ts) usa o entrypoint normal em desktop e celular emulado, sem provedores de submissão/avaliação simulados. Testes isolados com doubles continuam úteis, mas suas evidências ficam identificadas separadamente. Os comandos de verificação estão na [validação da entrega](../README.md#validação-da-entrega); a aprovação dos fluxos depende da revisão da equipe.
+[publicationIntegration.test.ts](../packages/api/src/routes/publicationIntegration.test.ts) exercita C1/C2/C3/C4, reinício dos repositórios, isolamento, nova rodada e concorrência com arquivos reais. [publication-flow.spec.ts](../e2e/publication-flow.spec.ts) usa o entrypoint normal em desktop e celular emulado, sem provedores de submissão/avaliação simulados. Testes isolados com doubles continuam úteis, mas suas evidências ficam identificadas separadamente. Os comandos de verificação estão na [validação da entrega](../README.md#6-testes-ci-e-evidências); a aprovação dos fluxos depende da revisão da equipe.

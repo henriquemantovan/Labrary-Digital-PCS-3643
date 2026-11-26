@@ -2,7 +2,24 @@ import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { ApiError, uploadFile } from "./api";
 import type { Material, MaterialRule, MaterialRules } from "./api";
-import { Icon } from "./Icons";
+import { BookOpen, Check, File, FileText, Lock, Video } from "lucide-react";
+import { Notice } from "./components/Feedback";
+import { Badge } from "./components/ui/badge";
+import { Button, buttonVariants } from "./components/ui/button";
+import { Field, FieldLabel } from "./components/ui/field";
+import { Input } from "./components/ui/input";
+import { Label } from "./components/ui/label";
+import {
+  fileInput,
+  hintText,
+  lockNote,
+  mutedText,
+  Panel,
+  panelTitle,
+  progressBar,
+  subTitle,
+} from "./components/Panel";
+import { cn } from "./lib/utils";
 
 const numberFormat = new Intl.NumberFormat("pt-BR", {
   maximumFractionDigits: 1,
@@ -105,30 +122,35 @@ function UploadFeedback({ upload, label }: { upload: Upload; label: string }) {
   return (
     <>
       {upload.progress !== null && (
-        <div className="upload-progress">
+        <div className="mt-3 flex items-center gap-3 text-xs text-muted-foreground">
           <progress
+            className={progressBar}
             max={100}
             value={upload.progress}
             aria-label={`Enviando ${label}`}
           />
-          <span aria-live="polite">{upload.progress}%</span>
-          <button className="text-button" type="button" onClick={upload.cancel}>
+          <span aria-live="polite" className="tabular-nums">
+            {upload.progress}%
+          </span>
+          <Button variant="ghost" size="sm" onClick={upload.cancel}>
             Cancelar
-          </button>
+          </Button>
         </div>
       )}
       {upload.error && (
-        <div className="notice upload-error" role="alert">
-          <span>{upload.error}</span>
-          {upload.retry && (
-            <button
-              className="text-button"
-              type="button"
-              onClick={() => void upload.retry?.()}
-            >
-              Tentar novamente
-            </button>
-          )}
+        <div className="mt-3">
+          <Notice>
+            <span>{upload.error}</span>
+            {upload.retry && (
+              <Button
+                variant="outline"
+                size="xs"
+                onClick={() => void upload.retry?.()}
+              >
+                Tentar novamente
+              </Button>
+            )}
+          </Notice>
         </div>
       )}
     </>
@@ -153,18 +175,18 @@ function FileButton({
   const input = useRef<HTMLInputElement>(null);
   return (
     <>
-      <button
-        type="button"
-        className={`${primary ? "primary" : "secondary"} compact`}
+      <Button
+        variant={primary ? "default" : "outline"}
+        size="sm"
         disabled={disabled}
         onClick={() => input.current?.click()}
       >
         {text}
-      </button>
+      </Button>
       <input
         ref={input}
         type="file"
-        className="visually-hidden"
+        className="sr-only"
         tabIndex={-1}
         aria-label={label}
         accept={rule.formats
@@ -189,15 +211,22 @@ function MaterialVideo({
 }) {
   const [failed, setFailed] = useState(false);
   return (
-    <div className="material-video">
+    <div className="mt-3 min-w-0">
       {failed ? (
-        <div className="notice" role="alert">
+        <div
+          className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm"
+          role="alert"
+        >
           <p>
             Não foi possível reproduzir este vídeo. Tente novamente ou use
             Baixar.
           </p>
           <button
-            className="secondary compact"
+            className={buttonVariants({
+              variant: "outline",
+              size: "sm",
+              className: "mt-3",
+            })}
             type="button"
             onClick={() => setFailed(false)}
           >
@@ -206,6 +235,7 @@ function MaterialVideo({
         </div>
       ) : (
         <video
+          className="block aspect-video max-h-[65vh] w-full max-w-[760px] rounded-xl border bg-black object-contain"
           controls
           playsInline
           preload="none"
@@ -218,6 +248,13 @@ function MaterialVideo({
       )}
     </div>
   );
+}
+
+function KindIcon({ kind }: { kind: string }) {
+  if (kind === "VIDEO") return <Video aria-hidden="true" />;
+  if (kind === "RELATORIO") return <FileText aria-hidden="true" />;
+  if (kind === "MANUAL") return <BookOpen aria-hidden="true" />;
+  return <File aria-hidden="true" />;
 }
 
 function MaterialCard({
@@ -242,81 +279,107 @@ function MaterialCard({
   const author = (version: Material["currentVersion"]) =>
     version.uploadedBy.fullName ?? "Autor removido";
   return (
-    <li className={`material-card${current ? " is-sent" : ""}`}>
-      <span className="material-icon">
-        <Icon name={current ? "check" : "folder"} size={19} />
-      </span>
-      <div className="material-info">
-        <strong>{title}</strong>
-        <span>{formatsText(rule)}</span>
-        {rule.dueAt && (
-          <span>
-            Prazo de {title}: {formatDate(rule.dueAt)}
-          </span>
-        )}
-        {rule.lock === "DEADLINE_PASSED" && (
-          <span>Prazo deste material encerrado.</span>
-        )}
-        {current ? (
-          <span className="material-state">
-            Enviado · versão {current.versionNumber} · {author(current)} ·{" "}
-            {formatDate(current.uploadedAt)}
-          </span>
-        ) : (
-          <span className="material-state pending">
-            {rule.required ? "Pendente" : "Opcional"}
-          </span>
-        )}
-        {current && (
-          <span className="material-file">
-            {current.originalFilename} · {formatBytes(current.sizeBytes)}
-          </span>
-        )}
-      </div>
-      <div className="material-actions">
-        {current && (
-          <a className="secondary compact" href={current.downloadUrl} download>
-            Baixar
-          </a>
-        )}
-        {canUpload && (
-          <FileButton
-            rule={rule}
-            label={`Arquivo para ${title}`}
-            text={current ? "Substituir" : "Enviar arquivo"}
-            primary={!current}
-            disabled={upload.progress !== null}
-            onFile={(file) =>
-              void upload.send(file, { materialId: material?.id })
-            }
-          />
-        )}
-        {material && (
-          <button
-            className="text-button"
-            type="button"
-            aria-expanded={history}
-            onClick={() => setHistory(!history)}
-          >
-            Histórico ({material.versions.length})
-          </button>
-        )}
+    // "material-card" é gancho dos testes E2E, sem estilo próprio.
+    <li className="material-card px-4 py-4">
+      <div className="flex flex-wrap items-start gap-3">
+        <span
+          className={cn(
+            "relative grid size-9 shrink-0 place-items-center rounded-lg border [&>svg]:size-4",
+            current
+              ? "border-success/24 bg-success/8 text-success-foreground"
+              : "bg-background text-muted-foreground",
+          )}
+        >
+          <KindIcon kind={rule.kind} />
+          {current && (
+            <Check className="absolute -right-1 -bottom-1 size-3.5! rounded-full bg-success p-0.5 text-white" />
+          )}
+        </span>
+        <div className="grid min-w-0 flex-1 gap-0.5 text-xs text-muted-foreground [overflow-wrap:anywhere]">
+          <strong className="text-sm font-medium text-foreground">
+            {title}
+          </strong>
+          <span>{formatsText(rule)}</span>
+          {rule.dueAt && (
+            <span>
+              Prazo de {title}: {formatDate(rule.dueAt)}
+            </span>
+          )}
+          {rule.lock === "DEADLINE_PASSED" && (
+            <span>Prazo deste material encerrado.</span>
+          )}
+          {current && (
+            <span>
+              Enviado · versão {current.versionNumber} · {author(current)} ·{" "}
+              {formatDate(current.uploadedAt)}
+            </span>
+          )}
+          {current && (
+            <span>
+              {current.originalFilename} · {formatBytes(current.sizeBytes)}
+            </span>
+          )}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {!current && (
+            <Badge variant={rule.required ? "warning" : "secondary"}>
+              {rule.required ? "Pendente" : "Opcional"}
+            </Badge>
+          )}
+          {current && (
+            <a
+              className={buttonVariants({ variant: "outline", size: "sm" })}
+              href={current.downloadUrl}
+              download
+            >
+              Baixar
+            </a>
+          )}
+          {canUpload && (
+            <FileButton
+              rule={rule}
+              label={`Arquivo para ${title}`}
+              text={current ? "Substituir" : "Enviar arquivo"}
+              primary={!current}
+              disabled={upload.progress !== null}
+              onFile={(file) =>
+                void upload.send(file, { materialId: material?.id })
+              }
+            />
+          )}
+          {material && (
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-expanded={history}
+              onClick={() => setHistory(!history)}
+            >
+              Histórico ({material.versions.length})
+            </Button>
+          )}
+        </div>
       </div>
       {current?.playbackUrl && current.mimeType.startsWith("video/") && (
         <MaterialVideo key={current.id} version={current} title={title} />
       )}
       <UploadFeedback upload={upload} label={title} />
       {material && history && (
-        <ol className="version-history" aria-label={`Versões de ${title}`}>
+        <ol
+          className="mt-3 grid gap-1 rounded-xl border bg-muted/40 p-2 text-xs"
+          aria-label={`Versões de ${title}`}
+        >
           {material.versions.map((version) => (
-            <li key={version.id}>
-              <span className="tiny-badge">v{version.versionNumber}</span>
-              <span>
+            <li
+              key={version.id}
+              className="flex flex-wrap items-center gap-2 rounded-md px-2 py-1.5"
+            >
+              <Badge variant="outline">v{version.versionNumber}</Badge>
+              <span className="min-w-0 flex-1 text-muted-foreground [overflow-wrap:anywhere]">
                 {version.originalFilename} · {formatBytes(version.sizeBytes)} ·{" "}
                 {author(version)} · {formatDate(version.uploadedAt)}
               </span>
               <a
-                className="text-button"
+                className="font-medium text-foreground underline-offset-2 hover:underline"
                 href={version.downloadUrl}
                 download
                 aria-label={`Baixar versão ${version.versionNumber} de ${title}`}
@@ -359,32 +422,37 @@ function SupplementForm({
       });
   }
   return (
-    <form className="supplement-form" onSubmit={submit}>
-      <h3>Adicionar material complementar</h3>
-      <p className="muted">{formatsText(rule)}</p>
-      <fieldset disabled={upload.progress !== null}>
-        <label>
-          Título
-          <input
+    <form className="mt-5 border-t pt-5" onSubmit={submit}>
+      <h3 className={subTitle}>Adicionar material complementar</h3>
+      <p className={cn(hintText, "mt-0.5 mb-4")}>{formatsText(rule)}</p>
+      <fieldset
+        className="m-0 grid items-end gap-3 border-0 p-0 md:grid-cols-[1fr_1fr_auto]"
+        disabled={upload.progress !== null}
+      >
+        <Field>
+          <FieldLabel>Título</FieldLabel>
+          <Input
             value={title}
             onChange={(event) => setTitle(event.target.value)}
             maxLength={200}
             placeholder={rule.defaultTitle}
           />
-        </label>
-        <label>
-          Arquivo
+        </Field>
+        <div className="flex flex-col items-start gap-2">
+          <Label htmlFor={`supplement-file-${projectId}`}>Arquivo</Label>
           <input
+            id={`supplement-file-${projectId}`}
+            className={cn(fileInput, "h-9 content-center")}
             ref={file}
             type="file"
             accept={rule.formats
               .flatMap((format) => [...format.extensions, format.mimeType])
               .join(",")}
           />
-        </label>
-        <button className="secondary compact" type="submit">
+        </div>
+        <Button variant="outline" type="submit">
           Enviar complementar
-        </button>
+        </Button>
       </fieldset>
       <UploadFeedback upload={upload} label="material complementar" />
     </form>
@@ -418,38 +486,55 @@ export function MaterialsPanel({
   });
   const supplement = rules.rules.find((rule) => !rule.required);
   return (
-    <section className="detail-section">
-      <div className="section-heading">
-        <h2>Materiais do projeto</h2>
-        <span>
+    <Panel
+      heading={<h2 className={panelTitle}>Materiais do projeto</h2>}
+      aside={
+        <>
           {required.length - missing.length} de {required.length} obrigatórios
           enviados
           {missing.length > 0 &&
             ` · falta${missing.length > 1 ? "m" : ""}: ${missing
               .map((rule) => rule.defaultTitle)
               .join(", ")}`}
-        </span>
-      </div>
+        </>
+      }
+    >
       {rules.lock === "DEADLINE_PASSED" && (
-        <p className="material-lock">
-          <Icon name="lock" size={16} />O prazo de entrega terminou
-          {rules.dueAt && ` em ${formatDate(rules.dueAt)}`}. Fale com o
-          professor para reabrir a entrega.
+        <p className={cn(lockNote, "mb-4")}>
+          <Lock />
+          <span>
+            O prazo de entrega terminou
+            {rules.dueAt && ` em ${formatDate(rules.dueAt)}`}. Fale com o
+            professor para reabrir a entrega.
+          </span>
         </p>
       )}
       {rules.lock === "PROJECT_LOCKED" && (
-        <p className="material-lock">
-          <Icon name="lock" size={16} />
+        <p className={cn(lockNote, "mb-4")}>
+          <Lock />
           Os materiais ficam bloqueados enquanto o projeto não está em
           preparação ou em ajustes.
         </p>
       )}
       {!rules.lock && rules.dueAt && (
-        <p className="material-due">
+        <p className={cn(mutedText, "mb-4")}>
           Prazo de entrega: {formatDate(rules.dueAt)}
         </p>
       )}
-      <ul className="material-list">
+      {required.length > 0 && (
+        <div
+          aria-hidden="true"
+          className="-mt-1 mb-4 h-1.5 overflow-hidden rounded-full bg-muted"
+        >
+          <div
+            className="h-full rounded-full bg-success transition-[width]"
+            style={{
+              width: `${((required.length - missing.length) / required.length) * 100}%`,
+            }}
+          />
+        </div>
+      )}
+      <ul className="m-0 list-none divide-y rounded-xl border p-0">
         {cards.map(({ rule, material }) => (
           <MaterialCard
             key={material ? `m${material.id}` : `k${rule.kind}`}
@@ -470,6 +555,6 @@ export function MaterialsPanel({
           expired={expired}
         />
       )}
-    </section>
+    </Panel>
   );
 }

@@ -1,6 +1,6 @@
 # Limitações e pendências da entrega
 
-Limites operacionais e pendências acadêmicas da aplicação. Os comandos estão na [validação da entrega](../README.md#validação-da-entrega); aprovação automatizada não equivale a aceite da equipe ou do professor.
+Limites operacionais e pendências acadêmicas da aplicação. Os comandos estão na [validação da entrega](../README.md#6-testes-ci-e-evidências); aprovação automatizada não equivale a aceite da equipe ou do professor.
 
 | Limite | Consequência e acompanhamento |
 | --- | --- |
@@ -17,7 +17,7 @@ Limites operacionais e pendências acadêmicas da aplicação. Os comandos estã
 | Login Google real e instalação limpa Ubuntu 26.04 | Exigem evidências próprias do ambiente e responsáveis (#46); a execução local não as substitui |
 | Modelo SQL mais amplo que os adapters atuais | Projetos, entregas, avaliações e publicação não foram migrados integralmente ao PostgreSQL; novas migrations não são justificadas apenas pelo DER |
 | Histórico/favoritos/estatísticas/recomendações | HU13–HU14 foram excluídas do escopo desta entrega |
-| Decisão sobre assinaturas | Fluxo acadêmico mantido; restrição etária, funcionalidades financeiras e HU13–HU14 dispensadas. Assinaturas e seus perfis ainda precisam de definição; [escopo da entrega](../README.md#alinhamento-com-o-enunciado-geral) |
+| Decisão sobre assinaturas | Fluxo acadêmico mantido; restrição etária, funcionalidades financeiras e HU13–HU14 dispensadas. Assinaturas e seus perfis ainda precisam de definição; [escopo da entrega](../README.md#1-tema-e-escopo) |
 | Revisão cruzada e vídeos finais | O roteiro está na apresentação. Aprovação de outro integrante, cinco vídeos revisados e retrospectiva dependem de registros humanos; não presumidos |
 
 As rotas legadas `/api/public/projects` continuam dependendo de um provedor específico e não substituem o C4. O acervo integrado usa `/api/catalog`. `/demo/acervo` é demonstração de componentes no desenvolvimento; não é a evidência de publicação real.
