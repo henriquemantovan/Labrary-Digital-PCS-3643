@@ -5,7 +5,7 @@ description: Implementar ou alterar rotas Express, contratos REST, regras de neg
 
 # Desenvolver a API do Labrary
 
-Leia a HU no `README.md`, o contrato atual em `docs/api-inicial.md` e as regras de acesso em `docs/hu01.md`. Os endpoints previstos no README incluem histórias futuras; confira o que está registrado em `packages/api/src/routes/` antes de assumir que existe.
+Leia a HU no `README.md`, o contrato atual em `docs/api-inicial.md` e as regras de acesso em `docs/manual-de-uso.md`. Os endpoints previstos no README incluem histórias futuras; confira o que está registrado em `packages/api/src/routes/` antes de assumir que existe.
 
 ## Pontos de extensão
 

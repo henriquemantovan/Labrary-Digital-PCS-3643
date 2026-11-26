@@ -1,6 +1,6 @@
 # Diagramas de sequência
 
-Comportamento revisado em 26/11/2026, incluindo as oito contas de desenvolvimento. Validações de entrada e erros menores foram agrupados. As permissões são sempre decididas pela API.
+Validações de entrada e erros menores foram agrupados. As permissões são sempre decididas pela API.
 
 ## Login e sessão local
 
@@ -115,7 +115,7 @@ sequenceDiagram
     end
 ```
 
-## Publicação integrada a C1 e C3
+## Publicação
 
 ```mermaid
 sequenceDiagram
@@ -138,4 +138,4 @@ sequenceDiagram
     A-->>U: Novos GET, HEAD e Range públicos bloqueados
 ```
 
-`server.ts` injeta os repositórios; `createApp` compõe C1/C3 reais. Liberação de notas ao grupo é independente da autorização pública. O E2E `publication-flow.spec.ts` usa o servidor normal; as fixtures dos testes isolados continuam identificadas separadamente. Aceite humano permanece pendente quando não registrado.
+`server.ts` injeta os repositórios; `createApp` compõe C1/C3 reais. Liberação de notas ao grupo é independente da autorização pública. O E2E `publication-flow.spec.ts` usa o servidor normal; as fixtures dos testes isolados continuam identificadas separadamente.

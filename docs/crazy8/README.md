@@ -1,11 +1,8 @@
-# Crazy 8 e validação de protótipos (TEC03)
-
-Registro da tarefa [TEC03 — Validar Crazy 8 e protótipos com o grupo](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/issues/17).
+# Crazy 8 e protótipos
 
 | Campo | Valor |
 | --- | --- |
 | Responsável | @enplo |
-| Sprint | 2 |
 | Data da sessão |  15/10/2026 |
 | Participantes | @henriquemantovan, @enplo, @kiyochii, @yuhangf2333, @kauebmr |
 
@@ -49,14 +46,14 @@ Pensando em criar uma interface fácil de usar e atrativa visualmente, dentre as
 
 - **Origem:** folha (7).
 - **Conteúdo:** linha do tempo vertical com as etapas do projeto, do início à entrega.
-- **Justificativa:** A linha do tempo torna visível o andamento de cada projeto, mostrando em que etapa ele está (em preparação, em avaliação, ajustes solicitados, concluído, publicado) e quais prazos se aproximam. Para os alunos, ela reduz dúvidas sobre o que falta entregar. Para professores e avaliadores, oferece uma visão rápida da situação de cada grupo. A ideia apoia diretamente a HU05 (Concluir a entrega do projeto) e a HU06 (Acompanhar projetos em andamento), que dependem de estados e prazos bem definidos, e complementa o checklist de materiais já presente no protótipo de envio.
+- **Justificativa:** A linha do tempo torna visível o andamento de cada projeto, mostrando em que etapa ele está (em preparação, em avaliação, ajustes solicitados, concluído, publicado) e quais prazos se aproximam. Para os alunos, ela reduz dúvidas sobre o que falta entregar. Para professores e avaliadores, oferece uma visão rápida da situação de cada grupo. A ideia apoia a entrega e o acompanhamento do projeto, complementando o checklist de materiais.
 
 ## 3. Decisões
 
 | Tema | Decisão | Impacto |
 | --- | --- | --- |
 | Avaliações na página pública | **Não ficam públicas.** Notas e feedback ficam restritos à área privada. | A caixa de avaliações com estrelas do esboço 2.2 sai da página pública. O protótipo `03-detalhe-publico` já segue essa regra. |
-| Quem avalia | Avaliadores atribuídos aos projetos, usando rubrica com pesos. O fluxo acadêmico atual foi mantido na definição de escopo de 22/11/2026. | Orienta a HU08; não há avaliação pública por estrelas nesta entrega. |
+| Quem avalia | Avaliadores atribuídos aos projetos, usando rubrica com pesos. O fluxo acadêmico atual foi mantido na definição de escopo de 22/11/2026. | Orienta a avaliação; não há avaliação pública por estrelas nesta entrega. |
 
 ## 4. Comparação com os protótipos
 
@@ -65,43 +62,15 @@ Protótipos em [`../prototipos`](../prototipos).
 | Protótipo | Ideia correspondente | Situação |
 | --- | --- | --- |
 | [`01-login`](../prototipos/01-login.svg) | Login (4) | Parcial: faltam cadastro (4) e escolha de perfil (6) |
-| [`02-acervo`](../prototipos/02-acervo.svg) | Homepage (2.1) e busca (7) | Equivalente após ajuste: banner com vídeo, vitrine "Conheça os grupos" e filtros por ano, turma e categoria (HU12) |
+| [`02-acervo`](../prototipos/02-acervo.svg) | Homepage (2.1) e busca (7) | Equivalente após ajuste: banner com vídeo, vitrine "Conheça os grupos" e filtros por ano, turma e categoria |
 | [`03-detalhe-publico`](../prototipos/03-detalhe-publico.svg) | Apresentação do projeto (2.2) | Equivalente após ajuste: lista lateral de projetos finais e integrantes; sem avaliações públicas |
 | [`04-materiais`](../prototipos/04-materiais.svg) | Submeter trabalho (4), painel do aluno (5), upload (6) | Equivalente |
 | [`05-feedback`](../prototipos/05-feedback.svg) | Chat de dúvida (6) | Equivalente |
 | [`06-acompanhamento`](../prototipos/06-acompanhamento.svg) | Painel do professor (4), visão do professor (6) | Parcial |
 | [`07-avaliacao`](../prototipos/07-avaliacao.svg) | Avaliar outros grupos (4), botão Avaliar (6) | Segue a avaliação por rubrica do fluxo atual |
 | [`08-consolidacao`](../prototipos/08-consolidacao.svg) | Tabela de notas (6) | Equivalente |
-| [`09-linha-do-tempo`](../prototipos/09-linha-do-tempo.svg) | Linha do tempo (2.3) | Criado a partir da ideia escolhida: etapas da entrega (HU05/HU06), próximo passo e prazos |
+| [`09-linha-do-tempo`](../prototipos/09-linha-do-tempo.svg) | Linha do tempo (2.3) | Criado a partir da ideia escolhida: etapas da entrega, próximo passo e prazos |
 
 Cada tela tem uma versão mobile (390×844) com o mesmo nome em [`../prototipos/mobile`](../prototipos/mobile). No mobile, o menu do cabeçalho vira um botão ☰, a lista lateral de projetos do detalhe público vira um seletor e os cards ficam em uma coluna.
 
-Ideias dos esboços sem protótipo e fora das escolhidas, para avaliar no backlog: destaques e premiados, dashboard e métricas (relacionado à HU14), fotos da feira, painel de administrador por turma.
-
-## 5. Validação dos protótipos
-
-Teste de navegação com o grupo, em desktop e mobile, observando clareza dos estados, recuperação de erros e acessibilidade.
-
-| Tela | Desktop | Mobile | Observações |
-| --- | --- | --- | --- |
-| Login | ☐ | ☐ | |
-| Acervo | ☐ | ☐ | |
-| Detalhe público | ☐ | ☐ | |
-| Envio de materiais | ☐ | ☐ | |
-| Linha do tempo | ☐ | ☐ | |
-| Feedback | ☐ | ☐ | |
-| Acompanhamento | ☐ | ☐ | |
-| Avaliação | ☐ | ☐ | |
-| Consolidação | ☐ | ☐ | |
-
-## 6. Pendências
-
-- [x] Preencher data, participantes e autor de cada folha.
-- [ ] Completar as ideias faltantes nas folhas (4), (5), (6) e (8), ou registrar a justificativa.
-- [x] Escrever a justificativa de cada ideia escolhida.
-- [x] Definir avaliação por rubrica com avaliadores atribuídos, conforme o fluxo acadêmico mantido.
-- [x] Ajustar `02-acervo` e `03-detalhe-publico` conforme as ideias 2.1 e 2.2.
-- [x] Criar protótipo da linha do tempo (2.3).
-- [x] Criar versões mobile dos protótipos.
-- [ ] Executar e registrar a validação da seção 5.
-- [ ] Revisão por outro integrante.
+Ideias dos esboços sem protótipo e fora das escolhidas, para avaliar no backlog: destaques e premiados, dashboard e métricas, fotos da feira, painel de administrador por turma.

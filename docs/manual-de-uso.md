@@ -1,121 +1,80 @@
-# Manual de uso e roteiro de demonstração
+# Manual de uso
 
-Roteiro revisado em 26/11/2026 após integração da main e das contas de desenvolvimento. Use a [instalação](instalacao-e-aceitacao.md) antes deste roteiro. Publicação, cadastro USP, convidados, R2 e player privado estão conectados à aplicação. Para as contas `@labrary.test` deste ambiente, consulte diretamente a [demonstração completa com PostgreSQL e R2](#demonstração-completa-com-postgresql-e-r2).
+Siga a [instalação no README](../README.md#instalação-no-ubuntu-2604) e abra **http://localhost:5173/login**. As contas e senhas de demonstração estão no [README](../README.md#contas-de-teste).
 
-## Entrar e navegar
+## Acesso e permissões
 
-1. Execute `pnpm demo` e abra `http://localhost:5173`. A página inicial apresenta a plataforma; o acesso fica em `/login`.
-2. Entre com uma das três contas locais do [README](../README.md#5-instalação-e-execução). A senha é `Labrary@2026`.
-3. Use **Projetos**, **Meu perfil** e, quando permitido, **Minhas turmas** e **Consolidação de notas**. O quadro organiza os projetos por estado, com busca e filtros.
-4. Para trocar de perfil da demonstração, use **Sair da conta** e faça outro login. Atualizar a página conserva a sessão enquanto ela for válida; sair revoga a sessão.
-
-No modo Google, use seu e-mail `@usp.br`; contas externas exigem convite prévio do ADMIN. A conta nova recebe ALUNO, sem vínculo automático. Antes da área acadêmica, o aluno USP confirma nome completo, NUSP e ano de ingresso; o professor/ADMIN cadastra os vínculos separadamente. Convidados ficam dispensados dos campos acadêmicos. Os dados aparecem em **Meu perfil**. Login bem-sucedido sem projetos pode significar ausência de vínculo, não falha de autenticação.
-
-Para usar contas fictícias no ambiente Google/PostgreSQL/R2, siga o [provisionamento de desenvolvimento](login-google.md#contas-fictícias-com-senha-no-desenvolvimento-googler2). Elas usam os endereços `@labrary.test` no formulário **E-mail da conta de teste**, com seus próprios papéis e vínculos. Os arquivos seguem o provedor do `.env`; os usuários reais continuam no botão **Entrar com Google**.
-
-## Preparar o projeto como professor
-
-1. Entre como `professor@labrary.local`.
-2. Em **Minhas turmas**, confira os grupos e integrantes. Cadastre/edite vínculos apenas entre contas já existentes.
-3. Em **Projetos**, abra **Monitor de consumo energético**, do Grupo 02 (projeto 2). O aluno local pertence a esse grupo; o avaliador inicialmente está atribuído ao projeto 1, portanto precisa ser atribuído também ao projeto 2.
-4. No painel **Avaliadores**, selecione Rafael Costa e salve a atribuição.
-5. Na configuração de requisitos/rubrica, defina vídeo, relatório e manual, formatos/tamanhos permitidos e prazo futuro. Salve critérios com pesos somando 100%; para o exemplo, Funcionamento 60% e Documentação 40%, notas de 0 a 10.
-6. Para demonstrar cadastro de projeto novo, use um grupo sem projeto pelo botão **Novo projeto**. Não crie outro projeto para o Grupo 02, que já possui o projeto do roteiro.
-
-## Enviar e submeter como aluno
-
-1. Saia e entre como `aluno@labrary.local`; abra o projeto do Grupo 02.
-2. Envie vídeo WebM/MP4 permitido pela rubrica, relatório PDF e manual PDF. O vídeo de teste `e2e/fixtures/demonstracao.webm` pode ser usado na demonstração; prepare PDFs válidos para os outros dois materiais.
-3. Confira o progresso e o histórico; substituir um material cria nova versão sem apagar a anterior. O player privado mostra o vídeo atual e começa a carregar ao apertar Play. É possível pausar/avançar, baixar e tentar reproduzir novamente em caso de erro. Não é necessário publicar o projeto para assistir.
-4. Use o feedback para registrar uma mensagem e, quando necessário, vinculá-la à versão do material.
-5. No painel **Entrega para avaliação**, confira os três obrigatórios e confirme a submissão. O estado passa para **Em avaliação** e os uploads ficam bloqueados. O snapshot conserva a rubrica e as versões exatas.
-
-Se o prazo vencer antes da primeira entrega, a submissão fica bloqueada. O professor pode usar **Reabrir entrega**, com justificativa, para permitir os ajustes. Não é necessário alterar o prazo de toda a turma.
-
-## Avaliar e liberar o resultado
-
-1. Entre como `avaliador@labrary.local` e abra o projeto atribuído. Use **Avaliações por rubrica** para consultar a rodada e baixar seus materiais.
-2. Salve uma nota parcial como rascunho e recarregue para conferir a persistência. Preencha todos os critérios e finalize; no exemplo, Funcionamento 8 e Documentação 9.
-3. Como professor, abra **Consolidação de notas**. A média ponderada esperada é **8,40**. Exporte CSV e confirme **Liberar resultado** do Grupo 02.
-4. Como aluno, consulte **Resultado do grupo**. Antes da liberação, notas e comentários devem ficar bloqueados; após a ação docente, o resultado autorizado fica visível apenas ao próprio grupo.
-5. Como professor, reabra a avaliação com justificativa. Confira o histórico e o bloqueio do resultado até nova finalização/liberação.
-6. Para nova rodada de entrega, devolva a submissão para ajustes; como aluno, substitua o manual e submeta novamente. A rodada anterior continua consultável. O [roteiro HU08](hu08.md) detalha esse percurso.
-
-## Acervo e publicação
-
-`/acervo` é a interface pública, com filtros e detalhe de materiais autorizados. O servidor normal fornece os repositórios persistentes e `createApp` compõe os produtores reais de submissão C1 e consolidação C3.
-
-1. Após concluir as avaliações da rodada vigente, o professor usa **Finalização e publicação** no projeto e confirma a finalização. A versão finalizada continua privada.
-2. Selecione os materiais da rodada finalizada, confirme a autorização do grupo e informe a referência da ata/declaração; só então publique. Liberar notas ao grupo é uma ação independente e não publica o conteúdo.
-3. Como visitante, abra `/acervo`, filtre o projeto e confira vídeo/documentos autorizados. Notas, feedback e dados acadêmicos não são divulgados.
-4. Como professor, retire a publicação. Novas consultas, downloads, HEAD e Range públicos são bloqueados; os arquivos e o histórico privados são preservados.
-
-O E2E `e2e/publication-flow.spec.ts` usa o entrypoint normal com produtores reais. Os testes isolados `e2e/publication.spec.ts` e as [evidências de Dan](dan-semana7.md) identificam separadamente as fixtures; essas gravações anteriores não comprovam, sozinhas, o aceite da integração atual.
-
-## Administração de contas
-
-A demonstração padrão não fornece ADMIN. No modo Google, um administrador real precisa ser provisionado conforme o [guia de acesso](login-google.md#administradores). A área `/administracao` permite buscar contas e alterar papéis, preservando o último ADMIN ativo. **Visualizar como** muda o perfil efetivo da própria sessão e utiliza seus vínculos; não impersona outro usuário.
-
-ADMIN também usa **Convidados externos** para autorizar o e-mail Google antes do primeiro login e revogar a autorização. Não há envio automático de convite por e-mail. O convite não concede outro papel ou vínculo; revogar bloqueia as sessões e os próximos logins, conservando histórico.
-
-## Erros e recuperação
-
-| Situação | Próximo passo |
+| Perfil | Permissões |
 | --- | --- |
-| Credenciais inválidas | Conferir conta; a API não revela se o e-mail existe |
-| Sessão expirada | Entrar novamente; o acesso privado exige sessão válida |
-| Projeto ausente/404 | Conferir vínculo com grupo, turma ou atribuição de avaliador |
-| Upload recusado | Conferir formato real, extensão, tamanho, prazo e estado da entrega |
-| Rubrica ausente/checklist incompleto | Professor configura a rubrica; aluno envia os obrigatórios |
-| Conflito de revisão da avaliação | Recarregar os dados antes de reenviar |
-| Finalização/publicação bloqueada | Conferir a rodada, rubrica, materiais e avaliações concluídas; falha de integração recebe erro recuperável |
+| Aluno | Acessar projetos dos próprios grupos; enviar e substituir materiais nos estados permitidos; conversar com a equipe; submeter entregas e consultar resultados liberados |
+| Avaliador | Consultar materiais e feedback dos projetos atribuídos; salvar rascunhos e finalizar avaliações pela rubrica |
+| Professor | Gerenciar grupos e projetos de suas turmas; atribuir avaliadores; configurar requisitos, prazos e rubricas; devolver entregas, reabrir avaliações, consolidar/exportar notas e publicar materiais autorizados |
+| Administrador | Gerenciar contas, papéis e convidados; administrar turmas e projetos. **Visualizar como** usa seus próprios vínculos e as permissões do perfil selecionado |
+| Visitante | Consultar o acervo e acessar somente materiais de publicações ativas |
 
-## Persistência e encerramento
+O login Google exige e-mail `@usp.br` ou convite prévio do administrador. Alunos USP completam nome, NUSP e ano de ingresso antes da área acadêmica. Convidados não precisam dos campos acadêmicos. Novos usuários começam como aluno, sem turma ou grupo; o professor ou administrador cria os vínculos.
 
-Pare com Ctrl+C. Para retomar a mesma demonstração, carregue o `environment.sh` exibido pelo script e execute `pnpm dev`. Rodar `pnpm demo` novamente cria outro diretório. Os dados temporários não constituem backup; copie o conjunto de JSON/uploads e PostgreSQL quando utilizado conforme a [instrução de restauração](instalacao-e-aceitacao.md#backup-e-restauração-de-teste).
+Use **Sair da conta** antes de trocar de usuário. Um projeto não encontrado pode indicar falta de vínculo. As permissões são verificadas pela API, inclusive em URLs acessadas diretamente.
 
-## Arquivos no disco e no R2
+## Organizar a turma
 
-`pnpm dev` usa o `.env`: com `STORAGE_PROVIDER=r2`, os materiais ficam no bucket privado, enquanto o domínio acadêmico continua em JSON e as identidades Google no PostgreSQL. O servidor usa temporários limitados durante o envio e os remove após concluir ou tratar uma falha. Com `disk`, os bytes ficam em `UPLOAD_DIR`. `pnpm demo` força disco em uma pasta temporária `/tmp` e cria dados novos a cada execução.
+Como professor, abra **Minhas turmas** e cadastre os grupos com integrantes já registrados. Crie os projetos, atribua avaliadores e defina os requisitos de vídeo, relatório e manual. Os critérios da rubrica usam notas de 0 a 10 e pesos cuja soma é 100%.
 
-A migração de provedor não copia os arquivos antigos automaticamente. Não apague originais nem contadores de uso para liberar a franquia. O R2 possui cobrança por excedentes; as cotas conservadoras da aplicação não são garantia contratual de custo zero. [Configuração e limites do R2](arquitetura.md#cloudflare-r2-e-controle-da-franquia-gratuita).
+## Materiais e entrega
 
-## Demonstração completa com PostgreSQL e R2
+1. Como aluno, abra o projeto e envie os materiais exigidos, respeitando formatos, tamanhos e prazo.
+2. Confira o histórico de versões e reproduza o vídeo na área privada. Substituir um arquivo conserva a versão anterior.
+3. Registre dúvidas pelo feedback; a mensagem pode apontar para uma versão específica.
+4. Quando o checklist estiver completo, confirme **Submeter para avaliação**. A rodada conserva as versões dos materiais e da rubrica; novos uploads ficam bloqueados.
+5. Se o professor devolver para ajustes, altere os materiais necessários e envie uma nova rodada. As anteriores continuam consultáveis.
 
-No desenvolvimento configurado com Google, `NODE_ENV=development` e `DEV_TEST_LOGIN=true`, use as oito contas `@labrary.test` do [guia de login](login-google.md#contas-fictícias-com-senha-no-desenvolvimento-googler2). A senha inicial é `LabraryTeste@2026`. Elas usam os dados persistentes e o provedor de arquivos do `.env`; não dependem do botão Google para entrar.
+O professor pode reabrir uma entrega com justificativa quando o prazo ou estado impedir o envio.
 
-```sh
-pnpm contas:teste
-pnpm dev
-# Em outro terminal, na raiz, com a aplicação já em execução:
-pnpm demonstracao:completa
-```
+## Avaliação e resultado
 
-O último comando cadastra os cenários ausentes pelas rotas normais, com uploads reais, submissões, avaliações, liberação e decisões de publicação. Ele cria avaliação com rascunho, ajustes, resultado liberado, finalizado privado, publicado, retirado e prazo vencido; acrescenta projetos de primeiro acesso e uma turma de prévia ADMIN. Não cria automaticamente o projeto principal anterior nem o grupo de isolamento de `aluno3`. Não troca o estado de projetos já existentes nem reinicia seu progresso. Cria a turma das contas fictícias quando necessário; não altera turmas ou projetos de usuários reais. Os endereços dos projetos ficam em `.data/demonstracao-completa.json` e aparecem no terminal. Com `STORAGE_PROVIDER=r2`, os arquivos usam o bucket privado. O vídeo padrão é pequeno; `DEMO_VIDEO_FILE` pode indicar outro WebM local permitido pelas cotas.
+Como avaliador, abra um projeto atribuído, consulte a rodada e preencha os critérios. É possível salvar rascunho; a finalização exige todos os critérios.
 
-| Funcionalidade | Conta e cenário |
+Como professor, abra **Consolidação de notas**, confira pendências e exporte CSV. A nota de cada avaliador é ponderada pelos pesos; o resultado final é a média das avaliações concluídas. **Liberar resultado** permite que o grupo veja sua nota e os comentários. Reabrir uma avaliação oculta o resultado até nova finalização e liberação.
+
+## Publicação no acervo
+
+1. Concluídas as avaliações, o professor finaliza o projeto. Ele continua privado.
+2. Selecione os materiais autorizados e registre a referência do consentimento para publicar.
+3. Abra `/acervo` sem login e confira o vídeo e os documentos selecionados. Notas, mensagens e dados acadêmicos continuam privados.
+4. Para remover o conteúdo público, use a retirada da publicação. Isso preserva arquivos e histórico privados e bloqueia novas consultas e downloads públicos.
+
+Liberar a nota não publica o projeto. A retirada não recolhe arquivos já baixados pelo visitante.
+
+## Contas e convidados
+
+Em **Administrar usuários**, o administrador pode buscar contas e alterar papéis. O sistema preserva o último administrador real ativo.
+
+Em **Convidados externos**, autorize o e-mail Google antes do primeiro acesso. Não há envio automático de convite por e-mail. A revogação bloqueia as sessões e novos logins do convidado; uma nova autorização pode restabelecer o acesso.
+
+## Cenários disponíveis
+
+| Projeto ou conta | Como usar |
 | --- | --- |
-| Enviar/substituir arquivos, imagem, player e feedback | `aluno` e `aluno2`: **Em ajustes — demonstração completa** permite nova versão e material complementar. O projeto principal em preparação, quando já provisionado no ambiente, também pode ser usado |
-| Submeter e bloquear uploads | `aluno`: submeta a próxima rodada de **Em ajustes — demonstração completa**, ou use o projeto principal já provisionado |
-| Rascunho e finalização de avaliação | `avaliador`: **Em avaliação — demonstração completa**, já atribuído e com rascunho parcial |
-| Alterar material e fazer nova rodada | `aluno`: **Em ajustes — demonstração completa**, com submissão anterior devolvida |
-| Notas e resultado liberado | `professor`: **Consolidação de notas**; `aluno`: **Resultado liberado — demonstração completa**, média 9,30 |
-| Reabrir avaliação e conferir bloqueio do resultado | `professor`: projeto com resultado liberado; a ação preserva o histórico |
-| Finalizado ainda privado | `professor`: **Finalizado privado — demonstração completa**, pronto para autorizar/publicar; ainda fora do acervo |
-| Acervo público, vídeo e documentos autorizados | Visitante, sem login: **Publicado no acervo — demonstração completa**; manual, notas e mensagens continuam privados |
-| Retirada e histórico | `professor`: **Publicação retirada — demonstração completa**; o histórico conserva finalização/publicação/retirada |
-| Prazo vencido e reabertura com justificativa | `professor`: **Prazo vencido — demonstração completa** |
-| Criar projeto, editar integrantes, avaliadores e rubrica | `professor`: turma de demonstração; grupo **Criar novo projeto — demonstração**, inicialmente sem projeto |
-| Isolamento entre grupos | `aluno3` começa sem vínculos no provisionamento novo e não vê os projetos de `aluno`/`aluno2`. Para demonstrar um projeto próprio, o professor cria outro grupo, vincula `aluno3` e cria seu projeto; neste ambiente esse grupo já foi preparado |
-| Administração de papéis e convidados | `admin`: **Administrar usuários**; alterações de papéis são reais, inclusive nas contas de teste |
-| Visualizar como sem listas vazias | `admin`: **Prévia dos três perfis — administrador**, com vínculos próprios de aluno, avaliador e professor em uma turma separada |
-| Primeiro cadastro, validação e Meu perfil | `cadastro`: nome completo, NUSP fictício (ex.: `99000022`) e ingresso; a área acadêmica exige concluir o cadastro |
-| Acesso de convidado e revogação | `convidado`: projeto próprio, sem NUSP; o ADMIN revoga/autoriza novamente o convite pelo endereço completo |
+| Projeto principal ou **Em ajustes — demonstração completa** | Enviar/substituir arquivos, assistir ao vídeo, registrar feedback e submeter |
+| **Em avaliação — demonstração completa** | Continuar o rascunho e finalizar a avaliação |
+| **Resultado liberado — demonstração completa** | Consultar a média 9,30; conferir CSV e reabertura como professor |
+| **Finalizado privado — demonstração completa** | Selecionar materiais e publicar com autorização |
+| **Publicado no acervo — demonstração completa** | Consultar vídeo e relatório sem login |
+| **Publicação retirada — demonstração completa** | Conferir o histórico privado e a ausência no acervo |
+| `cadastro@labrary.test` | Demonstrar primeiro cadastro com dados fictícios |
+| `convidado@labrary.test` | Demonstrar autorização, revogação e nova autorização |
 
-Nos endereços acima, acrescente `@labrary.test` ao nome da conta. Para trocar, use **Sair da conta**. Os projetos preparados são exemplos independentes: você pode começar em Ajustes, abrir diretamente uma etapa ou preparar um projeto novo em Preparação. Para o último caso, o professor usa o grupo inicialmente vazio, vincula os alunos, cria o projeto e define requisitos/rubrica antes dos uploads. Alterações permanecem após reiniciar; repetir a preparação preserva esse progresso.
+Os cenários preservam as alterações feitas. O cadastro preenchido e os projetos modificados não são reiniciados a cada login.
 
-O vídeo de 12 segundos, o relatório com duas versões e a imagem do projeto principal, assim como o grupo de isolamento, foram preparados neste ambiente e ficam em dados privados. Eles não acompanham o clone nem são recriados por `pnpm demonstracao:completa`. O script usa por padrão o pequeno WebM versionado em `e2e/fixtures` e gera PDFs; para outra apresentação, informe `DEMO_VIDEO_FILE` ou envie seus próprios arquivos pela interface. Use os títulos e o arquivo de saída para encontrar projetos: os IDs variam conforme os dados já existentes.
+## Problemas durante o uso
 
-Depois de concluir o primeiro cadastro, a conta `cadastro@labrary.test` passa a entrar normalmente, sem repetir o formulário. O seed não apaga os dados preenchidos. Revogar o convite de `convidado@labrary.test` bloqueia as sessões e a senha até uma nova autorização; repetir o seed não desfaz a revogação. Desligar `DEV_TEST_LOGIN` bloqueia todas as oito contas.
+| Situação | Ação |
+| --- | --- |
+| Sessão expirada | Entre novamente |
+| Projeto ausente | Confira o grupo, a turma ou a atribuição do avaliador |
+| Upload recusado | Verifique formato real do arquivo, tamanho, prazo e estado da entrega |
+| Entrega bloqueada | Confira requisitos obrigatórios e rubrica |
+| Avaliação desatualizada | Recarregue os dados antes de salvar |
+| Publicação bloqueada | Confira a rodada vigente, os materiais e todas as avaliações |
 
-A entrada no Google, a checagem real de `@usp.br` e o consentimento OAuth exigem uma conta Google real. O cadastro fictício e o convidado por senha exercitam as telas, regras e persistência da aplicação; não comprovam autenticação Google nem vínculo com a USP.
+Pare a aplicação com **Ctrl+C**. Para continuar, execute `pnpm dev` na mesma pasta. O modo `pnpm demo` cria outra demonstração local a cada execução; siga o [guia de backup](instalacao-e-aceitacao.md#backup-e-restauração) para preservar dados.
