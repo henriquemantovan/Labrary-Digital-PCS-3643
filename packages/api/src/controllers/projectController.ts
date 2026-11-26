@@ -1,3 +1,4 @@
+import type { DataRepository } from "../repositories/asyncRepository.js";
 import { AuthRepository } from "../repositories/authRepository.js";
 import { createPermissions } from "../services/permissions.js";
 import {
@@ -5,6 +6,7 @@ import {
   createDefaultMaterialPolicy,
   detectMimeType,
   MaterialPolicy,
+  AsyncMaterialPolicy,
   MaterialRule,
   materialUploadLock,
   ruleFor,
@@ -79,12 +81,12 @@ const materialFieldsSchema = materialKindSchema
 
 export interface ProjectControllerOptions {
   now?: () => number;
-  materialPolicy?: MaterialPolicy;
+  materialPolicy?: MaterialPolicy | AsyncMaterialPolicy;
   storage: FileStorage;
 }
 
 export function createProjectController(
-  repository: ProjectRepository,
+  repository: DataRepository<ProjectRepository>,
   auth: AuthRepository,
   options: ProjectControllerOptions,
 ) {
@@ -132,7 +134,7 @@ export function createProjectController(
         mimeType: detectMimeType(file.signature) ?? "application/octet-stream",
         sizeBytes: file.sizeBytes,
       });
-      return save({
+      return await save({
         originalFilename: file.originalFilename,
         mimeType: format.mimeType,
         sizeBytes: file.sizeBytes,
@@ -145,8 +147,6 @@ export function createProjectController(
       throw error;
     }
   };
-  const largestRule = (project: Project) =>
-    Math.max(...policy.rulesFor(project).map((rule) => rule.maxSizeBytes));
   const assertMaterialDeadline = (
     project: Project,
     rule: MaterialRule,
@@ -159,17 +159,17 @@ export function createProjectController(
         "O prazo de entrega deste material terminou.",
       );
   };
-  const accessibleProject = (request: Request, response: Response) => {
+  const accessibleProject = async (request: Request, response: Response) => {
     const { projectId } = projectIdSchema.parse(request.params);
-    const project = repository.get(projectId);
+    const project = (await repository.get(projectId));
     if (!project || !permissions.canRead(response.locals.user, project)) {
       throw new ApiError(404, "PROJECT_NOT_FOUND", "Projeto não encontrado.");
     }
     return project;
   };
-  const presentProject = (project: Project) => {
+  const presentProject = async (project: Project) => {
     const present = new Set(
-      repository.listMaterials(project.id).map((item) => item.kind),
+      (await repository.listMaterials(project.id)).map((item) => item.kind),
     );
     return {
       id: project.id,
@@ -194,19 +194,14 @@ export function createProjectController(
     };
   };
   return {
-    list(request: Request, response: Response) {
+    async list(request: Request, response: Response) {
       const query = listQuerySchema.parse(request.query);
+      const visible = (await repository.list(query))
+        .filter((project) => permissions.canRead(response.locals.user, project))
+        .filter((project) => !query.groupId || project.groupId === query.groupId);
+      const presented = await Promise.all(visible.map(presentProject));
       response.status(200).json({
-        data: repository
-          .list(query)
-          .filter((project) =>
-            permissions.canRead(response.locals.user, project),
-          )
-          .filter(
-            (project) => !query.groupId || project.groupId === query.groupId,
-          )
-          .map(presentProject)
-          .filter(
+        data: presented.filter(
             (project) =>
               query.pending === undefined ||
               project.missingMaterials.length > 0 ===
@@ -215,12 +210,12 @@ export function createProjectController(
       });
     },
 
-    get(request: Request, response: Response) {
-      const project = accessibleProject(request, response);
-      response.status(200).json({ data: presentProject(project) });
+    async get(request: Request, response: Response) {
+      const project = (await accessibleProject(request, response));
+      response.status(200).json({ data: (await presentProject(project)) });
     },
 
-    create(request: Request, response: Response) {
+    async create(request: Request, response: Response) {
       if (!["PROFESSOR", "ADMIN"].includes(response.locals.user.role))
         throw new ApiError(
           403,
@@ -233,19 +228,20 @@ export function createProjectController(
         input.classId,
         input.groupId,
       );
-      const project = repository.create(input);
-      response.status(201).json({ data: presentProject(project) });
+      const project = (await repository.create(input));
+      response.status(201).json({ data: (await presentProject(project)) });
     },
 
-    listMaterials(request: Request, response: Response) {
-      const project = accessibleProject(request, response);
+    async listMaterials(request: Request, response: Response) {
+      const project = (await accessibleProject(request, response));
       response.status(200).json({
-        data: repository.listMaterials(project.id).map(presentMaterial),
+        data: (await repository.listMaterials(project.id)).map(presentMaterial),
       });
     },
 
-    materialRules(request: Request, response: Response) {
-      const project = accessibleProject(request, response);
+    async materialRules(request: Request, response: Response) {
+      const project = (await accessibleProject(request, response));
+      const rules = await policy.rulesFor(project);
       const checkedAt = now();
       const lock = uploadLock(project, checkedAt);
       response.status(200).json({
@@ -254,7 +250,7 @@ export function createProjectController(
           lock,
           canUpload:
             !lock && permissions.canUpload(response.locals.user, project),
-          rules: policy.rulesFor(project).map((rule) => ({
+          rules: rules.map((rule) => ({
             ...rule,
             lock: materialUploadLock(project, rule, checkedAt),
             canUpload:
@@ -266,10 +262,10 @@ export function createProjectController(
     },
 
     async downloadVersion(request: Request, response: Response) {
-      const project = accessibleProject(request, response);
+      const project = (await accessibleProject(request, response));
       const { materialId, versionId } = versionIdSchema.parse(request.params);
-      const version = repository
-        .getMaterial(project.id, materialId)
+      const version = (await repository
+        .getMaterial(project.id, materialId))
         ?.versions.find((item) => item.id === versionId);
       const file = version && (await storage.open(version.storageKey));
       if (!version || !file)
@@ -285,10 +281,10 @@ export function createProjectController(
     },
 
     async streamVersion(request: Request, response: Response) {
-      const project = accessibleProject(request, response);
+      const project = (await accessibleProject(request, response));
       const { materialId, versionId } = versionIdSchema.parse(request.params);
-      const version = repository
-        .getMaterial(project.id, materialId)
+      const version = (await repository
+        .getMaterial(project.id, materialId))
         ?.versions.find((item) => item.id === versionId);
       const missing = () =>
         new ApiError(404, "FILE_NOT_FOUND", "Arquivo não encontrado.");
@@ -298,7 +294,7 @@ export function createProjectController(
       file.stream.on("error", () => undefined);
       try {
         // O acesso remoto pode ceder o processo a uma alteração de vínculos.
-        accessibleProject(request, response);
+        (await accessibleProject(request, response));
         if (file.sizeBytes !== version.sizeBytes) throw missing();
         const header =
           request.method === "HEAD" ? undefined : request.get("Range");
@@ -318,7 +314,7 @@ export function createProjectController(
           file = await storage.open(version.storageKey, range);
           if (!file) throw missing();
           file.stream.on("error", () => undefined);
-          accessibleProject(request, response);
+          (await accessibleProject(request, response));
           if (file.sizeBytes !== version.sizeBytes) throw missing();
           response.set(
             "Content-Range",
@@ -349,37 +345,39 @@ export function createProjectController(
     },
 
     async createMaterial(request: Request, response: Response) {
-      const project = accessibleProject(request, response);
+      const project = (await accessibleProject(request, response));
       const user = response.locals.user;
       const startedAt = now();
       permissions.assertUpload(user, project, startedAt);
-      assertDeclaredLength(request, largestRule(project));
+      const rules = await policy.rulesFor(project);
+      const resolvedPolicy = createDefaultMaterialPolicy(rules);
+      assertDeclaredLength(request, Math.max(...rules.map((rule) => rule.maxSizeBytes)));
       let rule: MaterialRule | undefined;
       const upload = await receiveUpload(request, storage, {
         maxBytes(fields) {
           const { kind } = materialKindSchema.parse(fields);
-          rule = ruleFor(policy, project, kind);
+          rule = ruleFor(resolvedPolicy, project, kind);
           assertMaterialDeadline(project, rule, startedAt);
           return rule.maxSizeBytes;
         },
       });
-      const material = await storeVersion(upload, rule!, user.id, (version) => {
+      const material = await storeVersion(upload, rule!, user.id, async (version) => {
         const { kind, title } = materialFieldsSchema.parse(upload.fields);
         // O projeto pode ter sido submetido enquanto o arquivo chegava.
-        permissions.assertUpload(user, project, startedAt);
-        return repository.createMaterial(
+        permissions.assertUpload(user, await accessibleProject(request, response), startedAt);
+        return (await repository.createMaterial(
           project.id,
           { kind, title: title ?? rule!.defaultTitle, createdBy: user.id },
           version,
-        );
+        ));
       });
       response.status(201).json({ data: presentMaterial(material) });
     },
 
     async createVersion(request: Request, response: Response) {
-      const project = accessibleProject(request, response);
+      const project = (await accessibleProject(request, response));
       const { materialId } = materialIdSchema.parse(request.params);
-      const existing = repository.getMaterial(project.id, materialId);
+      const existing = (await repository.getMaterial(project.id, materialId));
       if (!existing)
         throw new ApiError(
           404,
@@ -389,21 +387,21 @@ export function createProjectController(
       const user = response.locals.user;
       const startedAt = now();
       permissions.assertUpload(user, project, startedAt);
-      const rule = ruleFor(policy, project, existing.kind);
+      const rule = ruleFor(createDefaultMaterialPolicy(await policy.rulesFor(project)), project, existing.kind);
       assertMaterialDeadline(project, rule, startedAt);
       assertDeclaredLength(request, rule.maxSizeBytes);
       const upload = await receiveUpload(request, storage, {
         maxBytes: () => rule.maxSizeBytes,
       });
-      const material = await storeVersion(upload, rule, user.id, (version) => {
+      const material = await storeVersion(upload, rule, user.id, async (version) => {
         if (Object.keys(upload.fields).length)
           throw new ApiError(
             400,
             "UNEXPECTED_FIELD",
             "Envie somente o arquivo para substituir o material.",
           );
-        permissions.assertUpload(user, project, startedAt);
-        return repository.addVersion(project.id, materialId, version);
+        permissions.assertUpload(user, await accessibleProject(request, response), startedAt);
+        return (await repository.addVersion(project.id, materialId, version));
       });
       response.status(201).json({ data: presentMaterial(material) });
     },

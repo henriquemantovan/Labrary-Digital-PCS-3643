@@ -29,12 +29,12 @@ Plataforma de gestão, avaliação e divulgação de projetos acadêmicos, desen
 
 O frontend e a API executam no computador do professor. O ambiente fornecido utiliza **PostgreSQL remoto e Cloudflare R2 privado**; é necessário acesso à internet. Não é preciso instalar um servidor PostgreSQL local nem criar outro bucket.
 
-Arquivos fornecidos pela equipe:
+Arquivos fornecidos pela equipe (o pacote privado reúne a configuração e cópias de segurança):
 
 - **`labrary-codigo.tar.gz`**: código do projeto.
 - **`labrary-dados-professor.tar.gz`**: `.env`, dados da demonstração e backups, enviado em privado.
 
-**O `.env` sozinho não contém os projetos.** Extraia também os dados privados, pois projetos, avaliações e resultados utilizam arquivos JSON locais. O pacote privado contém credenciais e não deve ser publicado no Git.
+**Os dados da aplicação estão no PostgreSQL remoto e os arquivos no R2.** O `.env` fornecido conecta ao ambiente já preparado; os backups do pacote privado não precisam ser restaurados para iniciar. O pacote contém credenciais e não deve ser publicado no Git.
 
 ### 1. Dependências do sistema
 
@@ -54,7 +54,7 @@ Use um navegador Firefox ou Chrome/Chromium instalado no Ubuntu para abrir a apl
 | pnpm | **11.25.0**, conforme `package.json`; não usar `latest` |
 | Backend/frontend/bibliotecas | Versões exatas nos manifests e em `pnpm-lock.yaml`; instalação automática pelo pnpm |
 | Banco fornecido | PostgreSQL remoto **17.6**, consultado neste ambiente; testes/CI também usam PostgreSQL 18 |
-| Arquivos | Cloudflare R2 privado, configurado no `.env`; snapshots e contador permanecem locais |
+| Arquivos | Cloudflare R2 privado, configurado no `.env`; metadados e contador no PostgreSQL |
 | Rede | HTTPS para Node/npm/R2 e, se usado, Google; conexão ao host/porta PostgreSQL do `.env` |
 | Portas locais | API **3000** e interface **5173**, livres antes de iniciar |
 
@@ -101,11 +101,13 @@ chmod 600 .env
 chmod 700 .data
 ```
 
-O `.env` precisa ficar na **raiz**, ao lado de `package.json`; não em `packages/api` ou `packages/web`. Se ele foi enviado separadamente, conserve o arquivo recebido e extraia também os dados privados correspondentes. Não substitua por `.env.example` e não execute o conteúdo do `.env` como comando shell.
+Se recebeu somente o `.env`, copie-o para a raiz do código e aplique `chmod 600 .env`; pule a extração de `labrary-dados-professor.tar.gz` e o comando `chmod 700 .data`. Esse arquivo de configuração é suficiente para acessar os dados remotos já preparados.
+
+O `.env` precisa ficar na **raiz**, ao lado de `package.json`; não em `packages/api` ou `packages/web`. Se ele foi enviado separadamente, conserve o arquivo recebido; os dados acadêmicos são carregados do PostgreSQL remoto. Não substitua por `.env.example` e não execute o conteúdo do `.env` como comando shell.
 
 Se o código foi recebido por clone, extraia o pacote privado na raiz do repositório.
 
-A configuração fornecida usa `AUTH_PROVIDER=google`, `AUTH_DEMO=false`, `NODE_ENV=development`, `DEV_TEST_LOGIN=true`, `STORAGE_PROVIDER=r2` e `APP_ORIGIN=http://localhost:5173`. As credenciais e o banco/bucket já estão provisionados. **Não rode `pnpm storage:init`**: o contador do bucket usado vem no pacote e não pode ser zerado. Não rode `pnpm demo` para avaliar esse conjunto: esse comando usa outros usuários e dados.
+A configuração fornecida usa `AUTH_PROVIDER=google`, `AUTH_DEMO=false`, `NODE_ENV=development`, `DEV_TEST_LOGIN=true`, `STORAGE_PROVIDER=r2` e `APP_ORIGIN=http://localhost:5173`. As credenciais e o banco/bucket já estão provisionados. **Não rode `pnpm storage:init`**: o contador do bucket usado já está no PostgreSQL e não pode ser zerado. Não rode `pnpm demo` para avaliar esse conjunto: esse comando usa outros usuários e dados.
 
 ### 4. Instalar, compilar e iniciar
 
@@ -118,9 +120,9 @@ pnpm db:status
 pnpm dev
 ```
 
-`pnpm db:status` somente verifica as migrations do banco remoto; o ambiente fornecido já possui as seis migrations. Não é preciso `db:generate`, reaplicar `schema.sql`, instalar um servidor SQL nem executar seed novamente. Se a equipe fornecer um banco novo, ela deve aplicar `pnpm db:deploy` antes da entrega; não use reset ou baseline no banco compartilhado.
+`pnpm db:status` somente verifica as migrations do banco remoto; o ambiente fornecido já possui as sete migrations. Não é preciso `db:generate`, reaplicar `schema.sql`, instalar um servidor SQL nem executar seed novamente. Se a equipe fornecer um banco novo, ela deve aplicar `pnpm db:deploy` antes da entrega; não use reset ou baseline no banco compartilhado.
 
-Mantenha o terminal aberto: `pnpm dev` inicia API Express e interface Vite juntas, com proxy `/api` na mesma origem. Abra **http://localhost:5173/login**. Para parar, pressione **Ctrl+C**; para continuar com os mesmos dados, execute `pnpm dev` novamente na mesma pasta, sem reextrair os dados privados.
+Mantenha o terminal aberto: `pnpm dev` inicia API Express e interface Vite juntas, com proxy `/api` na mesma origem. Abra **http://localhost:5173/login**. Para parar, pressione **Ctrl+C**; para continuar com os mesmos dados, execute `pnpm dev` novamente com o mesmo `.env`; projetos, avaliações e resultados são recuperados do PostgreSQL.
 
 Em outro terminal, as verificações básicas são:
 
@@ -188,7 +190,7 @@ Para avaliar as oito contas e os materiais já preparados no R2, utilize **`pnpm
 | --- | --- |
 | `node`/`pnpm` não encontrado ou versão diferente | Reaplicar o `export PATH` do passo 2 no terminal usado |
 | API informa configuração Google incompleta | Conferir se o `.env` recebido está na raiz; não usar o modelo vazio |
-| Controle R2 ausente ou de outra conta | Recolocar os dados privados correspondentes ao `.env`; não criar contador zerado |
+| Controle R2 ausente ou de outra conta | Conferir o banco e o bucket do `.env`; o controle fica em `r2_usage`, sem recriar contador zerado |
 | Interface abre, mas login/API falham | Conferir mensagens da API no terminal e executar os dois `curl` acima |
 | Vite tenta abrir 5174 ou aparece erro de origem/OAuth | Liberar 5173 e 3000 antes de iniciar; a origem fornecida é `localhost:5173` |
 | Erro de conexão PostgreSQL/R2 | Verificar internet, acesso ao host/porta do banco e HTTPS do bucket |
@@ -230,9 +232,9 @@ O CI utiliza Ubuntu 24.04. No Ubuntu 26.04, a variável de plataforma acima perm
 - `pnpm test:e2e`: fluxos de navegador em desktop e celular emulado, com dados isolados.
 - `pnpm db:test`: integração com PostgreSQL descartável; exige banco próprio com permissão `CREATEDB`. Não utilizar o banco compartilhado da avaliação.
 
-Validação local em **26/11/2026**, no Ubuntu 26.04 x86_64: build, **330 testes da API e 141 da interface** aprovados, com cobertura acima de 85% nas quatro métricas de cada pacote. Os **68 cenários de navegador** passaram no conjunto das execuções; o comando integral atingiu o limite global de 60 segundos na avaliação desktop, que passou na repetição isolada. As demais suítes foram concluídas separadamente.
+Validação local em **26/11/2026**, no Ubuntu 26.04 x86_64: build, **346 testes da API e 141 da interface** aprovados, com cobertura acima de 85% nas quatro métricas de cada pacote. O comando completo `pnpm test:e2e` foi concluído com **68 cenários aprovados**, em desktop e celular emulado. A integração `pnpm db:test` também passou em bancos descartáveis vazio e existente, com sete migrations e 28 tabelas, incluindo persistência após reinício, importação e concorrência.
 
-A instalação em cópia separada, as oito contas e a reprodução privada/pública no R2 também foram conferidas. A validação utilizou um Ubuntu existente, não uma instalação nova do sistema operacional. O badge acompanha o CI da branch `main`.
+Uma instalação temporária com apenas o `.env`, sem pasta `.data`, validou as oito contas, os projetos compartilhados e a reprodução privada/pública no R2. A migração do banco fornecido foi comparada integralmente aos dados de origem, preservando os 13 projetos e seus históricos. A validação utilizou um Ubuntu existente, não uma instalação nova do sistema operacional. O badge acompanha o CI da branch `main`.
 
 ## Estrutura e persistência
 
@@ -249,13 +251,13 @@ docs/               Documentação, protótipos e evidências
 | Dados | Onde ficam no ambiente fornecido |
 | --- | --- |
 | Contas, vínculos, convidados e sessões | PostgreSQL remoto |
-| Projetos, materiais, mensagens, critérios de avaliação, avaliações e resultados | Arquivos privados em `.data/` |
+| Projetos, metadados de materiais, mensagens, critérios de avaliação, avaliações e resultados | PostgreSQL remoto |
 | Vídeos, imagens e documentos enviados | Bucket privado Cloudflare R2 |
-| Controle de uso do R2 | Arquivo privado em `.data/`, preservado entre reinícios |
+| Controle de uso do R2 | PostgreSQL remoto, tabela `r2_usage` |
 
-Execute **uma única API** sobre esse conjunto de dados. Durante a avaliação, a equipe deve manter sua cópia parada. Não apague nem restaure um contador antigo do R2. A franquia gratuita possui limites; os controles da aplicação não garantem bloqueio de cobrança pelo provedor.
+Durante a avaliação, evite alterações concorrentes da equipe nos mesmos projetos de demonstração. Não apague nem restaure um contador antigo do R2 no PostgreSQL. A franquia gratuita possui limites; os controles da aplicação não garantem bloqueio de cobrança pelo provedor.
 
-Para continuar depois de parar a aplicação, execute `pnpm dev` na mesma pasta, sem extrair os dados novamente. Procedimentos para um ambiente próprio e backups estão em [configuração e backup](docs/instalacao-e-aceitacao.md).
+Para continuar depois de parar a aplicação, execute `pnpm dev` com o mesmo `.env`. Os dados são compartilhados pelas instalações conectadas ao mesmo PostgreSQL. Procedimentos para um ambiente próprio e backups estão em [configuração e backup](docs/instalacao-e-aceitacao.md).
 
 ## Documentação
 
@@ -278,6 +280,18 @@ Para abrir a apresentação de telas no navegador:
 xdg-open docs/apresentacao-final.html
 ```
 
-Use as setas para navegar, **Sumário** para escolher um assunto e **Foco na tela** para ocultar as legendas dos prints. A abertura apresenta objetivo, equipe, perfis e arquitetura; depois vêm as 19 telas do sistema. As capturas acompanham o HTML em `docs/evidencias/apresentacao/`; a versão PDF reúne os 24 slides em um único arquivo. A apresentação pode ser consultada sem iniciar o servidor.
+Use os botões **Anterior** e **Próxima**, ou as setas do teclado, para navegar. O rodapé mostra somente o número do slide e o tema. A abertura apresenta objetivo, equipe, perfis e arquitetura; depois vêm as 19 telas do sistema. As capturas acompanham o HTML em `docs/evidencias/apresentacao/`; a versão PDF reúne os 24 slides em um único arquivo. A apresentação pode ser consultada sem iniciar o servidor.
+
+Divisão das falas, com aproximadamente **2 minutos por integrante** e **10 minutos no total**:
+
+| Integrante | Slides | Assunto |
+| --- | --- | --- |
+| Henrique | 1–5 | Introdução, objetivo, equipe, perfis e arquitetura |
+| Yuhang | 6–11 | Página inicial, login, cadastro, projetos, turmas e critérios de avaliação |
+| Enzo | 12–15 | Materiais, versões, feedback e submissão |
+| Kauê | 16–18 | Avaliação, consolidação de notas e resultado |
+| Dan | 19–24 | Publicação, acervo, retirada, administração, perfil e encerramento |
+
+Use a tabela acima como roteiro para a divisão das falas.
 
 As instruções de desenvolvimento estão em [AGENTS.md](AGENTS.md), com as skills compartilhadas em [.agents/skills](.agents/skills).

@@ -1,3 +1,4 @@
+import type { DataRepository } from "../repositories/asyncRepository.js";
 import { Router } from "express";
 import { z } from "zod";
 import { ApiError } from "../errors.js";
@@ -15,12 +16,12 @@ function present(p: PublicProject) {
   return { id: p.id, title: p.title, description: p.description, year: p.year, className: p.className, category: p.category, published: true,
     materials: p.materials.filter(m => /^\/api\/public\/materials\/[1-9]\d*\/content$/.test(m.url)).map(m => ({ versionId: m.versionId, title: m.title, kind: m.kind, url: m.url })) };
 }
-export function createReadRouter(providers: ReadProviders, repository: ProjectRepository, auth: AuthRepository) {
+export function createReadRouter(providers: ReadProviders, repository: DataRepository<ProjectRepository>, auth: AuthRepository) {
   const router = Router();
   router.get("/projects/:projectId/result", async (req, res, next) => {
     if (!providers.result) return next();
     const projectId = id.parse(req.params.projectId);
-    const project = repository.get(projectId);
+    const project = (await repository.get(projectId));
     const user = res.locals.user;
     if (!project || user.role !== "ALUNO" || !createPermissions(auth).canRead(user, project)) throw missing();
     const result = await providers.result.get(projectId);

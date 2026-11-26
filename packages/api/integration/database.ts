@@ -1,6 +1,7 @@
 import { verifyGroups } from "./groups.js";
 import { verifyAcademicAccess } from "./academicAccess.js";
 import { verifyDevelopmentTestAccounts } from "./developmentTestAccounts.js";
+import { verifyAcademicPersistence } from "./academicPersistence.js";
 // Disposable cluster only: this test creates and removes its own databases.
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
@@ -73,7 +74,7 @@ try {
             "SELECT count(*)::int AS count FROM _prisma_migrations WHERE finished_at IS NOT NULL",
           )
         ).rows[0].count,
-        6,
+        7,
       );
       assert.equal(
         (
@@ -81,7 +82,7 @@ try {
             "SELECT count(*)::int AS count FROM pg_tables WHERE schemaname='public' AND tablename<>'_prisma_migrations'",
           )
         ).rows[0].count,
-        25,
+        28,
       );
       if (index === 1)
         assert.deepEqual(
@@ -97,6 +98,7 @@ try {
           },
         );
       const identity = createPostgresIdentityRepository(pool);
+      await verifyAcademicPersistence(pool);
       const profile: GoogleProfile = {
         subject: "google-student",
         fullName: "Maria Google",
@@ -367,7 +369,7 @@ try {
       await verifyAcademicAccess(pool);
       await verifyDevelopmentTestAccounts(pool, url.toString());
       console.log(
-        `PASS: ${index === 0 ? "banco vazio" : "banco existente com identidade USP preservada"}; 25 tabelas, administrador com auditoria, proteção concorrente do último admin, visualização por sessão, migrations idempotentes, identidade Google, perfis, sessão entre processos, expiração, logout, desativação e tentativa OAuth de uso único.`,
+        `PASS: ${index === 0 ? "banco vazio" : "banco existente com identidade USP preservada"}; 28 tabelas, administrador com auditoria, proteção concorrente do último admin, visualização por sessão, migrations idempotentes, identidade Google, perfis, sessão entre processos, expiração, logout, desativação e tentativa OAuth de uso único.`,
       );
     } finally {
       await pool.end();

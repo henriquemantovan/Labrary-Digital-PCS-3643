@@ -1,3 +1,4 @@
+import type { DataRepository } from "../repositories/asyncRepository.js";
 import { ProjectRepository } from "../repositories/projectRepository.js";
 import { PublicationProviders } from "./publicationProviders.js";
 
@@ -6,12 +7,12 @@ import { PublicationProviders } from "./publicationProviders.js";
  * Não filtra por estado; recusar rodada devolvida é responsabilidade do consumidor.
  */
 export function createSubmissionProvider(
-  repository: Pick<ProjectRepository, "listSubmissions">,
+  repository: Pick<DataRepository<ProjectRepository>, "listSubmissions">,
 ): PublicationProviders["submissions"] {
   return {
     async latest(projectId) {
       // listSubmissions já devolve cópias ordenadas por rodada.
-      return repository.listSubmissions(projectId).at(-1);
+      return (await repository.listSubmissions(projectId)).at(-1);
     },
   };
 }

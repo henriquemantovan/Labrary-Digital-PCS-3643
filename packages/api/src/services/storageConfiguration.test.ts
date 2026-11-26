@@ -1,4 +1,5 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import type { Pool } from "pg";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -23,6 +24,13 @@ afterEach(() => {
     rmSync(root, { recursive: true, force: true });
 });
 describe("seleção explícita do armazenamento", () => {
+  it("usa o controle PostgreSQL sem exigir arquivo local de operações", async () => {
+    const query = vi.fn().mockResolvedValue({ rows: [] });
+    const storage = createConfiguredStorage(env, "/caminho-inexistente", "/sem-projetos.json", { query } as unknown as Pool);
+    expect(storage.save).toBeTypeOf("function");
+    expect(await storage.open("../segredo")).toBeUndefined();
+    expect(query).not.toHaveBeenCalled();
+  });
   it("mantém o disco como padrão e respeita UPLOAD_DIR", async () => {
     const root = mkdtempSync(join(tmpdir(), "labrary-storage-config-"));
     roots.push(root);

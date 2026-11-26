@@ -21,24 +21,24 @@ export function createEvaluationRouter(service: EvaluationService) {
     };
   }
 
-  router.get(path, (request, response) => {
-    response.json({ data: service.read(context(request, response)) });
+  router.get(path, async (request, response) => {
+    response.json({ data: (await service.read(context(request, response))) });
   });
 
-  router.put(`${path}/me`, (request, response) => {
-    response.json({ data: service.edit(context(request, response), edit.parse(request.body), false) });
+  router.put(`${path}/me`, async (request, response) => {
+    response.json({ data: (await service.edit(context(request, response), edit.parse(request.body), false)) });
   });
 
-  router.post(`${path}/me/finalize`, (request, response) => {
-    response.json({ data: service.edit(context(request, response), edit.parse(request.body), true) });
+  router.post(`${path}/me/finalize`, async (request, response) => {
+    response.json({ data: (await service.edit(context(request, response), edit.parse(request.body), true)) });
   });
 
-  router.post(`${path}/:evaluatorId/reopen`, (request, response) => {
-    response.json({ data: service.reopen(
+  router.post(`${path}/:evaluatorId/reopen`, async (request, response) => {
+    response.json({ data: (await service.reopen(
       context(request, response),
       id.parse(request.params.evaluatorId),
       reopen.parse(request.body),
-    ) });
+    )) });
   });
 
   return router;

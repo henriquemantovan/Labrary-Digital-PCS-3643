@@ -16,7 +16,7 @@ import { ProjectStorage } from "./projectRepository.js";
 
 const id = z.number().int().positive();
 const timestamp = z.iso.datetime();
-const snapshotSchema = z.object({
+export const projectSnapshotSchema = z.object({
   publicationDecisions: publicationHistorySchema.optional(),
   projects: z.array(
     z.object({
@@ -82,7 +82,7 @@ const snapshotSchema = z.object({
 });
 
 // Formato anterior à HU04: uma linha por versão, só metadados, sem bytes gravados.
-const legacySnapshotSchema = snapshotSchema.extend({
+const legacySnapshotSchema = projectSnapshotSchema.extend({
   materials: z.array(
     z.object({ id, projectId: id, versionNumber: id, storageKey: z.string() }),
   ),
@@ -124,7 +124,7 @@ export function createFileProjectStorage(path: string): ProjectStorage {
         const data: unknown = JSON.parse(readFileSync(path, "utf8"));
         return isLegacy(data)
           ? migrateLegacy(path, data)
-          : snapshotSchema.parse(data);
+          : projectSnapshotSchema.parse(data);
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code === "ENOENT")
           return undefined;

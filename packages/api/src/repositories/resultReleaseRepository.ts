@@ -3,7 +3,7 @@ import { dirname } from "node:path";
 import { z } from "zod";
 
 const id = z.number().int().positive().safe();
-const releaseSchema = z.object({
+export const releaseSchema = z.object({
   projectId: id, submissionId: id, round: id,
   fingerprint: z.string().regex(/^[a-f0-9]{64}$/), releasedBy: id, releasedAt: z.iso.datetime(),
 }).strict();
@@ -13,9 +13,16 @@ export interface ResultReleaseRepository {
   release(value: ResultRelease): ResultRelease;
 }
 
+export interface ResultReleaseStorage {
+  load(): ResultRelease[];
+  save(releases: ResultRelease[]): void;
+}
+
 /** Arquivo privado separado dos snapshots HU07; um único processo escritor. */
-export function createResultReleaseRepository(path?: string): ResultReleaseRepository {
-  let releases: ResultRelease[] = [];
+export function createResultReleaseRepository(source?: string | ResultReleaseStorage): ResultReleaseRepository {
+  const path = typeof source === "string" ? source : undefined;
+  const storage = typeof source === "object" ? source : undefined;
+  let releases: ResultRelease[] = storage ? z.array(releaseSchema).parse(storage.load()) : [];
   if (path) {
     try { releases = z.array(releaseSchema).parse(JSON.parse(readFileSync(path, "utf8"))); }
     catch (error) {
@@ -31,6 +38,7 @@ export function createResultReleaseRepository(path?: string): ResultReleaseRepos
       const existing = releases.find(r => r.projectId === parsed.projectId && r.fingerprint === parsed.fingerprint);
       if (existing) return structuredClone(existing);
       const next = [...releases, parsed];
+      storage?.save(structuredClone(next));
       if (path) {
         mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
         writeFileSync(`${path}.tmp`, JSON.stringify(next), { mode: 0o600, flush: true });

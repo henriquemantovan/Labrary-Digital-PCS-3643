@@ -39,6 +39,10 @@ export interface MaterialPolicy {
   rulesFor(project: Project): MaterialRule[];
 }
 
+export interface AsyncMaterialPolicy {
+  rulesFor(project: Project): Promise<MaterialRule[]>;
+}
+
 const megabytes = (value: number) => value * 1024 * 1024;
 
 export const defaultMaterialRules: MaterialRule[] = [

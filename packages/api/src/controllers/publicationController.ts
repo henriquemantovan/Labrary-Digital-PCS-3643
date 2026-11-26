@@ -97,7 +97,7 @@ export function createPublicationController(
     async file(request: Request, response: Response) {
       const project = projectId(request),
         versionId = id.parse(request.params.versionId);
-      const version = service.publicVersion(project, versionId);
+      const version = (await service.publicVersion(project, versionId));
       let file = await storage.open(version.storageKey);
       if (!file) throw missing();
       file.stream.on("error", () => undefined);
@@ -106,7 +106,7 @@ export function createPublicationController(
         throw missing();
       }
       try {
-        service.publicVersion(project, versionId);
+        (await service.publicVersion(project, versionId));
       } catch (error) {
         file.stream.destroy();
         throw error;
@@ -133,7 +133,7 @@ export function createPublicationController(
       }
       // Revalida após o acesso assíncrono ao disco, inclusive se houve retirada.
       try {
-        service.publicVersion(project, versionId);
+        (await service.publicVersion(project, versionId));
       } catch (error) {
         file.stream.destroy();
         throw error;

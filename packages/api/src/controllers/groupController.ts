@@ -1,3 +1,4 @@
+import type { DataRepository } from "../repositories/asyncRepository.js";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { ApiError } from "../errors.js";
@@ -12,7 +13,7 @@ const ids = z
   .max(200)
   .refine((items) => new Set(items).size === items.length);
 export function createGroupController(
-  projects: ProjectRepository,
+  projects: DataRepository<ProjectRepository>,
   auth: AuthRepository,
   planning: GroupRepository,
   now: () => number,
@@ -33,9 +34,9 @@ export function createGroupController(
       throw new ApiError(404, "CLASS_NOT_FOUND", "Turma não encontrada.");
     return classId;
   };
-  const project = (request: Request, response: Response) => {
+  const project = async (request: Request, response: Response) => {
     teacher(response);
-    const item = projects.get(id.parse(request.params.projectId));
+    const item = (await projects.get(id.parse(request.params.projectId)));
     if (!item || !permissions.canRead(response.locals.user, item))
       throw new ApiError(404, "PROJECT_NOT_FOUND", "Projeto não encontrado.");
     return item;
@@ -107,7 +108,7 @@ export function createGroupController(
       });
     },
     async evaluators(request: Request, response: Response) {
-      const item = project(request, response);
+      const item = (await project(request, response));
       response.json({
         data: {
           evaluatorIds: auth.directory.assignments
@@ -118,7 +119,7 @@ export function createGroupController(
       });
     },
     async setEvaluators(request: Request, response: Response) {
-      const item = project(request, response);
+      const item = (await project(request, response));
       const { evaluatorIds } = z
         .object({ evaluatorIds: ids })
         .strict()

@@ -17,6 +17,7 @@
     "auth:hash": "pnpm --silent --filter @labrary/api exec tsx src/scripts/hashPassword.ts",
     "contas:teste": "pnpm --filter @labrary/api contas:teste",
     "db:deploy": "pnpm --filter @labrary/api db:deploy",
+    "db:importar-json": "pnpm --filter @labrary/api db:importar-json",
     "db:baseline": "pnpm --filter @labrary/api db:baseline",
     "db:status": "pnpm --filter @labrary/api db:status",
     "db:test": "pnpm --filter @labrary/api db:test",

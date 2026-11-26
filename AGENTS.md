@@ -5,7 +5,7 @@
 - Monorepo pnpm com API Express/TypeScript em `packages/api` e interface React/Vite em `packages/web`.
 - Consulte os critérios da HU no `README.md` e o código atual antes de implementar. O README também contém funcionalidades planejadas: não as trate como prontas.
 - Contratos atuais: `docs/api-inicial.md`. Sessões: `docs/login-google.md`; permissões: `docs/manual-de-uso.md`.
-- Desde a HU07, o entrypoint persiste projetos, metadados e mensagens em arquivo privado (`PROJECT_DATA_FILE`), para um processo escritor. A factory de testes e o modo local continuam em memória. No modo Google, usuários, vínculos, sessões e tentativas OAuth usam PostgreSQL; veja `docs/login-google.md`. As migrations anteriores são imutáveis; registrar metadados não equivale a persistir arquivos. Veja `docs/arquitetura.md`.
+- No modo Google, o entrypoint persiste identidades, vínculos, sessões, domínio acadêmico e controle R2 no PostgreSQL. Os agregados acadêmicos usam JSONB transacional em `academic_state`; arquivos enviados ficam no R2 privado. A factory de testes aceita memória e o demo isolado mantém adapters locais. As migrations anteriores são imutáveis. A importação dos arquivos antigos é explícita por `pnpm db:importar-json`, sem sobrescrever dados divergentes. Veja `docs/arquitetura.md` e `docs/login-google.md`.
 - Use as versões de `.nvmrc` e `package.json`, pnpm e o lockfile existente. Não troque dependências para contornar falhas de ambiente.
 
 ## Código acompanhado de testes executados pela IA

@@ -1,3 +1,4 @@
+import type { DataRepository } from "../repositories/asyncRepository.js";
 import type { EvaluationProvider } from "../models/consolidation.js";
 import type { ResultReleaseRepository } from "../repositories/resultReleaseRepository.js";
 import { consolidate, evaluationFingerprint } from "./consolidation.js";
@@ -6,7 +7,7 @@ import type { PublicationProviders } from "./publicationProviders.js";
 /** Projeta o C3 real para a HU11 sem transportar notas ou comentários. */
 export function createPublicationEvaluationProvider(
   evaluations: EvaluationProvider,
-  releases: ResultReleaseRepository,
+  releases: DataRepository<ResultReleaseRepository>,
 ): PublicationProviders["evaluations"] {
   return {
     async completeness(projectId, submissionId) {
@@ -23,7 +24,7 @@ export function createPublicationEvaluationProvider(
         allEvaluationsCompleted: result.allEvaluationsCompleted,
         resultReleased:
           result.allEvaluationsCompleted &&
-          !!releases.find(projectId, evaluationFingerprint(round)),
+          !!(await releases.find(projectId, evaluationFingerprint(round))),
       };
     },
   };

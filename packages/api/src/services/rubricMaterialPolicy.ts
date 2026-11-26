@@ -1,11 +1,12 @@
+import type { DataRepository } from "../repositories/asyncRepository.js";
 import { RubricRepository } from "../repositories/rubricRepository.js";
-import { defaultMaterialRules, fileFormats, MaterialPolicy } from "./materialPolicy.js";
+import { defaultMaterialRules, fileFormats, AsyncMaterialPolicy } from "./materialPolicy.js";
 
 /** Adapta C0 à política de upload sem duplicar extensões ou detecção dos bytes. */
-export function createRubricMaterialPolicy(rubrics: RubricRepository): MaterialPolicy {
+export function createRubricMaterialPolicy(rubrics: DataRepository<RubricRepository>): AsyncMaterialPolicy {
   return {
-    rulesFor(project) {
-      const configuration = rubrics.latest(project.id);
+    async rulesFor(project) {
+      const configuration = (await rubrics.latest(project.id));
       if (!configuration) return structuredClone(defaultMaterialRules);
       const required = configuration.requirements.map((requirement) => ({
         kind: requirement.kind,
