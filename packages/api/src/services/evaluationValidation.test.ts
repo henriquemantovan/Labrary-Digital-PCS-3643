@@ -22,18 +22,18 @@ describe("S5: validador isolado de notas e completude", () => {
     const grade = { criterionId: "funcionamento", score: 8 };
     expect(() => validateEvaluationScores(rubric, [grade, grade], false)).toThrow();
     expect(() => validateEvaluationScores(rubric, [{ ...grade, criterionId: "outro" }], false))
-      .toThrow("rubrica");
+      .toThrow("critérios de avaliação");
     expect(() => validateEvaluationScores(rubric, [grade], true)).toThrow("todos os critérios");
     expect(() => validateEvaluationScores(rubric, [], true)).toThrow("todos os critérios");
   });
-  it("usa a versão fornecida sem alterar rubrica ou notas de entrada", () => {
+  it("usa a versão fornecida sem alterar critérios de avaliação ou notas de entrada", () => {
     const original = evaluationContractExamples().finalized;
     const later = structuredClone(original.rubric);
     later.id = 2; later.versionNumber = 2;
     later.criteria[0].id = "novo-criterio";
     const before = structuredClone(original);
     expect(validateEvaluationScores(original.rubric, original.evaluations[0].scores, true)).toHaveLength(2);
-    expect(() => validateEvaluationScores(later, original.evaluations[0].scores, true)).toThrow("rubrica");
+    expect(() => validateEvaluationScores(later, original.evaluations[0].scores, true)).toThrow("critérios de avaliação");
     expect(original).toEqual(before);
   });
 });

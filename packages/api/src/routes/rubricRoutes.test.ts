@@ -6,7 +6,7 @@ import { defaultRequirements } from "../models/rubric.js";
 const path = "/api/projects/2/configuration";
 const input = () => ({
   baseVersionId: 0,
-  title: "Rubrica da entrega",
+  title: "Critérios de avaliação da entrega",
   requirements: defaultRequirements("2026-11-25T23:59:00-03:00"),
   criteria: [
     { id: "funcionamento", title: "Funcionamento", description: "Demonstração", weight: 60, minScore: 0, maxScore: 10 },
@@ -14,7 +14,7 @@ const input = () => ({
   ],
 });
 
-describe("C0: requisitos e versões imutáveis da rubrica", () => {
+describe("C0: requisitos e versões imutáveis dos critérios de avaliação", () => {
   it("exige autenticação em todas as leituras e mutações e mantém proteção CSRF", async () => {
     const { app, client } = context();
     for (const suffix of ["", "/versions", "/versions/1"])

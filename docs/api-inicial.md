@@ -50,7 +50,7 @@ Aluno acessa os próprios grupos; avaliador, suas atribuições; professor, suas
 | GET | `/projects/:projectId/configuration` | Configuração atual |
 | GET | `/projects/:projectId/configuration/versions` | Histórico de configurações |
 | GET | `/projects/:projectId/configuration/versions/:versionId` | Versão específica |
-| POST | `/projects/:projectId/configuration/versions` | Nova versão de requisitos/rubrica |
+| POST | `/projects/:projectId/configuration/versions` | Nova versão de requisitos/critérios de avaliação |
 | GET | `/projects/:projectId/material-rules` | Formatos, tamanhos, prazos e permissão de envio |
 | GET/POST | `/projects/:projectId/materials` | Listar/criar materiais |
 | POST | `/projects/:projectId/materials/:materialId/versions` | Enviar nova versão |
@@ -78,7 +78,7 @@ Mensagens recebem `{text,materialVersionId?,clientMessageId}`. A chave UUID perm
 | POST | `/projects/:projectId/submissions/:submissionId/evaluations/me/finalize` | Finalizar critérios com `{scores,expectedRevision}` |
 | POST | `/projects/:projectId/submissions/:submissionId/evaluations/:evaluatorId/reopen` | Reabrir com `{reason,expectedRevision}` |
 
-A rodada conserva versões exatas dos materiais e da rubrica. A submissão bloqueia uploads; a devolução permite outra rodada. O avaliador edita apenas sua avaliação nos projetos atribuídos. A revisão esperada impede sobrescrever uma alteração concorrente.
+A rodada conserva versões exatas dos materiais e dos critérios de avaliação. A submissão bloqueia uploads; a devolução permite outra rodada. O avaliador edita apenas sua avaliação nos projetos atribuídos. A revisão esperada impede sobrescrever uma alteração concorrente.
 
 ## Notas e publicação
 

@@ -107,13 +107,13 @@ erDiagram
     SUBMISSION ||--o{ RESULT_RELEASE : libera
 ```
 
-Uma submissão guarda também a cópia da rubrica. Rubricas/avaliações/liberações usam arquivos separados, com referências verificadas pelos serviços. A decisão de publicação guarda snapshot e autorização; seus pré-requisitos reais C1/C3 são compostos em `createApp`, a partir dos repositórios persistentes fornecidos pelo bootstrap.
+Uma submissão guarda também a cópia dos critérios de avaliação. Critérios de avaliação/avaliações/liberações usam arquivos separados, com referências verificadas pelos serviços. A decisão de publicação guarda snapshot e autorização; seus pré-requisitos reais C1/C3 são compostos em `createApp`, a partir dos repositórios persistentes fornecidos pelo bootstrap.
 
 | Agregado | Armazenamento configurável |
 | --- | --- |
 | Projetos, metadados, mensagens, rodadas e decisões de publicação | `PROJECT_DATA_FILE` |
 | Grupos e vínculos locais | `GROUP_DATA_FILE` |
-| Requisitos e rubricas | `RUBRIC_DATA_FILE` |
+| Requisitos e critérios de avaliação | `RUBRIC_DATA_FILE` |
 | Avaliações | `EVALUATION_DATA_FILE` |
 | Liberações | `RESULT_RELEASE_DATA_FILE` |
 | Bytes de cada versão | Disco privado `UPLOAD_DIR` ou R2 privado, referenciado por `storageKey` |

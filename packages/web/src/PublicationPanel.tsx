@@ -183,7 +183,7 @@ export function PublicationPanel({
                     placeholder="Referência da ata, declaração ou autorização recebida"
                   />
                 </label>
-                <p>Notas, rubrica e mensagens permanecem privadas.</p>
+                <p>Notas, critérios de avaliação e mensagens permanecem privadas.</p>
                 <button className={buttonVariants({ size: "sm" })}>Publicar no acervo</button>
               </fieldset>
             </form>

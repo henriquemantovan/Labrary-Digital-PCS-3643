@@ -92,7 +92,7 @@ async function submitted(app: App): Promise<Submission> {
     (
       await app.teacher.post(`${base}/configuration/versions`).send({
         baseVersionId: 0,
-        title: "Rubrica da aceitação",
+        title: "Critérios de avaliação da aceitação",
         requirements: defaultRequirements("2026-11-25T23:00:00.000Z"),
         criteria: [
           {

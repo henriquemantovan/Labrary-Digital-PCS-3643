@@ -6,7 +6,7 @@ import { context, pdfFile, sampleFiles, storedMaterial, upload } from "../test/c
 const now = () => Date.parse("2026-11-08T12:00:00Z");
 const materials = "/api/projects/2/materials";
 const configuration = () => ({
-  projectId: 2, classId: 1, title: "Rubrica", createdBy: 3, createdAt: new Date(now()).toISOString(),
+  projectId: 2, classId: 1, title: "Critérios de avaliação", createdBy: 3, createdAt: new Date(now()).toISOString(),
   requirements: defaultRequirements("2026-11-25T23:00:00Z"),
   criteria: [{ id: "funcionamento", title: "Funcionamento", description: "", weight: 100, minScore: 0 as const, maxScore: 10 as const }],
 });

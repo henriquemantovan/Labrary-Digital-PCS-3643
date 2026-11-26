@@ -53,7 +53,7 @@ describe("consolidação C3", () => {
     (r: EvaluationRound) => { r.evaluations[0].scores[0].score = 10.01; },
     (r: EvaluationRound) => { r.evaluations[0].scores[0].score = NaN; },
     (r: EvaluationRound) => { r.rubric.criteria[0].weight = Infinity; },
-  ])("rejeita rubrica, IDs, notas e finalização inconsistentes", mutate => {
+  ])("rejeitos critérios de avaliação, IDs, notas e finalização inconsistentes", mutate => {
     const input = exampleRound(); mutate(input);
     expect(() => consolidate(1, input)).toThrow();
   });

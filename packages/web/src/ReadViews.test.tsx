@@ -12,7 +12,7 @@ it('resultado bloqueado nunca renderiza notas ou comentários recebidos', async 
   expect(await screen.findByText(/Resultado bloqueado/)).not.toBeNull();
   expect(screen.queryByText('Comentário liberado')).toBeNull(); expect(screen.queryByText(/Nota:/)).toBeNull();
 });
-it.each([false, true])('exibe resultado liberado e rubrica; completo=%s', async complete => {
+it.each([false, true])('exibe resultado liberado e critérios de avaliação; completo=%s', async complete => {
   mock({ ...result, released: true, complete }); render(<GroupResult projectId={2} expired={vi.fn()} />);
   expect(await screen.findByText(complete ? 'Resultado liberado' : 'Resultado parcial')).not.toBeNull();
   expect(screen.getByText('Nota: 8.00')).not.toBeNull(); expect(screen.getByText('Comentário liberado')).not.toBeNull();
@@ -47,7 +47,7 @@ it('integra notas por critério e comentários do contrato HU09, incluindo zero'
       { evaluatorId: 4, scores: [{ criterionId: 'c1', score: 0, comment: '' }] }] });
   render(<GroupResult projectId={2} expired={vi.fn()} />);
   expect(await screen.findByText('Nota: 0.00')).toBeTruthy();
-  expect(screen.getByText('Rubrica: 5')).toBeTruthy();
+  expect(screen.getByText('Critérios de avaliação: 5')).toBeTruthy();
   expect(screen.getByText('Revisar circuito')).toBeTruthy();
   expect(screen.getByText('Peso: 100% · Nota: 0.00')).toBeTruthy();
 });

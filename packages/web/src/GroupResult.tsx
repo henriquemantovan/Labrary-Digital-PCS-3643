@@ -24,7 +24,7 @@ export function GroupResult({ projectId, expired }: { projectId: number; expired
       {!result.released ? <p role="status">Resultado bloqueado. Aguardando liberação pelo professor.</p> : <>
         <h3>{result.complete ? "Resultado liberado" : "Resultado parcial"}</h3>
         <p>Nota: {result.grade === null ? "Pendente" : result.grade.toFixed(2)}</p>
-        <p>Rubrica: {result.rubricVersionId}</p>
+        <p>Critérios de avaliação: {result.rubricVersionId}</p>
         <ul className="m-0 grid list-none gap-2 p-0 [&_h4]:text-sm [&_h4]:font-medium [&_p]:text-xs [&_p]:text-muted-foreground [&>li]:grid [&>li]:gap-0.5 [&>li]:rounded-lg [&>li]:border [&>li]:p-3">{result.criteria.map((c, i) => <li key={i}><h4>{c.title}</h4><p>Peso: {c.weight}% · Nota: {c.grade === null ? "Pendente" : c.grade.toFixed(2)}</p><p>{c.comment}</p></li>)}</ul>
       </>}
     </>}

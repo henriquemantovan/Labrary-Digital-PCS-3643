@@ -7,8 +7,8 @@ Siga a [instalação no README](../README.md#instalação-no-ubuntu-2604) e abra
 | Perfil | Permissões |
 | --- | --- |
 | Aluno | Acessar projetos dos próprios grupos; enviar e substituir materiais nos estados permitidos; conversar com a equipe; submeter entregas e consultar resultados liberados |
-| Avaliador | Consultar materiais e feedback dos projetos atribuídos; salvar rascunhos e finalizar avaliações pela rubrica |
-| Professor | Gerenciar grupos e projetos de suas turmas; atribuir avaliadores; configurar requisitos, prazos e rubricas; devolver entregas, reabrir avaliações, consolidar/exportar notas e publicar materiais autorizados |
+| Avaliador | Consultar materiais e feedback dos projetos atribuídos; salvar rascunhos e finalizar avaliações pelos critérios de avaliação |
+| Professor | Gerenciar grupos e projetos de suas turmas; atribuir avaliadores; configurar requisitos, prazos e critérios de avaliação; devolver entregas, reabrir avaliações, consolidar/exportar notas e publicar materiais autorizados |
 | Administrador | Gerenciar contas, papéis e convidados; administrar turmas e projetos. **Visualizar como** usa seus próprios vínculos e as permissões do perfil selecionado |
 | Visitante | Consultar o acervo e acessar somente materiais de publicações ativas |
 
@@ -18,14 +18,14 @@ Use **Sair da conta** antes de trocar de usuário. Um projeto não encontrado po
 
 ## Organizar a turma
 
-Como professor, abra **Minhas turmas** e cadastre os grupos com integrantes já registrados. Crie os projetos, atribua avaliadores e defina os requisitos de vídeo, relatório e manual. Os critérios da rubrica usam notas de 0 a 10 e pesos cuja soma é 100%.
+Como professor, abra **Minhas turmas** e cadastre os grupos com integrantes já registrados. Crie os projetos, atribua avaliadores e defina os requisitos de vídeo, relatório e manual. Os critérios de avaliação usam notas de 0 a 10 e pesos cuja soma é 100%.
 
 ## Materiais e entrega
 
 1. Como aluno, abra o projeto e envie os materiais exigidos, respeitando formatos, tamanhos e prazo.
 2. Confira o histórico de versões e reproduza o vídeo na área privada. Substituir um arquivo conserva a versão anterior.
 3. Registre dúvidas pelo feedback; a mensagem pode apontar para uma versão específica.
-4. Quando o checklist estiver completo, confirme **Submeter para avaliação**. A rodada conserva as versões dos materiais e da rubrica; novos uploads ficam bloqueados.
+4. Quando o checklist estiver completo, confirme **Submeter para avaliação**. A rodada conserva as versões dos materiais e dos critérios de avaliação; novos uploads ficam bloqueados.
 5. Se o professor devolver para ajustes, altere os materiais necessários e envie uma nova rodada. As anteriores continuam consultáveis.
 
 O professor pode reabrir uma entrega com justificativa quando o prazo ou estado impedir o envio.
@@ -73,7 +73,7 @@ Os cenários preservam as alterações feitas. O cadastro preenchido e os projet
 | Sessão expirada | Entre novamente |
 | Projeto ausente | Confira o grupo, a turma ou a atribuição do avaliador |
 | Upload recusado | Verifique formato real do arquivo, tamanho, prazo e estado da entrega |
-| Entrega bloqueada | Confira requisitos obrigatórios e rubrica |
+| Entrega bloqueada | Confira requisitos obrigatórios e critérios de avaliação |
 | Avaliação desatualizada | Recarregue os dados antes de salvar |
 | Publicação bloqueada | Confira a rodada vigente, os materiais e todas as avaliações |
 

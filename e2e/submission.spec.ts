@@ -31,7 +31,7 @@ const openDueAt = "2099-11-25T23:59:00-03:00";
 const requirement = (kind: string, label: string, allowedMimeTypes: string[], dueAt: string) => ({
   kind, label, required: true, allowedMimeTypes, maxSizeBytes: 20 * 1024 * 1024, dueAt,
 });
-// Requisitos (C0) pela API real, com a sessão do professor; a interface da rubrica é coberta em assessment.spec.ts.
+// Requisitos (C0) pela API real, com a sessão do professor; a interface dos critérios de avaliação é coberta em assessment.spec.ts.
 async function configure(page: Page, dueAt: string) {
   const current = (await (await page.request.get("/api/projects/2/configuration")).json()).data;
   const configured = await page.request.post("/api/projects/2/configuration/versions", {

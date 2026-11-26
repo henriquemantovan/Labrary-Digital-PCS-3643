@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { evaluationCriteriaTitle } from "./lib/evaluationCriteria";
 import { Success } from "./components/Feedback";
 import type { FormEvent } from "react";
 import { api, ApiError } from "./api";
@@ -40,18 +41,18 @@ export function Rubrics({ projectId, canEdit, expired, onConfigurationSaved }: {
     return () => { active = false; };
   }, [projectId, revision, fail]);
   const current = versions?.at(-1);
-  return <section className={panelClass} aria-label="Requisitos e rubrica">
-    <h2>Requisitos e rubrica</h2>
+  return <section className={panelClass} aria-label="Requisitos e critérios de avaliação">
+    <h2>Requisitos e critérios de avaliação</h2>
     <p className={mutedText}>Cada versão preserva os requisitos e os critérios usados nas entregas anteriores.</p>
     {success && <Success>{success}</Success>}
     {error && <div role="alert">{error} <button type="button" className={buttonVariants({ variant: "ghost", size: "sm" })} onClick={() => {
       setError(""); setEditing(false); setRevision((value) => value + 1);
       void onConfigurationSaved?.().catch(fail);
-    }}>Recarregar rubricas</button></div>}
-    {versions === null ? (!error && <p role="status">Carregando rubricas…</p>) : <>
-      {current ? <RubricSummary version={current} /> : <p>Nenhuma rubrica configurada para este projeto.</p>}
+    }}>Recarregar critérios de avaliação</button></div>}
+    {versions === null ? (!error && <p role="status">Carregando critérios de avaliação…</p>) : <>
+      {current ? <RubricSummary version={current} /> : <p>Nenhum conjunto de critérios de avaliação configurado para este projeto.</p>}
       {canEdit && <button type="button" className={buttonVariants({ variant: "outline", size: "sm" })} onClick={() => { setEditing(!editing); setSuccess(""); }}>
-        {editing ? "Cancelar nova versão" : "Criar nova versão da rubrica"}
+        {editing ? "Cancelar nova versão" : "Nova versão dos critérios de avaliação"}
       </button>}
       {editing && canEdit && <RubricForm key={current?.id ?? 0} current={current} projectId={projectId} fail={fail} onSaved={(saved) => {
         setVersions([...versions, saved]); setEditing(false); setError("");
@@ -66,7 +67,7 @@ export function Rubrics({ projectId, canEdit, expired, onConfigurationSaved }: {
 }
 export function RubricSummary({ version }: { version: RubricVersion }) {
   return <div className={blockClass}>
-    <h3>{version.title} · Versão {version.versionNumber}</h3>
+    <h3>{evaluationCriteriaTitle(version.title)} · Versão {version.versionNumber}</h3>
     <p className={mutedText}>Criada em {new Date(version.createdAt).toLocaleString("pt-BR")} · Conta {version.createdBy}</p>
     <ul>{version.requirements.map((rule) => <li key={rule.kind}>
       {rule.label}: obrigatório · {rule.allowedMimeTypes.join(", ")} · até {rule.maxSizeBytes / mib} MiB · prazo {new Date(rule.dueAt).toLocaleString("pt-BR")}
@@ -114,11 +115,11 @@ function RubricForm({ current, projectId, onSaved, fail }: {
   function update(index: number, change: Partial<RubricCriterion>) {
     setCriteria((items) => items.map((item, itemIndex) => itemIndex === index ? { ...item, ...change } : item));
   }
-  return <form onSubmit={submit} className="grid gap-4" aria-label="Nova versão da rubrica">
+  return <form onSubmit={submit} className="grid gap-4" aria-label="Nova versão dos critérios de avaliação">
     <fieldset disabled={busy}>
       <legend>Nova versão explícita</legend>
       {validation && <p role="alert">{validation}</p>}
-      <label>Título da rubrica<input name="title" required maxLength={160} defaultValue={current?.title ?? "Rubrica do projeto"} /></label>
+      <label>Título dos critérios de avaliação<input name="title" required maxLength={160} defaultValue={evaluationCriteriaTitle(current?.title ?? "Critérios de avaliação do projeto")} /></label>
       <div className="grid gap-4 md:grid-cols-2">{kinds.map((kind) => {
         const rule = current?.requirements.find((item) => item.kind === kind);
         const formats = kind === "VIDEO" ? ["video/mp4", "video/webm"] : ["application/pdf"];

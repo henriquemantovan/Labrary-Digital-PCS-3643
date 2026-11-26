@@ -53,7 +53,7 @@ Pensando em criar uma interface fácil de usar e atrativa visualmente, dentre as
 | Tema | Decisão | Impacto |
 | --- | --- | --- |
 | Avaliações na página pública | **Não ficam públicas.** Notas e feedback ficam restritos à área privada. | A caixa de avaliações com estrelas do esboço 2.2 sai da página pública. O protótipo `03-detalhe-publico` já segue essa regra. |
-| Quem avalia | Avaliadores atribuídos aos projetos, usando rubrica com pesos. O fluxo acadêmico atual foi mantido na definição de escopo de 22/11/2026. | Orienta a avaliação; não há avaliação pública por estrelas nesta entrega. |
+| Quem avalia | Avaliadores atribuídos aos projetos, usando critérios de avaliação com pesos. O fluxo acadêmico atual foi mantido na definição de escopo de 22/11/2026. | Orienta a avaliação; não há avaliação pública por estrelas nesta entrega. |
 
 ## 4. Comparação com os protótipos
 
@@ -67,7 +67,7 @@ Protótipos em [`../prototipos`](../prototipos).
 | [`04-materiais`](../prototipos/04-materiais.svg) | Submeter trabalho (4), painel do aluno (5), upload (6) | Equivalente |
 | [`05-feedback`](../prototipos/05-feedback.svg) | Chat de dúvida (6) | Equivalente |
 | [`06-acompanhamento`](../prototipos/06-acompanhamento.svg) | Painel do professor (4), visão do professor (6) | Parcial |
-| [`07-avaliacao`](../prototipos/07-avaliacao.svg) | Avaliar outros grupos (4), botão Avaliar (6) | Segue a avaliação por rubrica do fluxo atual |
+| [`07-avaliacao`](../prototipos/07-avaliacao.svg) | Avaliar outros grupos (4), botão Avaliar (6) | Segue a avaliação por critérios do fluxo atual |
 | [`08-consolidacao`](../prototipos/08-consolidacao.svg) | Tabela de notas (6) | Equivalente |
 | [`09-linha-do-tempo`](../prototipos/09-linha-do-tempo.svg) | Linha do tempo (2.3) | Criado a partir da ideia escolhida: etapas da entrega, próximo passo e prazos |
 

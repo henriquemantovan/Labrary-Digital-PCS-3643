@@ -11,7 +11,7 @@ export function validateEvaluationScores(
   const scores = scoresSchema.parse(input);
   const criteria = rubric.criteria;
   if (scores.some((score) => !criteria.some((criterion) => criterion.id === score.criterionId)))
-    throw new ApiError(400, "UNKNOWN_CRITERION", "A nota deve pertencer à rubrica da submissão.");
+    throw new ApiError(400, "UNKNOWN_CRITERION", "A nota deve pertencer aos critérios de avaliação da submissão.");
   if (finalizing && scores.length !== criteria.length)
     throw new ApiError(400, "INCOMPLETE_EVALUATION", "Preencha todos os critérios antes de finalizar.");
   return scores;

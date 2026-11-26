@@ -31,7 +31,7 @@ describe("Persistência e isolamento de versões C0", () => {
     first.title = "Modificação externa";
     const another = repo.create(input(2), 0);
     expect(another).toMatchObject({ id: 2, versionNumber: 1 });
-    const second = repo.create({ ...input(), title: "Nova rubrica" }, 1);
+    const second = repo.create({ ...input(), title: "Novos critérios de avaliação" }, 1);
     expect(second).toMatchObject({ id: 3, versionNumber: 2 });
     repo.list(1)[0].criteria[0].title = "Tentativa de alterar histórico";
     repo.get(1)!.requirements[0].maxSizeBytes = 1;

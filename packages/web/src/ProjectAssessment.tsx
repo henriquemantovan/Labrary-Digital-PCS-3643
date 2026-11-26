@@ -24,16 +24,16 @@ export function ProjectAssessment({ projectId, projectStatus, user, expired, onC
       <div className="grid gap-1">
         <h2 className={panelTitle}>Avaliação</h2>
         <p className="text-sm text-muted-foreground">
-          {canSeeEvaluations ? "Requisitos, rubrica e avaliações desta entrega." : "Requisitos e critérios usados na avaliação."}
+          {canSeeEvaluations ? "Requisitos, critérios de avaliação e avaliações desta entrega." : "Requisitos e critérios usados na avaliação."}
         </p>
       </div>
       <div className={buttonRow}>
         <Button variant={rubrics ? "secondary" : "outline"} size="sm" aria-expanded={rubrics} onClick={() => setRubrics(!rubrics)}>
-          Requisitos e rubrica
+          Requisitos e critérios de avaliação
           <ChevronDown aria-hidden="true" className={toggle(rubrics)} />
         </Button>
         {canSeeEvaluations && <Button variant={evaluations ? "secondary" : "outline"} size="sm" aria-expanded={evaluations} onClick={() => setEvaluations(!evaluations)}>
-          Avaliações por rubrica
+          Avaliações por critérios
           <ChevronDown aria-hidden="true" className={toggle(evaluations)} />
         </Button>}
       </div>

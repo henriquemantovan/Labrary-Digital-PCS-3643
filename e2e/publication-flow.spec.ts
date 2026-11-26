@@ -30,7 +30,7 @@ test("S7 integra submissão, avaliação, publicação e retirada pelo servidor 
 }, info) => {
   const visitor = await browser.newContext({ baseURL });
   try {
-    await test.step("Preparar vínculos e rubrica reais", async () => {
+    await test.step("Preparar vínculos e critérios de avaliação reais", async () => {
       await login(page, "professor");
       expect(
         (
@@ -46,7 +46,7 @@ test("S7 integra submissão, avaliação, publicação e retirada pelo servidor 
             headers: csrf,
             data: {
               baseVersionId: 0,
-              title: "Rubrica da demonstração integrada",
+              title: "Critérios de avaliação da demonstração integrada",
               requirements: [
                 {
                   kind: "VIDEO",
@@ -125,10 +125,10 @@ test("S7 integra submissão, avaliação, publicação e retirada pelo servidor 
     await test.step("Avaliação finalizada alimenta a consolidação real", async () => {
       await login(page, "avaliador");
       await page
-        .getByRole("button", { name: "Avaliações por rubrica", exact: true })
+        .getByRole("button", { name: "Avaliações por critérios", exact: true })
         .click();
       const evaluation = page.getByRole("region", {
-        name: "Avaliações por rubrica",
+        name: "Avaliações por critérios",
       });
       await evaluation
         .getByLabel("Nota — Funcionamento", { exact: true })

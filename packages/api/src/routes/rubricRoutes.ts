@@ -29,13 +29,13 @@ export function createRubricRouter(projects: ProjectRepository, auth: AuthReposi
     const item = project(request, response);
     const version = rubrics.get(id.parse(request.params.versionId));
     if (!version || version.projectId !== item.id)
-      throw new ApiError(404, "RUBRIC_NOT_FOUND", "Versão de rubrica não encontrada.");
+      throw new ApiError(404, "RUBRIC_NOT_FOUND", "Versão dos critérios de avaliação não encontrada.");
     response.json({ data: version });
   });
   router.post("/projects/:projectId/configuration/versions", (request, response) => {
     const item = project(request, response);
     if (!permissions.ownsClass(response.locals.user, item.classId))
-      throw new ApiError(403, "FORBIDDEN", "Somente o professor pode configurar requisitos e rubricas.");
+      throw new ApiError(403, "FORBIDDEN", "Somente o professor pode configurar requisitos e critérios de avaliação.");
     const { baseVersionId, ...input } = createSchema.parse(request.body);
     const version = rubrics.create({
       ...input, classId: item.classId, projectId: item.id,

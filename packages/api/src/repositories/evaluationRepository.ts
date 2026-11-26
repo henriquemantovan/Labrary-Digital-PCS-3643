@@ -42,7 +42,7 @@ export function createEvaluationRepository(path?: string): EvaluationRepository 
     if (record.projectId !== round.projectId || record.submissionId !== round.id)
       return false;
     if (record.rubricVersionId !== round.rubricVersionId)
-      throw new Error("A rubrica da avaliação não corresponde à submissão armazenada.");
+      throw new Error("Os critérios de avaliação não correspondem à submissão armazenada.");
     return true;
   }
 

@@ -86,7 +86,7 @@ const submit = (app: App) =>
   app.student.post(`${project}/submissions`).send({ clientSubmissionId: randomUUID() });
 const configure = (app: App, baseVersionId = 0, rubricCriteria = criteria) =>
   app.teacher.post(`${project}/configuration/versions`).send({
-    title: baseVersionId ? "Nova rubrica" : "Rubrica original",
+    title: baseVersionId ? "Novos critérios de avaliação" : "Critérios de avaliação originais",
     requirements: defaultRequirements(dueAt),
     criteria: rubricCriteria,
     baseVersionId,
@@ -216,7 +216,7 @@ describe("HU08: avaliação sobre submissão real", () => {
     const resubmitted = await submit(app);
     expect(resubmitted.status).toBe(201);
     const second = submissionSchema.parse(resubmitted.body.data);
-    expect(second).toMatchObject({ round: 2, rubric: { versionNumber: 2, title: "Nova rubrica" } });
+    expect(second).toMatchObject({ round: 2, rubric: { versionNumber: 2, title: "Novos critérios de avaliação" } });
     expect((await app.evaluator.get(evaluationsAt(second.id))).body.data).toMatchObject({
       canEdit: true, evaluations: [{ status: "PENDENTE", revision: 0 }],
     });
