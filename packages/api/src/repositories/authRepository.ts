@@ -18,6 +18,7 @@ export function createAuthRepository(
   const tokenHash = (token: string) =>
     createHash("sha256").update(token).digest("hex");
   return {
+    developmentTestLogin: false,
     directory,
     findByEmail(email: string): User | undefined {
       return directory.users.find((user) => user.email === email);
@@ -55,6 +56,7 @@ export function createAuthRepository(
 }
 type Awaitable<T> = T | Promise<T>;
 export interface AuthRepository {
+  developmentTestLogin?: boolean;
   directory: Directory;
   refresh?: () => Promise<void>;
   findByEmail(email: string): User | undefined;

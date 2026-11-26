@@ -1,5 +1,7 @@
 # Redesign do frontend — plano de implementação
 
+Registro histórico de 19/11/2026. A interface integrada usa coss ui/Base UI e Tailwind, conforme a [arquitetura atual](../../arquitetura.md). As propostas e instruções abaixo pertencem ao planejamento daquele incremento; não são o guia de execução atual.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Reescrever a interface de `packages/web` no estilo claro e minimalista da especificação `docs/superpowers/specs/2026-11-19-redesign-frontend-design.md`, sem alterar comportamento, textos, rotas ou a API.

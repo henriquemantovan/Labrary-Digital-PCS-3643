@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Mock } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { formatBytes, MaterialsPanel, validateFile } from "./Materials";
 import type { Material, MaterialRule, MaterialRules } from "./api";
@@ -87,14 +87,111 @@ afterEach(() => {
 });
 
 describe("painel de materiais", () => {
+  it("mostra player privado após envio e preserva download para quem só consulta", () => {
+    const current = {
+      ...version(1, "video.webm"),
+      mimeType: "video/webm",
+      playbackUrl: "/api/projects/2/materials/4/versions/1/stream",
+    };
+    const video: Material = {
+      id: 4,
+      kind: "VIDEO",
+      title: "Vídeo de apresentação",
+      currentVersion: current,
+      versions: [current],
+    };
+    const view = renderPanel();
+    expect(screen.queryByLabelText(/Assistir Vídeo/)).toBeNull();
+    view.rerender(
+      <MaterialsPanel
+        projectId={2}
+        materials={[video, report]}
+        rules={{ ...rules, canUpload: false }}
+        onSaved={onSaved}
+        expired={expired}
+      />,
+    );
+    const player = screen.getByLabelText(
+      "Assistir Vídeo de apresentação — versão 1",
+    ) as HTMLVideoElement;
+    expect(player.src).toContain(current.playbackUrl);
+    expect(player.controls).toBe(true);
+    expect(player.preload).toBe("none");
+    expect(player.playsInline).toBe(true);
+    expect(screen.getAllByRole("link", { name: "Baixar" })).toHaveLength(2);
+    expect(screen.queryByRole("button", { name: "Substituir" })).toBeNull();
+    expect(screen.queryByLabelText(/Assistir Relatório/)).toBeNull();
+  });
+  it("permite repetir reprodução com erro e limpa o erro ao receber uma versão nova", async () => {
+    const user = userEvent.setup();
+    const first = {
+      ...version(1, "video.webm"),
+      mimeType: "video/webm",
+      playbackUrl: "/api/projects/2/materials/4/versions/1/stream",
+    };
+    const video: Material = {
+      id: 4,
+      kind: "VIDEO",
+      title: "Vídeo de apresentação",
+      currentVersion: first,
+      versions: [first],
+    };
+    const view = renderPanel([video]);
+    fireEvent.error(screen.getByLabelText(/Assistir Vídeo/));
+    expect(screen.getByRole("alert").textContent).toContain(
+      "Não foi possível reproduzir",
+    );
+    expect(screen.getByRole("link", { name: "Baixar" })).toBeDefined();
+    await user.click(
+      screen.getByRole("button", { name: "Tentar reproduzir novamente" }),
+    );
+    expect(screen.queryByRole("alert")).toBeNull();
+    fireEvent.error(screen.getByLabelText(/Assistir Vídeo/));
+    const latest = {
+      ...first,
+      id: 2,
+      versionNumber: 2,
+      playbackUrl: "/api/projects/2/materials/4/versions/2/stream",
+    };
+    view.rerender(
+      <MaterialsPanel
+        projectId={2}
+        materials={[
+          { ...video, currentVersion: latest, versions: [latest, first] },
+        ]}
+        rules={rules}
+        onSaved={onSaved}
+        expired={expired}
+      />,
+    );
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(
+      screen
+        .getByLabelText("Assistir Vídeo de apresentação — versão 2")
+        .getAttribute("src"),
+    ).toBe(latest.playbackUrl);
+  });
   it("mostra prazo específico e bloqueia somente o material vencido", () => {
-    renderPanel([], { rules: rules.rules.map((item) => item.kind === "RELATORIO" ? {
-      ...item, dueAt: "2026-11-08T12:00:00Z", lock: "DEADLINE_PASSED", canUpload: false,
-    } : item) });
+    renderPanel([], {
+      rules: rules.rules.map((item) =>
+        item.kind === "RELATORIO"
+          ? {
+              ...item,
+              dueAt: "2026-11-08T12:00:00Z",
+              lock: "DEADLINE_PASSED",
+              canUpload: false,
+            }
+          : item,
+      ),
+    });
     expect(screen.getByText(/Prazo de Relatório do projeto:/)).toBeDefined();
     expect(screen.getByText("Prazo deste material encerrado.")).toBeDefined();
-    expect(screen.queryByLabelText("Arquivo para Relatório do projeto")).toBeNull();
-    expect(screen.getByLabelText("Arquivo para Vídeo de apresentação")).not.toBeNull();
+    expect(
+      screen.queryByLabelText("Arquivo para Relatório do projeto"),
+    ).toBeNull();
+    expect(
+      screen.getByLabelText("Arquivo para Vídeo de apresentação"),
+    ).not.toBeNull();
     expect(screen.getByLabelText("Arquivo para Manual de uso")).not.toBeNull();
   });
   it("lista obrigatórios pendentes com formatos, limite e prazo", () => {

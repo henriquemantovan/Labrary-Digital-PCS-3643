@@ -1,6 +1,4 @@
-# API REST — contratos da base c2dbb7f
-
-Revisão documental de 25/11/2026. Consulte a [arquitetura](arquitetura.md) para as conexões efetivas e o [manual](manual-de-uso.md) para o roteiro de uso.
+# API REST — contratos integrados (26/11/2026)
 
 O [C0 — requisitos/rubricas](contratos/c0-requisitos-rubrica.md) define a configuração versionada. O [C2 — avaliação](contratos/c2-avaliacao.md) usa a rubrica da submissão C1 para registrar as avaliações que alimentam a consolidação C3.
 
@@ -8,10 +6,14 @@ Rotas REST usam JSON, exceto o envio de arquivos de materiais (`multipart/form-d
 
 | Método | Rota | Uso | Sucesso |
 | --- | --- | --- | --- |
-| GET | `/api/auth/providers` | Opções disponíveis `{ google, local }` | `200` |
+| GET | `/api/auth/providers` | Opções `{ google, local }`; inclui `testLogin: true` somente com a exceção de desenvolvimento habilitada | `200` |
 | GET | `/api/auth/google` | Inicia OpenID Connect no Google | `302` |
-| GET | `/api/auth/google/callback` | Valida tentativa e cria sessão | `302` para `/projetos` ou `/login?authError=google` |
+| GET | `/api/auth/google/callback` | Valida tentativa e cria sessão | `302` para `/cadastro`, `/projetos` ou `/login?authError=google` |
 | POST | `/api/auth/login` | Autentica `{ email, password }` e emite cookie HttpOnly | `200 { data: PublicUser }` |
+| POST | `/api/auth/profile` | Aluno Google USP confirma `{fullName, uspNumber, entryYear}`; exceção restrita a `cadastro@labrary.test` no desenvolvimento | `200 { data: PublicUser }` |
+| GET | `/api/admin/guests` | ADMIN consulta autorizações de convidados e histórico de revogação | `200 { data: GuestInvitation[] }` |
+| POST | `/api/admin/guests` | ADMIN autoriza `{email}` externo antes do login Google | `201 { data: GuestInvitation }` |
+| DELETE | `/api/admin/guests/:invitationId` | ADMIN revoga autorização e sessões do convidado | `204` |
 | POST | `/api/auth/view-role` | ADMIN seleciona `{ role: "ALUNO" | "AVALIADOR" | "PROFESSOR" | null }` para sua sessão | `200 { data: PublicUser }` |
 | GET | `/api/admin/users` | ADMIN lista contas com ID, nome, e-mail, papel e estado | `200 { data: ManagedUser[] }` |
 | PATCH | `/api/admin/users/:userId/role` | ADMIN altera `{ role: "ALUNO" | "AVALIADOR" | "PROFESSOR" | "ADMIN" }` | `200 { data: ManagedUser }` |
@@ -27,12 +29,17 @@ Rotas REST usam JSON, exceto o envio de arquivos de materiais (`multipart/form-d
 | POST | `/api/projects/:projectId/materials` | Registra material novo (versão 1) | `201 { data: ProjectMaterial }` |
 | POST | `/api/projects/:projectId/materials/:materialId/versions` | Substitui material criando nova versão | `201 { data: ProjectMaterial }` |
 | GET | `/api/projects/:projectId/materials/:materialId/versions/:versionId/file` | Baixa o arquivo de uma versão | `200` com o arquivo |
+| GET/HEAD | `/api/projects/:projectId/materials/:materialId/versions/:versionId/stream` | Reproduz vídeo privado; aceita Range simples | `200` ou `206` com os bytes autorizados |
 | GET | `/api/projects/:projectId/messages` | Consulta feedback privado | `200 { data: ProjectMessage[] }` |
 | POST | `/api/projects/:projectId/messages` | Envia feedback privado | `201` ou `200` na repetição idêntica |
 
-Todas as rotas de projetos, materiais e escopo exigem sessão válida. `GET /projects` aplica o escopo antes de retornar dados; filtros não ampliam acesso. Um projeto fora do escopo responde com o mesmo `404` de um projeto inexistente. Professor/ADMIN cria projetos para grupos da própria turma; apenas aluno do grupo envia materiais enquanto o projeto está em Preparação/Ajustes (`409 PROJECT_LOCKED` nos demais estados).
+Todas as rotas de projetos, materiais e escopo exigem sessão válida. `GET /projects` aplica o escopo antes de retornar dados; filtros não ampliam acesso. Um projeto fora do escopo responde com o mesmo `404` de um projeto inexistente. Professor/ADMIN cria projetos conforme seu escopo; apenas aluno do grupo envia arquivos enquanto o projeto está em Preparação/Ajustes (`409 PROJECT_LOCKED` nos demais estados).
 
-`PublicUser` contém `id`, `fullName`, `email`, `role`; contas Google incluem `googleLinked: true`. Segredos OAuth não são retornados. Em modo Google, o login local responde `403 LOCAL_LOGIN_DISABLED`. Veja [configuração Google e migrations](login-google.md). Credenciais inválidas/inativas retornam `401 INVALID_CREDENTIALS`, sempre com `E-mail ou senha inválidos.`. Mutações POST, PUT, PATCH e DELETE exigem o cabeçalho `X-CSRF-Protection: 1`; `Origin`, se informado, deve ser igual a `APP_ORIGIN`. Não há CORS. Use a mesma origem para frontend e `/api`.
+`PublicUser` contém `id`, `fullName`, `email`, `role`; contas Google incluem `googleLinked: true`. Segredos OAuth não são retornados. No modo Google, o login por senha responde `403 LOCAL_LOGIN_DISABLED`, exceto pelos oito endereços fictícios `@labrary.test` com `DEV_TEST_LOGIN=true` em desenvolvimento local. A exceção recusa senhas de usuários comuns, mesmo com hash legado, e não atribui identidade Google às contas fictícias. Desligar a opção bloqueia suas sessões. Veja [configuração e contas de teste](login-google.md#contas-fictícias-com-senha-no-desenvolvimento-googler2). Credenciais inválidas/inativas retornam `401 INVALID_CREDENTIALS`, sempre com `E-mail ou senha inválidos.`. Mutações POST, PUT, PATCH e DELETE exigem o cabeçalho `X-CSRF-Protection: 1`; `Origin`, se informado, deve ser igual a `APP_ORIGIN`. Não há CORS. Use a mesma origem para frontend e `/api`.
+
+Contas Google também recebem `guest`, `uspNumber`, `entryYear` e `requiresAcademicProfile`. NUSP e ano ficam nulos antes do preenchimento; esses campos são da própria conta e não entram no catálogo ou nas listas de integrantes. A API exige `@usp.br` ou convite vigente; validar o domínio só na interface não autoriza a conta. Aluno USP sem cadastro completo recebe `403 ACADEMIC_PROFILE_REQUIRED` em projetos, turmas e escopo. `/auth/me`, `/auth/profile` e logout continuam disponíveis para concluir o cadastro ou sair. No desenvolvimento com a exceção ativa, `cadastro@labrary.test` exerce o mesmo preenchimento e bloqueio, sem identidade Google; os dados são salvos no PostgreSQL. Os `PublicUser` fictícios recebem `developmentTest: true`, `guest`, `uspNumber`, `entryYear` e `requiresAcademicProfile`. As demais contas por senha continuam sem cadastro obrigatório. `convidado@labrary.test` exige convite ativo no login e nas requisições privadas; revogar remove suas sessões e bloqueia a senha até uma nova autorização. Nenhuma dessas exceções é habilitada em produção.
+
+O cadastro usa nome completo com duas partes, NUSP numérico de até 32 dígitos e ano inteiro entre 1900 e o ano atual. Dados inválidos recebem 400; NUSP de outra conta recebe `409 USP_NUMBER_IN_USE`. Autor, conta e papel não são aceitos no corpo. Convites são exclusivos de ADMIN: `GuestInvitation` contém `id,email,invitedBy,createdAt,revokedAt,revokedBy`, sem conceder permissões acadêmicas. Convite inexistente recebe 404, e tentativa de revogar o próprio convite administrativo recebe `409 OWN_INVITATION`. Novos registros e revogações conservam histórico no PostgreSQL.
 
 As respostas da API incluem `Cache-Control: no-store`. Veja [HU01](hu01.md) para matriz de permissões, configurações, contas e ciclo da sessão.
 
@@ -60,25 +67,29 @@ Exemplo de erro:
 }
 ```
 
-`ProjectMaterial` contém `id`, `projectId`, `kind`, `title`, `createdBy`, `createdAt`, `currentVersion` e `versions` (da mais recente para a mais antiga). Cada versão traz `versionNumber`, `originalFilename`, `mimeType`, `sizeBytes`, `checksumSha256`, `uploadedBy { id, fullName }`, `uploadedAt` e `downloadUrl`; a chave interna de armazenamento não é exposta. Criar um material com o mesmo tipo e título (sem diferenciar maiúsculas) responde `409 MATERIAL_ALREADY_EXISTS`: a substituição usa a rota de versões, que nunca apaga versões anteriores. Material inexistente ou de outro projeto responde `404 MATERIAL_NOT_FOUND`.
+`ProjectMaterial` contém `id`, `projectId`, `kind`, `title`, `createdBy`, `createdAt`, `currentVersion` e `versions` (da mais recente para a mais antiga). Cada versão traz `versionNumber`, `originalFilename`, `mimeType`, `sizeBytes`, `checksumSha256`, `uploadedBy { id, fullName }`, `uploadedAt` e `downloadUrl`; vídeos também trazem `playbackUrl` para reprodução privada. A chave interna de armazenamento não é exposta. Criar um material com o mesmo tipo e título (sem diferenciar maiúsculas) responde `409 MATERIAL_ALREADY_EXISTS`: a substituição usa a rota de versões, que nunca apaga versões anteriores. Material inexistente ou de outro projeto responde `404 MATERIAL_NOT_FOUND`.
 
-`MaterialRules` contém `dueAt`, `lock` (`null`, `PROJECT_LOCKED` ou `DEADLINE_PASSED`), `canUpload` e `rules` (por tipo: `kind`, `defaultTitle`, `required`, `formats[{ label, mimeType, extensions }]`, `maxSizeBytes`). A política atual usa a rubrica versionada do projeto; os formatos e tetos de referência da política padrão são: vídeo MP4/WebM até 500 MB; relatório e manual PDF até 20 MB; outros PDF/ZIP/PNG/JPEG até 50 MB. A entrega está aberta em Preparação antes de `dueAt` e em Ajustes (reabertura pelo professor, mesmo após o prazo). Envios recusados respondem `400 EMPTY_FILE`, `413 FILE_TOO_LARGE`, `415 UNSUPPORTED_FORMAT` (tipo ou extensão fora da regra) ou `409 DEADLINE_PASSED`.
+`MaterialRules` contém `dueAt`, `lock` (`null`, `PROJECT_LOCKED` ou `DEADLINE_PASSED`), `canUpload` e `rules` (por tipo: `kind`, `defaultTitle`, `required`, `formats[{ label, mimeType, extensions }]`, `maxSizeBytes`). A política usa os requisitos da rubrica vigente; sem configuração, aplica os padrões: vídeo MP4/WebM até 500 MB; relatório e manual PDF até 20 MB; outros PDF/ZIP/PNG/JPEG até 50 MB. A entrega está aberta em Preparação antes de `dueAt` e em Ajustes (reabertura pelo professor, mesmo após o prazo). Envios recusados respondem `400 EMPTY_FILE`, `413 FILE_TOO_LARGE`, `415 UNSUPPORTED_FORMAT` (tipo ou extensão fora da regra) ou `409 DEADLINE_PASSED`.
 
 **Envio de arquivos.** `POST …/materials` e `POST …/materials/:materialId/versions` recebem `multipart/form-data` com **um** arquivo no campo `file`. Na criação, o campo `kind` deve vir **antes** do arquivo (define o limite aplicado durante o envio); `title` é opcional (padrão: título sugerido do tipo). A substituição não aceita outros campos (`400 UNEXPECTED_FIELD`). O servidor:
 
 - recusa antes de ler o corpo se o `Content-Length` já excede o limite do tipo (`413`);
-- grava em streaming numa pasta privada (`UPLOAD_DIR`), interrompendo ao passar do limite (`413 FILE_TOO_LARGE`);
+- grava em streaming no armazenamento privado configurado (disco ou R2, com temporário local limitado), interrompendo ao passar do limite (`413 FILE_TOO_LARGE`);
 - identifica o formato pelos bytes iniciais (PDF, MP4, WebM, ZIP, PNG, JPEG), ignorando o `Content-Type` do navegador; formato ou extensão fora da regra → `415 UNSUPPORTED_FORMAT`; arquivo vazio → `400 EMPTY_FILE`;
 - registra tamanho real e SHA-256 da versão;
 - apaga o arquivo recebido em qualquer recusa, inclusive se a entrega fechar durante o envio.
 
-Erros de formato do envio: `400 MULTIPART_REQUIRED`, `FILE_REQUIRED`, `UNEXPECTED_FILE`, `TOO_MANY_FILES`, `TOO_MANY_FIELDS`, `FIELD_TOO_LONG` e `INVALID_MULTIPART`.
+Erros de formato do envio: `400 MULTIPART_REQUIRED`, `FILE_REQUIRED`, `UNEXPECTED_FILE`, `TOO_MANY_FILES`, `TOO_MANY_FIELDS`, `FIELD_TOO_LONG` e `INVALID_MULTIPART`. No R2, capacidade excedida retorna `507 STORAGE_CAPACITY_LIMIT`, limite mensal de operações retorna `503 STORAGE_OPERATION_LIMIT` e falha remota retorna `503 STORAGE_UNAVAILABLE`. O envio não é confirmado na lista de versões se os bytes não forem gravados.
 
 Exemplo: `curl -b cookies.txt -H 'X-CSRF-Protection: 1' -F kind=RELATORIO -F 'file=@relatorio.pdf' http://localhost:3000/api/projects/2/materials`.
 
-**Download.** `GET …/versions/:versionId/file` exige sessão e acesso de leitura ao projeto (integrantes do grupo, avaliadores atribuídos e professor da turma). O arquivo vem com `Content-Disposition: attachment` (nome original em UTF-8), o `Content-Type` detectado no envio, `X-Content-Type-Options: nosniff`, `Content-Security-Policy: default-src 'none'; sandbox` e `Cache-Control: no-store`. Projeto fora do escopo → `404 PROJECT_NOT_FOUND`; material, versão ou arquivo ausente → `404 FILE_NOT_FOUND`. Não existe URL pública de material.
+**Download privado.** `GET …/versions/:versionId/file` exige sessão e acesso de leitura ao projeto (integrantes do grupo, avaliadores atribuídos e professor da turma). O arquivo vem com `Content-Disposition: attachment` (nome original em UTF-8), o `Content-Type` detectado no envio, `X-Content-Type-Options: nosniff`, `Content-Security-Policy: default-src 'none'; sandbox` e `Cache-Control: no-store`. Projeto fora do escopo → `404 PROJECT_NOT_FOUND`; material, versão ou arquivo ausente → `404 FILE_NOT_FOUND`. Essa rota permanece privada após publicação; bytes públicos autorizados usam a rota própria C4.
 
-A HU01 autentica e autoriza estas rotas. O entrypoint da API persiste projetos, materiais com suas versões e mensagens em arquivo privado desde a HU07; os bytes dos arquivos ficam em `UPLOAD_DIR`. Sem snapshot anterior, no modo local há seed; no modo Google iniciam vazios. Identidades, vínculos de autorização, sessões e tentativas OAuth usam PostgreSQL no modo Google; no modo local, sessões ficam em memória.
+**Player privado.** `GET/HEAD …/versions/:versionId/stream` usa a mesma sessão e o mesmo escopo, mesmo para projetos ainda não publicados. Só aceita versões de vídeo; documentos ou arquivos ausentes recebem `404 FILE_NOT_FOUND`. Retorna `Content-Disposition: inline`, `Accept-Ranges: bytes` e `Cache-Control: no-store`. Range simples válido recebe `206` e `Content-Range`; faixa inválida ou múltipla recebe `416 INVALID_RANGE`. HEAD retorna apenas os cabeçalhos, ignorando Range. O acesso ao projeto é revalidado depois de abrir os bytes e depois de abrir o intervalo; vínculo revogado bloqueia novas requisições. Links copiados não dispensam autenticação. A interface mostra o player da versão atual após o envio, carrega os bytes ao apertar Play e mantém Baixar e o histórico de versões.
+
+A HU01 autentica e autoriza estas rotas. O entrypoint da API persiste projetos, materiais com suas versões e mensagens em arquivo privado desde a HU07; os bytes dos arquivos ficam em `UPLOAD_DIR` ou no bucket privado R2, conforme `STORAGE_PROVIDER`. Sem snapshot anterior, no modo local há seed; no modo Google iniciam vazios. Identidades, vínculos de autorização, sessões e tentativas OAuth usam PostgreSQL no modo Google; no modo local, sessões ficam em memória.
+
+No modo R2, uploads também podem responder `507 STORAGE_CAPACITY_LIMIT` ao atingir o limite total do bucket. Operações de arquivo e verificações de publicação podem responder `503 STORAGE_OPERATION_LIMIT` ao esgotar o orçamento mensal local ou `503 STORAGE_UNAVAILABLE` quando o provedor falha. Não são devolvidos endpoint, credenciais ou links diretos para o bucket; URLs e permissões dos materiais continuam iguais. Os limites locais não equivalem a um bloqueio de cobrança da Cloudflare. Veja [configuração R2 e franquia](arquitetura.md#cloudflare-r2-e-controle-da-franquia-gratuita).
 
 ## Acompanhamento — HU06
 
@@ -88,7 +99,7 @@ Lista, detalhe e criação retornam os campos de `Project`, mais `groupName` e `
 
 `GET /projects/:projectId/materials` permite ao avaliador atribuído consultar todas as versões registradas, inclusive em Preparação/Ajustes, sem permitir alterações. Acesso fora da atribuição recebe `404` tanto no detalhe quanto nos materiais. Revogar a atribuição bloqueia a próxima requisição. As respostas de projeto selecionam explicitamente os campos de acompanhamento; notas e comentários não fazem parte desse contrato.
 
-Não há rota de galeria pública neste incremento. Rotas privadas continuam exigindo sessão mesmo para projetos Finalizados. O conteúdo dos arquivos é aberto pela rota protegida de download da HU04; a projeção pública deverá ser implementada e validada na HU11/HU12. Veja [escopo e revisão da HU06](hu06.md).
+Rotas privadas continuam exigindo sessão mesmo para projetos Finalizados. A consulta pública usa o C4 em `/api/catalog`, com seleção explícita de versões; não reutiliza o download privado da HU04. Veja [escopo da HU06](api-inicial.md) e [integração da publicação](hu11.md).
 
 ## Feedback privado — HU07
 
@@ -100,13 +111,13 @@ Envio: `{ "clientMessageId": "UUID", "body": "Texto de 1 a 5000 caracteres", "ma
 
 Projeto + autor + `clientMessageId` identificam uma tentativa lógica: criação retorna 201; repetição com mesmo texto normalizado e contexto retorna 200 com a mensagem original; payload diferente com a mesma chave retorna `409 MESSAGE_ID_CONFLICT`. Campos adicionais, UUID inválido, texto vazio/excessivo ou ID malformado recebem 400; contexto inexistente/de outro projeto recebe `404 MATERIAL_NOT_FOUND`. Falha de armazenamento retorna 500 sem atualizar o estado em memória.
 
-Persistência do servidor em `.data/projects-<modo>.json`, substituição atômica de snapshot, um processo escritor; `PROJECT_DATA_FILE` configura outro caminho. Não há alterações no schema PostgreSQL; os bytes dos materiais ficam em `UPLOAD_DIR`. Sessões do modo Google usam PostgreSQL; no modo local continuam em memória. Limites e roteiro em [docs/hu07.md](hu07.md).
+Persistência do servidor em `.data/projects-<modo>.json`, substituição atômica de snapshot, um processo escritor; `PROJECT_DATA_FILE` configura outro caminho. Não há alterações no schema PostgreSQL; os bytes dos materiais ficam em `UPLOAD_DIR` ou no bucket privado R2. Sessões do modo Google usam PostgreSQL; no modo local continuam em memória. Limites e roteiro em [docs/hu07.md](hu07.md).
 
 ## Login Google
 
-`GET /api/auth/google` emite cookie HttpOnly `labrary_google` SameSite=Lax com validade de dez minutos e redireciona para o Google. `GET /api/auth/google/callback` valida state/cookie, consome a tentativa de uso único, troca o código com PKCE, verifica o ID token e persiste a conta e a sessão. Retorna `302` para `/projetos`, ou `/login?authError=google|inactive|account_conflict`. Não aceita papel ou identidade enviados pelo navegador. O e-mail precisa ser verificado. Novas contas recebem `ALUNO`; papéis existentes são mantidos.
+`GET /api/auth/google` emite cookie HttpOnly `labrary_google` SameSite=Lax com validade de dez minutos e redireciona para o Google. `GET /api/auth/google/callback` valida state/cookie, consome a tentativa de uso único, troca o código com PKCE, verifica o ID token e persiste a conta e a sessão. Retorna `302` para `/cadastro` se o aluno precisa concluir os dados, para `/projetos` caso contrário, ou para `/login?authError=google|inactive|account_conflict|usp_only` em caso de recusa. Não aceita papel ou identidade enviados pelo navegador. O e-mail precisa ser verificado. Novas contas recebem `ALUNO`; papéis existentes são mantidos.
 
-O cookie `labrary_session` é HttpOnly, SameSite=Lax e Secure em produção; só seu SHA-256 fica no banco. A sessão é restaurada em `/auth/me`, tem expiração absoluta de oito horas, pode ser usada entre instâncias e é revogada no logout/desativação. `POST /auth/logout` mantém proteção CSRF e revogação idempotente. Tokens Google e segredos não são retornados nem persistidos. A API não oferece cadastro por senha no modo Google.
+O cookie `labrary_session` é HttpOnly, SameSite=Lax e Secure em produção; só seu SHA-256 fica no banco. A sessão é restaurada em `/auth/me`, tem expiração absoluta de oito horas, pode ser usada entre instâncias e é revogada no logout/desativação. `POST /auth/logout` mantém proteção CSRF e revogação idempotente. Tokens Google e segredos não são retornados nem persistidos. A API não oferece cadastro público por senha. As oito contas reservadas de desenvolvimento são provisionadas pelo CLI, sem criar identidades Google.
 
 ## Administração e visualização de perfis
 
@@ -116,7 +127,7 @@ O papel `ADMIN` é persistido em `app_user.role`, mantido pelos próximos logins
 
 Na visão administrativa, ADMIN vê todos os projetos, turmas e grupos e pode criar projetos para grupos existentes. Registro de materiais conserva as regras de aluno/grupo/estado: a administração não ignora essas regras. Mudar apenas a visualização não cria vínculos com turma, grupo ou projeto.
 
-Mudanças de papel usam transação com bloqueio para impedir que remoções concorrentes deixem zero administradores ativos. Remover o último ADMIN ativo retorna `409 LAST_ADMIN`. A transação limpa as prévias das sessões da conta alterada e registra autor, alvo, papel anterior, novo papel e data em `user_role_audit`. Um administrador destituído perde acesso administrativo na próxima requisição. O estado das contas e os vínculos acadêmicos são preservados.
+Mudanças de papel usam transação com bloqueio para impedir que remoções concorrentes deixem zero administradores ativos. Remover o último ADMIN real ativo retorna `409 LAST_ADMIN`; administradores dos endereços fictícios reservados não contam como substitutos dessa conta. A transação limpa as prévias das sessões da conta alterada e registra autor, alvo, papel anterior, novo papel e data em `user_role_audit`. Um administrador destituído perde acesso administrativo na próxima requisição. O estado das contas e os vínculos acadêmicos são preservados.
 
 
 ## Grupos e vínculos — HU02 / S5
@@ -137,14 +148,14 @@ IDs são inteiros positivos seguros; listas aceitam até 200 IDs únicos e podem
 
 Professor gerencia somente a própria turma; ADMIN sem prévia gerencia todas. Prévia acadêmica usa o perfil e vínculos efetivos. Papel inadequado recebe `403 FORBIDDEN`; turma/projeto fora do escopo recebem `404 CLASS_NOT_FOUND` / `PROJECT_NOT_FOUND`; grupo inexistente ou de outra turma no caminho recebe `404 GROUP_NOT_FOUND`. Dados inválidos recebem `400 VALIDATION_ERROR`; conta inexistente, inativa ou de perfil incompatível recebe `400 INVALID_LINK`; nome duplicado recebe `409 GROUP_EXISTS`. Sem sessão: 401; CSRF/origem inválidos: 403. Remoção revoga leitura na próxima requisição da mesma sessão.
 
-A resposta privada de projeto também informa `academicYear`, derivado da turma (nulo se o diretório não tiver a turma). Persistência e decisão transitória da FK de avaliadores estão em [HU02](hu02.md). O [contrato público C4](contratos/c4-publicacao.md) define as futuras rotas do catálogo/publicação; elas continuam sem implementação nesta semana.
+A resposta privada de projeto também informa `academicYear`, derivado da turma (nulo se o diretório não tiver a turma). Persistência e decisão transitória da FK de avaliadores estão em [HU02](hu02.md). O [contrato público C4](contratos/c4-publicacao.md) documenta as rotas implementadas do catálogo/publicação.
 
 
-## Finalização e publicação — HU11 / S6
+## Finalização e publicação — HU11 / S7
 
 Rotas implementadas: `GET /api/projects/:projectId/publication`, `POST /api/projects/:projectId/finalization`, `POST/DELETE /api/projects/:projectId/publication`; consulta anônima em `GET /api/catalog`, `GET /api/catalog/:projectId` e `GET/HEAD /api/catalog/:projectId/materials/:versionId/file`. Contratos, seleção, autorização do grupo e erros estão no [C4 atualizado](contratos/c4-publicacao.md).
 
-As rotas privadas exigem sessão, perfil docente/ADMIN, turma e CSRF nas mutações. Finalização e publicação verificam a última submissão e a completude das avaliações pela porta injetável; o entrypoint não injeta fixtures nem assume conclusão. Sem os adapters reais, novas decisões recebem 503 e os controles ficam indisponíveis. Retirada e leitura de publicações previamente registradas não dependem desses provedores.
+As rotas privadas exigem sessão, perfil docente/ADMIN, turma e CSRF nas mutações. A factory conecta `createSubmissionProvider(repository)` ao C1 persistido e `createPublicationEvaluationProvider(evaluations, resultReleases)` ao mesmo C2/C3 usado na consolidação. O entrypoint usa o repositório real de avaliações; não injeta fixtures nem assume conclusão. Prontidão incompleta recebe 409; na factory sem fonte de avaliações, ou diante de erro de leitura dos provedores, novas decisões recebem 503. Retirada e leitura de publicações previamente registradas não dependem desses provedores. C1/C3 são relidos depois das verificações assíncronas dos arquivos, recusando devolução, troca de rodada ou reabertura concorrente.
 
 Decisões, snapshot finalizado e projeção pública são preservados no arquivo privado dos projetos. Finalizado continua privado até publicar. Retirada conserva os dados privados e bloqueia listagem/detalhe/bytes de novas requisições. Vídeo suporta um Range e reprodução inline; documentos usam attachment; HEAD não envia corpo. Veja [persistência, interfaces C1/C3, limites e testes](hu11.md).
 

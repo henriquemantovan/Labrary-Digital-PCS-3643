@@ -76,7 +76,7 @@ export function createPublicationService(
       throw unavailable();
     }
   }
-  async function ready(project: Project): Promise<Submission> {
+  async function latestSubmission(project: Project): Promise<Submission> {
     if (!providers) throw unavailable();
     const input = await fromProvider(() =>
       providers.submissions.latest(project.id),
@@ -91,16 +91,20 @@ export function createPublicationService(
       submission.rubric.classId !== project.classId
     )
       throw notReady();
+    return submission;
+  }
+  async function assertComplete(
+    project: Project,
+    submission: Submission,
+    expected: number[],
+  ) {
     const status = publicationCompletenessSchema.safeParse(
       await fromProvider(() =>
-        providers.evaluations.completeness(project.id, submission.id),
+        providers!.evaluations.completeness(project.id, submission.id),
       ),
     );
     if (!status.success) throw notReady();
     const evaluations = status.data;
-    const expected = auth.directory.assignments
-      .filter((link) => link.projectId === project.id)
-      .map((link) => link.evaluatorId);
     if (
       evaluations.projectId !== project.id ||
       evaluations.submissionId !== submission.id ||
@@ -115,6 +119,13 @@ export function createPublicationService(
       !evaluations.allEvaluationsCompleted
     )
       throw notReady();
+  }
+  async function ready(project: Project): Promise<Submission> {
+    const submission = await latestSubmission(project);
+    const expected = auth.directory.assignments
+      .filter((link) => link.projectId === project.id)
+      .map((link) => link.evaluatorId);
+    await assertComplete(project, submission, expected);
     for (const requirement of submission.rubric.requirements) {
       const material = submission.materials.find(
         (material) => material.kind === requirement.kind,
@@ -147,6 +158,14 @@ export function createPublicationService(
       file.stream.on("error", () => undefined).destroy();
       if (file.sizeBytes !== material.sizeBytes) throw notReady();
     }
+    // A leitura dos bytes cede o processo: C1/C3 podem ter sido devolvidos ou
+    // reabertos nesse intervalo. Releia antes da decisão síncrona persistida.
+    if (
+      JSON.stringify(await latestSubmission(project)) !==
+      JSON.stringify(submission)
+    )
+      throw conflict();
+    await assertComplete(project, submission, expected);
     const currentExpected = auth.directory.assignments
       .filter((link) => link.projectId === project.id)
       .map((link) => link.evaluatorId);

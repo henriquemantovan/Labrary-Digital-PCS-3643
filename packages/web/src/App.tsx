@@ -4,6 +4,8 @@ import { httpCatalog } from "./catalogClient";
 import { api, ApiError } from "./api";
 import type { User } from "./api";
 import { AdminUsers } from "./AdminUsers";
+import { AcademicRegistration } from "./AcademicRegistration";
+import { GuestInvitations } from "./GuestInvitations";
 import { Gradebook } from "./Gradebook";
 import { Brand } from "./components/Brand";
 import { Loading, Notice } from "./components/Feedback";
@@ -76,7 +78,8 @@ function PrivateApp() {
   }, [bootstrap]);
   // Sessão já ativa ao abrir /login: segue direto para os projetos.
   useEffect(() => {
-    if (user && path === "/login") navigate("/projetos");
+    if (user && path === "/login")
+      navigate(user.requiresAcademicProfile ? "/cadastro" : "/projetos");
   }, [user, path, navigate]);
   useEffect(() => {
     if (!user) return;
@@ -152,7 +155,22 @@ function PrivateApp() {
           setUser(current);
           setMessage("");
           setLogoutError("");
-          if (path === "/" || path === "/login") navigate("/projetos");
+          if (current.requiresAcademicProfile) navigate("/cadastro");
+          else if (path === "/" || path === "/login") navigate("/projetos");
+        }}
+      />
+    );
+  if (user.requiresAcademicProfile)
+    return (
+      <AcademicRegistration
+        user={user}
+        expired={expired}
+        logout={logout}
+        logoutBusy={busy}
+        logoutError={logoutError}
+        onSaved={(current) => {
+          setUser(current);
+          navigate("/projetos");
         }}
       />
     );
@@ -200,25 +218,32 @@ function PrivateApp() {
         )}
         {viewError && <Notice>{viewError}</Notice>}
       </div>
-      {path === "/notas" && ["PROFESSOR", "ADMIN"].includes(visibleUser.role) ? (
-            <Gradebook key={`${user.id}-${user.viewRole ?? ""}`} expired={expired} />
-          ) : path === "/administracao" && user.role === "ADMIN" ? (
-            <AdminUsers
-              expired={expired}
-              onSessionChanged={(current) => {
-                setUser(current);
-                if (current.role !== "ADMIN") navigate("/projetos");
-              }}
-            />
-          ) : (
-            <Dashboard
-              key={`${user.id}-${user.role}-${user.viewRole ?? ""}`}
-              user={path === "/perfil" ? user : visibleUser}
-              path={path}
-              navigate={navigate}
-              expired={expired}
-            />
-          )}
+      {path === "/notas" &&
+      ["PROFESSOR", "ADMIN"].includes(visibleUser.role) ? (
+        <Gradebook
+          key={`${user.id}-${user.viewRole ?? ""}`}
+          expired={expired}
+        />
+      ) : path === "/administracao" && user.role === "ADMIN" ? (
+        <>
+          <AdminUsers
+            expired={expired}
+            onSessionChanged={(current) => {
+              setUser(current);
+              if (current.role !== "ADMIN") navigate("/projetos");
+            }}
+          />
+          <GuestInvitations expired={expired} />
+        </>
+      ) : (
+        <Dashboard
+          key={`${user.id}-${user.role}-${user.viewRole ?? ""}`}
+          user={path === "/perfil" ? user : visibleUser}
+          path={path}
+          navigate={navigate}
+          expired={expired}
+        />
+      )}
     </AppShell>
   );
 }

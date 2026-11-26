@@ -239,14 +239,16 @@ test("HU11 retirada bloqueia catálogo, documentos, HEAD e novas requisições R
   ).toBeVisible();
 });
 
-test("HU11 mantém a finalização indisponível sem os provedores reais", async ({
+test("HU11 mantém a finalização bloqueada sem submissão real completa", async ({
   page,
   baseURL,
 }) => {
   await login(page, baseURL!);
   const panel = page.getByRole("region", { name: "Finalização e publicação" });
   await expect(
-    panel.getByText(/Finalização e publicação indisponíveis/),
+    panel.getByText(
+      /A finalização exige uma entrega completa e todas as avaliações concluídas/,
+    ),
   ).toBeVisible();
   await expect(
     panel.getByRole("button", { name: "Finalizar projeto" }),

@@ -7,6 +7,7 @@ import request from "supertest";
 import { createApp } from "../src/app.js";
 import { createPostgresAuthRepository } from "../src/repositories/postgresAuthRepository.js";
 import { createPostgresIdentityRepository } from "../src/repositories/postgresIdentityRepository.js";
+import { createPostgresAcademicAccessRepository } from "../src/repositories/postgresAcademicAccessRepository.js";
 import { createPostgresGroupRepository } from "../src/repositories/postgresGroupRepository.js";
 import { createMemoryProjectRepository } from "../src/repositories/projectRepository.js";
 import { createFileProjectStorage } from "../src/repositories/fileProjectStorage.js";
@@ -16,25 +17,30 @@ export async function verifyGroups(pool: Pool, connectionString: string) {
   const student = await identity.saveProfile({
     subject: "hu02-student",
     fullName: "Estudante Google",
-    email: "hu02-student@example.com",
+    email: "hu02-student@usp.br",
     emailVerified: true,
   });
+  await createPostgresAcademicAccessRepository(pool).saveProfile(
+    student.id,
+    { fullName: "Estudante Google", uspNumber: "876543219", entryYear: 2024 },
+    Date.now(),
+  );
   const evaluator = await identity.saveProfile({
     subject: "hu02-evaluator",
     fullName: "Avaliador Google",
-    email: "hu02-evaluator@example.com",
+    email: "hu02-evaluator@usp.br",
     emailVerified: true,
   });
   const teacher = await identity.saveProfile({
     subject: "hu02-teacher",
     fullName: "Professor Google",
-    email: "hu02-teacher@example.com",
+    email: "hu02-teacher@usp.br",
     emailVerified: true,
   });
   const administrator = await identity.saveProfile({
     subject: "hu02-admin",
     fullName: "Administrador Google",
-    email: "hu02-admin@example.com",
+    email: "hu02-admin@usp.br",
     emailVerified: true,
   });
   await pool.query("UPDATE app_user SET role='PROFESSOR' WHERE id=$1", [

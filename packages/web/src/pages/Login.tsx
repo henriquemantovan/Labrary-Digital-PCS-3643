@@ -32,13 +32,14 @@ export function Login({
   const [providers, setProviders] = useState<{
     google: boolean;
     local: boolean;
+    testLogin?: boolean;
   } | null>(null);
   const [providerError, setProviderError] = useState("");
   async function loadProviders() {
     setProviderError("");
     try {
       setProviders(
-        await api<{ google: boolean; local: boolean }>("/auth/providers"),
+        await api<{ google: boolean; local: boolean; testLogin?: boolean }>("/auth/providers"),
       );
     } catch (error) {
       setProviderError((error as Error).message);
@@ -51,13 +52,15 @@ export function Login({
     "authError",
   );
   const googleError =
-    authError === "account_conflict"
-      ? "Já existe uma conta com esse e-mail. Solicite ao responsável a vinculação da conta Google."
-      : authError === "inactive"
-        ? "Sua conta está desativada. Contate o responsável."
-        : authError
-          ? "Não foi possível entrar com o Google. Tente novamente; se persistir, contate o responsável."
-          : "";
+    authError === "usp_only"
+      ? "Use seu e-mail USP (@usp.br). Contas externas precisam de convite autorizado pelo administrador."
+      : authError === "account_conflict"
+        ? "Já existe uma conta com esse e-mail. Solicite ao responsável a vinculação da conta Google."
+        : authError === "inactive"
+          ? "Sua conta está desativada. Contate o responsável."
+          : authError
+            ? "Não foi possível entrar com o Google. Tente novamente; se persistir, contate o responsável."
+            : "";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [visible, setVisible] = useState(false);
@@ -84,7 +87,11 @@ export function Login({
     <main className="grid min-h-dvh place-items-center bg-sidebar px-4 py-10">
       <div className="w-full max-w-[400px]">
         <div className="mb-6 flex items-center justify-between">
-          <a href="/" className="no-underline" aria-label="labrary digital — início">
+          <a
+            href="/"
+            className="no-underline"
+            aria-label="labrary digital — início"
+          >
             <Brand />
           </a>
           <a
@@ -107,7 +114,8 @@ export function Login({
               começa aqui.
             </CardTitle>
             <CardDescription>
-              Entre com sua conta para acessar seu espaço.
+              Entre com seu e-mail USP (@usp.br). O acesso com outra conta
+              Google é exclusivo para convidados autorizados.
             </CardDescription>
           </CardHeader>
           <CardPanel className="grid gap-4">
@@ -117,14 +125,26 @@ export function Login({
             {providerError && (
               <Notice>
                 {providerError}
-                <Button variant="outline" size="xs" onClick={() => void loadProviders()}>
+                <Button
+                  variant="outline"
+                  size="xs"
+                  onClick={() => void loadProviders()}
+                >
                   Tentar novamente
                 </Button>
               </Notice>
             )}
             {!providers && !providerError && (
-              <p role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Spinner aria-hidden="true" aria-label={undefined} role="presentation" className="size-4" />
+              <p
+                role="status"
+                className="flex items-center gap-2 text-sm text-muted-foreground"
+              >
+                <Spinner
+                  aria-hidden="true"
+                  aria-label={undefined}
+                  role="presentation"
+                  className="size-4"
+                />
                 Carregando opções de acesso…
               </p>
             )}
@@ -158,12 +178,18 @@ export function Login({
                 aria-label="Entrar na conta"
                 className="grid gap-4"
               >
+                {providers.testLogin && (
+                  <p className="rounded-lg border bg-muted p-3 text-sm text-muted-foreground">
+                    Contas de teste do desenvolvimento: use um e-mail @labrary.test
+                    e a senha fornecida. Sua conta pessoal continua usando o Google.
+                  </p>
+                )}
                 <Field>
-                  <FieldLabel>E-mail institucional</FieldLabel>
+                  <FieldLabel>{providers.testLogin ? "E-mail da conta de teste" : "E-mail institucional"}</FieldLabel>
                   <Input
                     type="email"
                     autoComplete="username"
-                    placeholder="seu.nome@instituicao.br"
+                    placeholder={providers.testLogin ? "aluno@labrary.test" : "seu.nome@instituicao.br"}
                     required
                     maxLength={254}
                     value={email}
@@ -205,7 +231,11 @@ export function Login({
                 >
                   <span>{busy ? "Entrando…" : "Entrar no meu espaço"}</span>
                   {busy ? (
-                    <Spinner aria-hidden="true" aria-label={undefined} role="presentation" />
+                    <Spinner
+                      aria-hidden="true"
+                      aria-label={undefined}
+                      role="presentation"
+                    />
                   ) : (
                     <ArrowRight />
                   )}

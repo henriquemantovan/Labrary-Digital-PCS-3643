@@ -1,6 +1,7 @@
 import { ApiError } from "../errors.js";
 import { User } from "../models/auth.js";
 import { AuthRepository } from "./authRepository.js";
+import { isDevelopmentTestEmail } from "../services/developmentTestAccounts.js";
 export type ManagedUser = Pick<
   User,
   "id" | "fullName" | "email" | "role" | "active"
@@ -61,8 +62,11 @@ export function createMemoryAdminRepository(
         actor,
         target,
         role,
-        auth.directory.users.filter((u) => u.active && u.role === "ADMIN")
-          .length,
+        // Um ADMIN fictício não evita a perda do último ADMIN elegível em produção.
+        auth.directory.users.filter(
+          (u) => u.active && u.role === "ADMIN" &&
+            (isDevelopmentTestEmail(target?.email ?? "") || !isDevelopmentTestEmail(u.email)),
+        ).length,
       );
       target!.role = role;
       return managedUser(target!);

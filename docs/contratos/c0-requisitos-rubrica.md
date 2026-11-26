@@ -30,9 +30,9 @@ POST recebe `baseVersionId: 0` na primeira versão e o ID da última versão nas
   "baseVersionId": 0,
   "title": "Entrega final",
   "requirements": [
-    { "kind": "VIDEO", "label": "Vídeo de apresentação", "required": true, "allowedMimeTypes": ["video/mp4", "video/webm"], "maxSizeBytes": 524288000, "dueAt": "2026-11-25T23:59:00-03:00" },
-    { "kind": "RELATORIO", "label": "Relatório do projeto", "required": true, "allowedMimeTypes": ["application/pdf"], "maxSizeBytes": 20971520, "dueAt": "2026-11-25T23:59:00-03:00" },
-    { "kind": "MANUAL", "label": "Manual de uso", "required": true, "allowedMimeTypes": ["application/pdf"], "maxSizeBytes": 20971520, "dueAt": "2026-11-25T23:59:00-03:00" }
+    { "kind": "VIDEO", "label": "Vídeo de apresentação", "required": true, "allowedMimeTypes": ["video/mp4", "video/webm"], "maxSizeBytes": 524288000, "dueAt": "2099-11-25T23:59:00-03:00" },
+    { "kind": "RELATORIO", "label": "Relatório do projeto", "required": true, "allowedMimeTypes": ["application/pdf"], "maxSizeBytes": 20971520, "dueAt": "2099-11-25T23:59:00-03:00" },
+    { "kind": "MANUAL", "label": "Manual de uso", "required": true, "allowedMimeTypes": ["application/pdf"], "maxSizeBytes": 20971520, "dueAt": "2099-11-25T23:59:00-03:00" }
   ],
   "criteria": [
     { "id": "funcionamento", "title": "Funcionamento", "description": "Demonstração do sistema", "weight": 60, "minScore": 0, "maxScore": 10 },
@@ -49,12 +49,12 @@ São obrigatórios exatamente vídeo, relatório e manual. Formatos são uma lis
 
 O adapter `createRubricMaterialPolicy` utiliza a última configuração para formatos, tamanhos, títulos e prazos de upload. Sem configuração explícita, preserva a política padrão preexistente. Material complementar `OUTRO` conserva a regra opcional padrão. O prazo global do projeto continua sendo um limite adicional; a devolução para `AJUSTES` permite upload após os prazos, conforme a HU04. `/material-rules` expõe `dueAt`, `lock` e `canUpload` por requisito para a interface mostrar bloqueios específicos.
 
-Enzo deve registrar em C1 o `rubricVersionId` e a cópia exata desta versão, junto à rodada e às versões submetidas de materiais. Consumidores devem resolver a versão pelo ID fixado, nunca buscar a última rubrica para uma avaliação anterior. O contrato C2 proposto exige preservar a rubrica utilizada; o serviço de avaliação pertence à S6 e ainda não está implementado neste incremento. A submissão real de Enzo continua sendo uma integração separada; este contrato não cria submissões.
+C1 registra `rubricVersionId` e a cópia exata desta versão, junto à rodada e às versões submetidas. C2 avalia esse snapshot; nunca busca a última rubrica para uma rodada anterior. Submissão e avaliação estão integradas no servidor normal. C0 cria apenas configurações; submeter é uma ação separada pela [rota C1](c1-submissao.md).
 
 ## Persistência e backup
 
 O entrypoint persiste em `RUBRIC_DATA_FILE` (padrão: `${PROJECT_DATA_FILE}.rubrics.json`); `createApp` usa memória quando nenhum repositório é injetado. O arquivo privado usa gravação temporária seguida de renomeação e suporta um processo escritor. Não é um adapter PostgreSQL.
 
-Na primeira execução, arquivo ausente significa configuração ainda não criada. Arquivos inválidos ou históricos incoerentes impedem a carga; não são apagados nem reinicializados. Antes de atualizar/restaurar, interrompa o escritor e copie em conjunto o arquivo de projetos, grupos, rubricas e `UPLOAD_DIR`, mantendo uma cópia intacta. Este módulo não converte metadados antigos de materiais nem gravações privadas não integradas do PR #26; eventuais dados externos exigem conversão explícita e validada.
+Na primeira execução, arquivo ausente significa configuração ainda não criada. Arquivos inválidos ou históricos incoerentes impedem a carga; não são apagados nem reinicializados. Antes de atualizar/restaurar, interrompa o escritor e copie em conjunto projetos, vínculos locais, rubricas, avaliações, liberações e os bytes em disco/R2; inclua PostgreSQL e o contador R2 quando usados, conforme o [backup conjunto](../instalacao-e-aceitacao.md#backup-e-restauração-de-teste). Este módulo não converte metadados antigos de materiais nem gravações privadas não integradas do PR #26; eventuais dados externos exigem conversão explícita e validada.
 
 Testes relevantes: `rubricRoutes.test.ts` (autorização, contrato, pesos, formatos, prazo e conflito), `fileRubricStorage.test.ts` (reinício, referências independentes, erro de gravação e corrupção), `rubricMaterialRoutes.test.ts` (upload com política configurada e prazos por requisito). Resultados executados constam do relatório de entrega, não deste contrato.

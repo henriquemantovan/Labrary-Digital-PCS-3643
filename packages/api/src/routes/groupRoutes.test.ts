@@ -211,14 +211,15 @@ it("usa IDs reais de contas Google e ADMIN respeitando a visualização acadêmi
   auth.directory.users.push({
     ...auth.directory.users[0],
     id: 105,
-    email: "google@example.com",
+    email: "google@usp.br",
+    academicProfileCompleted: true,
     googleLinked: true,
     passwordHash: null,
   });
   auth.directory.users.push({
     ...auth.directory.users[2],
     id: 200,
-    email: "admin@example.com",
+    email: "admin@usp.br",
     role: "ADMIN",
     passwordHash: null,
     googleLinked: true,

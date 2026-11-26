@@ -1,6 +1,58 @@
 # Classes e tipos do domínio implementado
 
-Base `c2dbb7f`, revisão de 25/11/2026. O backend usa interfaces TypeScript, schemas Zod e factories; os blocos UML abaixo representam tipos e relações, não classes ORM instanciadas. IDs do domínio em execução são `number`; os tipos SQL do modelo relacional são tratados no [DER](diagrama-er.md).
+Código revisado em 26/11/2026. O backend usa interfaces TypeScript, schemas Zod e factories; os blocos UML abaixo representam tipos e relações, não classes ORM instanciadas. IDs do domínio em execução são `number`; os tipos SQL do modelo relacional são tratados no [DER](diagrama-er.md).
+
+## Identidade, sessão e acesso
+
+```mermaid
+classDiagram
+    direction TB
+    class User {
+        +number id
+        +string fullName
+        +string email
+        +Role role
+        +boolean active
+        +boolean googleLinked
+        +boolean guest
+        +string uspNumber
+        +number entryYear
+        +boolean academicProfileCompleted
+    }
+    class PublicUser {
+        +Role role
+        +AcademicRole viewRole
+        +boolean requiresAcademicProfile
+        +boolean developmentTest
+    }
+    class Session {
+        +number userId
+        +number expiresAt
+        +AcademicRole viewRole
+    }
+    class AuthRepository {
+        <<interface>>
+        +boolean developmentTestLogin
+        +refresh()
+        +createSession(userId, now, ttl)
+        +getSession(token, now)
+        +deleteSession(token)
+    }
+    class GuestInvitation {
+        +number id
+        +string email
+        +number invitedBy
+        +string createdAt
+        +string revokedAt
+    }
+    User "1" --> "0..*" Session : autentica
+    AuthRepository --> User : diretório e vínculos
+    AuthRepository --> Session : hash do token
+    User --> PublicUser : projeção sem hash ou estado ativo
+    User "1" --> "0..*" GuestInvitation : ADMIN autoriza
+```
+
+Papéis: ALUNO, AVALIADOR, PROFESSOR e ADMIN. `viewRole` restringe o escopo acadêmico da sessão do ADMIN aos vínculos próprios. `developmentTest` identifica a projeção das contas reservadas habilitadas no desenvolvimento; não é um campo que o cliente possa enviar para obter acesso. Convidado é uma autorização associada ao e-mail, não um papel novo. Campos opcionais/nulos seguem os tipos TypeScript; consulte o [contrato de autenticação](api-inicial.md).
 
 ## Projetos, materiais e rodadas
 
@@ -144,4 +196,4 @@ classDiagram
     PublicationProviders --> PublicationDecision : pré-requisito da decisão
 ```
 
-`ResultRelease` identifica o resultado efetivo por fingerprint; alterações na rodada/avaliação podem tornar a liberação anterior inaplicável. `PublicationDecision` é uma união: `FINALIZADO` guarda a submissão, `PUBLICADO` guarda autorização e DTO público, `RETIRADO` registra a retirada. O bootstrap conecta avaliação à consolidação, mas ainda não fornece `PublicationProviders` reais. Ver [arquitetura](arquitetura.md).
+`ResultRelease` identifica o resultado efetivo por fingerprint; alterações na rodada/avaliação podem tornar a liberação anterior inaplicável. `PublicationDecision` é uma união: `FINALIZADO` guarda a submissão, `PUBLICADO` guarda autorização e DTO público, `RETIRADO` registra a retirada. O bootstrap fornece os repositórios persistentes; `createApp` compõe os `PublicationProviders` reais com `createSubmissionProvider` e `createPublicationEvaluationProvider`. Ver [arquitetura](arquitetura.md).

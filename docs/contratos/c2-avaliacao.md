@@ -14,7 +14,7 @@ O serviço de avaliação de Yuhang consome a rodada C1 de Enzo. O servidor entr
 | `expectedEvaluatorIds` | IDs únicos dos avaliadores atualmente atribuídos, em ordem crescente; pode ser vazio |
 | `evaluations` | Até um registro por avaliador previsto, em ordem crescente de ID |
 
-Cada registro contém `evaluatorId`, `status`, `revision`, `scores`, `finalizedAt` e `history`. Cada nota usa `{criterionId:string, score:number, comment:string}`; cada evento usa `{action, actorId, at, reason, revision, scores}`. O histórico preserva cópia das notas por revisão. Datas usam ISO UTC. Identidades e autorizações deverão vir do backend autenticado, nunca do cliente.
+Cada registro contém `evaluatorId`, `status`, `revision`, `scores`, `finalizedAt` e `history`. Cada nota usa `{criterionId:string, score:number, comment:string}`; cada evento usa `{action, actorId, at, reason, revision, scores}`. O histórico preserva cópia das notas por revisão. Datas usam ISO UTC. Identidades e autorizações vêm do backend autenticado, nunca do cliente.
 
 | Estado | Significado para o consumidor |
 | --- | --- |
@@ -75,6 +75,6 @@ Cada registro fica associado a projeto, submissão, versão da rubrica e avaliad
 
 Uma avaliação finalizada só volta à edição depois de uma reabertura justificada. A nova revisão preserva as notas anteriores e registra ação, conta autenticada, data e justificativa. Enviar a revisão antiga recebe `409 EVALUATION_VERSION_CONFLICT`. Rodada fora de avaliação recebe `409 EVALUATION_ROUND_LOCKED`. Editar um resultado finalizado recebe `409 EVALUATION_FINALIZED`; reabrir um registro ausente ou ainda não finalizado recebe `404 EVALUATION_NOT_FOUND` ou `409 EVALUATION_NOT_FINALIZED`. Projeto ou submissão fora do escopo retornam 404; papéis sem permissão recebem 403.
 
-O servidor grava `EVALUATION_DATA_FILE`, com padrão `${PROJECT_DATA_FILE}.evaluations.json`, por substituição atômica de arquivo privado para um único processo escritor. Copie-o junto com projetos, vínculos, rubricas, liberações e uploads. Em caso de falha de escrita, o estado em memória continua na última revisão gravada.
+O servidor grava `EVALUATION_DATA_FILE`, com padrão `${PROJECT_DATA_FILE}.evaluations.json`, por substituição atômica de arquivo privado para um único processo escritor. Copie-o junto com projetos, vínculos, rubricas, liberações e bytes em disco/R2, incluindo PostgreSQL e `R2_USAGE_FILE` quando aplicáveis. Em caso de falha de escrita, o estado em memória continua na última revisão gravada.
 
 O C3 considera a última submissão ainda submetida. Uma rodada devolvida deixa de alimentar a consolidação até a próxima submissão. Remover um vínculo exclui o avaliador da consolidação e revoga seu acesso, preservando seus registros na visão docente. Somente avaliações finalizadas participam da nota; reabrir ou refinalizar muda a revisão e exige nova liberação do resultado.

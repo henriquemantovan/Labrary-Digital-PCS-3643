@@ -12,7 +12,10 @@ export default defineConfig({
   testDir: "./e2e",
   testMatch: "**/evaluation.spec.ts",
   outputDir: "test-results/evaluation",
-  timeout: recordDemo ? 90_000 : 30_000,
+  // Duas rodadas, reabertura e várias trocas de conta: o limite global de
+  // 30 s encerrou ações válidas ao final do fluxo neste ambiente. As esperas
+  // individuais e todas as asserções permanecem com os limites anteriores.
+  timeout: recordDemo ? 90_000 : 60_000,
   workers: 1,
   forbidOnly: !!process.env.CI,
   reporter: "list",
@@ -45,6 +48,7 @@ export default defineConfig({
           API_PORT: String(apiPort),
           AUTH_DEMO: "true",
           AUTH_PROVIDER: "local",
+          DEV_TEST_LOGIN: "false",
           AUTH_USERS_FILE: "",
           APP_ORIGIN: `http://localhost:${webPort}`,
           PROJECT_DATA_FILE: `${data}/projects.json`,
@@ -53,6 +57,7 @@ export default defineConfig({
           EVALUATION_DATA_FILE: `${data}/evaluations.json`,
           RESULT_RELEASE_DATA_FILE: `${data}/results.json`,
           UPLOAD_DIR: `test-results/evaluation-${runId}-${name}/uploads`,
+          STORAGE_PROVIDER: "disk",
         },
       },
       {

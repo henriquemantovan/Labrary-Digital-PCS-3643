@@ -7,7 +7,14 @@ const targets = [
 ];
 export default defineConfig({
   testDir: "./e2e",
-  testIgnore: ["**/grades-flow.spec.ts", "**/submission.spec.ts", "**/evaluation.spec.ts"],
+  testIgnore: [
+    "**/google-academic.spec.ts",
+    "**/development-test-login.spec.ts",
+    "**/grades-flow.spec.ts",
+    "**/submission.spec.ts",
+    "**/evaluation.spec.ts",
+    "**/publication-flow.spec.ts",
+  ],
   fullyParallel: false,
   workers: 1,
   forbidOnly: !!process.env.CI,
@@ -61,11 +68,13 @@ export default defineConfig({
           API_PORT: String(apiPort),
           AUTH_DEMO: "true",
           AUTH_PROVIDER: "local",
+          DEV_TEST_LOGIN: "false",
           PROJECT_DATA_FILE: `../../test-results/projects-${runId}-${name}.json`,
           GROUP_DATA_FILE: `../../test-results/groups-${runId}-${name}.json`,
           AUTH_USERS_FILE: "",
           APP_ORIGIN: `http://localhost:${webPort}`,
           UPLOAD_DIR: `test-results/uploads-${runId}-${name}`,
+          STORAGE_PROVIDER: "disk",
         },
       },
       {

@@ -5,6 +5,11 @@ export interface User {
   role: "ALUNO" | "AVALIADOR" | "PROFESSOR" | "ADMIN";
   viewRole?: "ALUNO" | "AVALIADOR" | "PROFESSOR";
   googleLinked?: boolean;
+  guest?: boolean;
+  uspNumber?: string | null;
+  entryYear?: number | null;
+  requiresAcademicProfile?: boolean;
+  developmentTest?: boolean;
 }
 export interface ManagedUser {
   id: number;
@@ -39,6 +44,7 @@ export interface MaterialVersion {
   uploadedBy: { id: number; fullName: string | null };
   uploadedAt: string;
   downloadUrl: string;
+  playbackUrl?: string;
 }
 export interface Material {
   id: number;

@@ -19,18 +19,27 @@ export function Profile({ user }: { user: User }) {
         title="Meu perfil"
         intro="Seu lugar na comunidade Labrary."
       />
-      <Card render={<section aria-labelledby="profile-name" />} className="max-w-xl">
+      <Card
+        render={<section aria-labelledby="profile-name" />}
+        className="max-w-xl"
+      >
         <CardHeader className="flex items-center gap-4">
           <Avatar className="size-14 border bg-background">
-            <AvatarFallback className="bg-muted text-base font-semibold">{initials}</AvatarFallback>
+            <AvatarFallback className="bg-muted text-base font-semibold">
+              {initials}
+            </AvatarFallback>
           </Avatar>
           <div className="grid gap-1.5">
-            <h2 id="profile-name" className="font-heading text-lg font-semibold">
+            <h2
+              id="profile-name"
+              className="font-heading text-lg font-semibold"
+            >
               {user.fullName}
             </h2>
             <div className="flex flex-wrap gap-1.5">
               <Badge variant="outline">{roleLabels[user.role]}</Badge>
               {user.googleLinked && <Badge variant="info">Google</Badge>}
+              {user.developmentTest && <Badge variant="outline">Conta de teste</Badge>}
             </div>
           </div>
         </CardHeader>
@@ -38,6 +47,18 @@ export function Profile({ user }: { user: User }) {
           <dl className="grid gap-x-6 gap-y-3 border-t pt-6 text-sm sm:grid-cols-[max-content_1fr]">
             <dt className="text-muted-foreground">E-mail</dt>
             <dd className="[overflow-wrap:anywhere]">{user.email}</dd>
+            {user.uspNumber && (
+              <>
+                <dt className="text-muted-foreground">NUSP</dt>
+                <dd>{user.uspNumber}</dd>
+              </>
+            )}
+            {user.entryYear && (
+              <>
+                <dt className="text-muted-foreground">Ano de ingresso</dt>
+                <dd>{user.entryYear}</dd>
+              </>
+            )}
             {user.googleLinked && (
               <>
                 <dt className="text-muted-foreground">Autenticação</dt>

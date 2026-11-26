@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="pt-BR">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Labrary Digital — apresentação final</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; background: #100e18; color: #f2edf8; }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    main { max-width: 1400px; margin: auto; }
+    section { min-height: calc(100svh - 82px); padding: clamp(24px, 6vw, 90px); display: flex; flex-direction: column; justify-content: center; }
+    section[hidden] { display: none; }
+    .eyebrow { color: #bd9ce8; text-transform: uppercase; letter-spacing: .16em; font-size: .85rem; font-weight: 700; }
+    h1 { font-size: clamp(2.8rem, 7vw, 6.5rem); line-height: 1.02; margin: 22px 0; letter-spacing: -.055em; max-width: 1050px; }
+    h2 { font-size: clamp(2rem, 4vw, 4rem); line-height: 1.12; margin: 16px 0 26px; letter-spacing: -.04em; }
+    p, li { font-size: clamp(1.1rem, 1.8vw, 1.6rem); line-height: 1.55; }
+    p { max-width: 1000px; }
+    li { margin: .5em 0; }
+    a { color: #d5b3ff; text-underline-offset: .2em; }
+    .muted, small { color: #b9b0c7; }
+    .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin: 24px 0; }
+    .card { background: #21192f; border: 1px solid #463256; border-radius: 18px; padding: 24px; }
+    .card strong { font-size: 1.35rem; color: #d5b3ff; }
+    .card p { font-size: 1.1rem; margin-bottom: 0; }
+    .pipeline { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 24px 0; }
+    .pipeline .card { border-top: 4px solid #a774d4; }
+    table { border-collapse: collapse; width: 100%; font-size: clamp(1rem, 1.5vw, 1.35rem); }
+    th, td { padding: 14px; text-align: left; border-bottom: 1px solid #463256; }
+    th { color: #d5b3ff; }
+    code { background: #21192f; border-radius: 8px; padding: .3em .6em; font-size: .9em; }
+    nav { min-height: 82px; padding: 16px 24px; display: flex; gap: 16px; align-items: center; justify-content: space-between; border-top: 1px solid #463256; }
+    nav div { display: flex; gap: 10px; align-items: center; }
+    button { font: inherit; padding: 10px 18px; color: inherit; border: 1px solid #755294; border-radius: 10px; background: #21192f; cursor: pointer; }
+    button:disabled { opacity: .4; cursor: default; }
+    button:focus-visible, a:focus-visible { outline: 3px solid #d5b3ff; outline-offset: 4px; }
+    @media (max-width: 700px) { .cards, .pipeline { grid-template-columns: 1fr; } nav { flex-wrap: wrap; } table { font-size: .95rem; } th, td { padding: 8px; } }
+    @media print {
+      @page { size: A4 landscape; margin: 0; }
+      :root { color-scheme: light; background: white; color: #21192f; }
+      section, section[hidden] { display: flex; height: 210mm; min-height: 0; padding: 15mm; break-after: page; }
+      section:last-child { break-after: auto; }
+      h1 { font-size: 56pt; } h2 { font-size: 34pt; } p, li { font-size: 17pt; }
+      .card { background: #f5effb; } .card strong, a, th, .eyebrow { color: #63358e; }
+      .muted, small { color: #564961; } table { font-size: 16pt; } nav { display: none; }
+      code { background: #f5effb; }
+    }
+  </style>
+  <main>
+    <section aria-labelledby="titulo-1">
+      <div class="eyebrow">PCS3643 · Equipe Labrary Digital · 26/11/2026</div>
+      <h1 id="titulo-1">Da entrega privada ao acervo autorizado.</h1>
+      <p>Gestão, avaliação e divulgação de projetos acadêmicos de sistemas digitais.</p>
+      <p class="muted">Henrique · Enzo · Yuhang · Dan · Kauê</p>
+      <small>Semana 7, documentação revisada em 26/11/2026. Aceite humano e acadêmico pendentes.</small>
+    </section>
+    <section aria-labelledby="titulo-2" hidden>
+      <div class="eyebrow">01 · O problema e a entrega</div>
+      <h2 id="titulo-2">Um fluxo para arquivos, avaliação e divulgação.</h2>
+      <div class="cards">
+        <div class="card"><strong>Mesma versão</strong><p>Entrega congela arquivos e rubrica; a avaliação referencia essa rodada.</p></div>
+        <div class="card"><strong>Acesso por vínculo</strong><p>Grupo, avaliador atribuído e docente têm escopos verificados pela API.</p></div>
+        <div class="card"><strong>Divulgação explícita</strong><p>Professor registra autorização e escolhe as versões que chegam ao visitante.</p></div>
+      </div>
+      <p>Finalizar avaliação, liberar resultado e publicar materiais são decisões separadas.</p>
+    </section>
+    <section aria-labelledby="titulo-3" hidden>
+      <div class="eyebrow">02 · As cinco contribuições</div>
+      <h2 id="titulo-3">Responsabilidades conectadas por contratos.</h2>
+      <table>
+        <thead><tr><th>Integrante</th><th>Contribuição</th></tr></thead>
+        <tbody>
+          <tr><td>Henrique</td><td>Grupos, autorização, finalização, publicação e retirada</td></tr>
+          <tr><td>Enzo</td><td>Upload, histórico de versões e submissão imutável</td></tr>
+          <tr><td>Yuhang</td><td>Requisitos, rubricas, avaliações e reabertura</td></tr>
+          <tr><td>Dan</td><td>Acompanhamento, feedback, resultados e catálogo</td></tr>
+          <tr><td>Kauê</td><td>Consolidação, CSV, liberação, instalação e CI</td></tr>
+        </tbody>
+      </table>
+      <p class="muted">Autoria preservada no histórico. Contribuições e falas por autor no <a href="apresentacao-final.md">roteiro da apresentação</a>.</p>
+    </section>
+    <section aria-labelledby="titulo-4" hidden>
+      <div class="eyebrow">03 · Arquitetura executável</div>
+      <h2 id="titulo-4">React → API Express → domínio e armazenamento privado.</h2>
+      <div class="pipeline">
+        <div class="card"><strong>C1 · Entrega</strong><p>Versões e rubrica congeladas na submissão.</p></div>
+        <div class="card"><strong>C2 · Avaliação</strong><p>Notas, revisões e histórico por rodada.</p></div>
+        <div class="card"><strong>C3 · Consolidação</strong><p>Completude e liberação do resultado.</p></div>
+        <div class="card"><strong>C4 · Publicação</strong><p>Somente metadados e versões autorizadas.</p></div>
+      </div>
+      <p>Sessão HttpOnly, CSRF e verificação de escopo no backend. Metadados em arquivos privados com um processo escritor; vídeos e documentos em disco ou R2 privado. Identidades, cadastro, convites e sessões Google/desenvolvimento em PostgreSQL.</p>
+      <small><a href="arquitetura.md">Arquitetura atual</a> · <a href="contratos/c4-publicacao.md">Contrato público C4</a></small>
+    </section>
+    <section aria-labelledby="titulo-5" hidden>
+      <div class="eyebrow">04 · Demonstração integrada</div>
+      <h2 id="titulo-5">Da submissão à retirada, com os adapters reais.</h2>
+      <ol>
+        <li>Aluno envia três materiais e submete a rodada.</li>
+        <li>Avaliador finaliza os critérios; professor confere a consolidação.</li>
+        <li>Professor finaliza: o projeto continua privado.</li>
+        <li>Professor autoriza vídeo e relatório; visitante abre o acervo.</li>
+        <li>Retirada bloqueia URLs copiadas, HEAD e novas requisições Range.</li>
+      </ol>
+      <p><code>pnpm demonstracao:completa</code> prepara cenários no desenvolvimento já configurado; <code>pnpm demo:publicacao</code> grava o percurso automatizado isolado.</p>
+      <small>Oito contas de teste incluem cadastro e convidado. A demonstração completa usa pesos 50/30/20 e nota 9,30; a gravação automatizada usa outro exemplo. Dados e autorização são fictícios. <a href="manual-de-uso.md#demonstração-completa-com-postgresql-e-r2">Roteiro completo</a>.</small>
+    </section>
+    <section aria-labelledby="titulo-6" hidden>
+      <div class="eyebrow">05 · Evidência técnica</div>
+      <h2 id="titulo-6">Verificações reproduzíveis e falhas corrigidas.</h2>
+      <div class="cards">
+        <div class="card"><strong>Build e cobertura</strong><p>330 testes API e 140 web aprovados na execução de 26/11; as quatro métricas de cada pacote superam 85%.</p></div>
+        <div class="card"><strong>Persistência e privacidade</strong><p>C1/C2/C3/C4 conservados após reinício dos repositórios. Notas e feedback fora do acervo.</p></div>
+        <div class="card"><strong>Navegador real</strong><p>68 cenários aprovados em execuções complementares; timeout global da avaliação desktop passou na repetição isolada.</p></div>
+      </div>
+      <p>Regressão corrigida: avaliação reaberta durante a leitura dos arquivos impede a finalização.</p>
+      <small>Comandos e pendências na <a href="../README.md#6-testes-ci-e-evidências">validação da entrega</a>.</small>
+    </section>
+    <section aria-labelledby="titulo-7" hidden>
+      <div class="eyebrow">06 · Limites e fechamento</div>
+      <h2 id="titulo-7">O que a equipe ainda precisa validar.</h2>
+      <ul>
+        <li>Revisão cruzada e cinco vídeos finais identificados por autor e versão.</li>
+        <li>Instalação limpa Ubuntu 26.04 e login com Google real.</li>
+        <li>Definição sobre assinaturas e seus perfis, ainda pendente.</li>
+        <li>Um escritor e disco persistente; retirada não recolhe bytes já recebidos.</li>
+      </ul>
+      <p>Manual, contratos, arquitetura e roteiro estão disponíveis no repositório.</p>
+      <small><a href="manual-usuario.md">Manual</a> · <a href="limitacoes.md">Limitações</a> · <a href="../README.md#1-tema-e-escopo">Escopo acadêmico</a> · <a href="apresentacao-final.md">Falas e roteiro detalhado</a></small>
+    </section>
+  </main>
+  <nav aria-label="Navegação da apresentação">
+    <span id="contador" role="status" aria-live="polite"></span>
+    <div>
+      <button type="button" id="anterior">← Anterior</button>
+      <button type="button" id="proximo">Próximo →</button>
+      <button type="button" id="imprimir">Imprimir / PDF</button>
+    </div>
+  </nav>
+  <script>
+    const slides = [...document.querySelectorAll('main > section')];
+    const anterior = document.querySelector('#anterior');
+    const proximo = document.querySelector('#proximo');
+    let current = 0;
+    function show(index) {
+      current = Math.max(0, Math.min(slides.length - 1, index));
+      slides.forEach((slide, position) => { slide.hidden = position !== current; });
+      anterior.disabled = current === 0;
+      proximo.disabled = current === slides.length - 1;
+      document.querySelector('#contador').textContent = `${current + 1} / ${slides.length} · Labrary Digital`;
+      history.replaceState(null, '', `#${current + 1}`);
+      window.scrollTo(0, 0);
+    }
+    anterior.addEventListener('click', () => show(current - 1));
+    proximo.addEventListener('click', () => show(current + 1));
+    document.querySelector('#imprimir').addEventListener('click', () => window.print());
+    document.addEventListener('keydown', (event) => {
+      if (event.altKey || event.ctrlKey || event.metaKey) return;
+      if (['ArrowRight', 'PageDown', 'ArrowLeft', 'PageUp', 'Home', 'End'].includes(event.key)) {
+        event.preventDefault();
+        show(event.key === 'Home' ? 0 : event.key === 'End' ? slides.length - 1 : current + (['ArrowRight', 'PageDown'].includes(event.key) ? 1 : -1));
+      }
+    });
+    const requested = Number(location.hash.slice(1));
+    show(Number.isInteger(requested) && requested > 0 ? requested - 1 : 0);
+  </script>
+</html>

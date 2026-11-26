@@ -56,3 +56,5 @@ O entrypoint conecta arquivo privado `RESULT_RELEASE_DATA_FILE`, padrão `${PROJ
 `server.ts` usa a última rodada C1 submetida e as avaliações gravadas em `EVALUATION_DATA_FILE`. A factory aceita `evaluationRepository` para habilitar o mesmo fluxo, ou `evaluations` para injetar um provedor de teste.
 
 `integration/gradesFixture.ts` continua atendendo aos testes isolados da consolidação. O fluxo `e2e/evaluation.spec.ts` usa o servidor normal com submissão, avaliação e liberação reais.
+
+Na S7, a HU11 compartilha esse `EvaluationProvider` e o repositório de liberações. O adapter [publicationEvaluationProvider.ts](../../packages/api/src/services/publicationEvaluationProvider.ts) chama `consolidate` e projeta IDs de projeto/submissão/rodada/rubrica, previstos, concluídos e os sinais `allEvaluationsCompleted`/`resultReleased`. Ausência de rodada ou outra submissão não fornece completude; erro do produtor propaga a indisponibilidade. A HU11 compara esses IDs com o C1 e vínculos atuais e relê as fontes depois de conferir os arquivos. Não exige `resultReleased` para finalizar/publicar. [Verificação integrada](../../README.md#6-testes-ci-e-evidências).

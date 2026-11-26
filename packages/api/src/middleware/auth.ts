@@ -2,6 +2,15 @@ import { Request, RequestHandler } from "express";
 import { ApiError } from "../errors.js";
 import { AcademicRole, User } from "../models/auth.js";
 import { AuthRepository } from "../repositories/authRepository.js";
+import {
+  isDevelopmentTestAccount,
+  isDevelopmentTestEmail,
+  isDevelopmentGuestAccount,
+} from "../services/developmentTestAccounts.js";
+import {
+  isUspEmail,
+  requiresAcademicProfile,
+} from "../models/academicAccess.js";
 
 declare global {
   namespace Express {
@@ -9,6 +18,7 @@ declare global {
       user: User;
       accountUser: User;
       viewRole?: AcademicRole;
+      developmentTestLogin?: boolean;
     }
   }
 }
@@ -31,7 +41,13 @@ export function requireAuth(
     const session = await auth.getSession(token, now());
     if (session) await auth.refresh?.();
     const user = session && auth.findById(session.userId);
-    if (!user?.active) {
+    if (
+      !user?.active ||
+      (isDevelopmentTestEmail(user.email) &&
+        (!auth.developmentTestLogin || !isDevelopmentTestAccount(user) ||
+          (isDevelopmentGuestAccount(user) && !user.guest))) ||
+      (user.googleLinked && !isUspEmail(user.email) && !user.guest)
+    ) {
       await auth.deleteSession(token);
       throw new ApiError(
         401,
@@ -40,12 +56,26 @@ export function requireAuth(
       );
     }
     response.locals.accountUser = user;
+    response.locals.developmentTestLogin = auth.developmentTestLogin;
     const viewRole = user.role === "ADMIN" ? session?.viewRole : undefined;
     response.locals.viewRole = viewRole;
     response.locals.user = viewRole ? { ...user, role: viewRole } : user;
     next();
   };
 }
+export const requireCompleteAcademicProfile: RequestHandler = (
+  _request,
+  response,
+  next,
+) => {
+  if (requiresAcademicProfile(response.locals.accountUser, response.locals.developmentTestLogin))
+    throw new ApiError(
+      403,
+      "ACADEMIC_PROFILE_REQUIRED",
+      "Complete seu nome, NUSP e ano de ingresso antes de acessar a área acadêmica.",
+    );
+  next();
+};
 export function protectMutations(origin: string): RequestHandler {
   return (request, _response, next) => {
     if (

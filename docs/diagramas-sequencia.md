@@ -1,6 +1,6 @@
 # Diagramas de sequência
 
-Base `c2dbb7f`, revisão de 25/11/2026. Diagramas de comportamento; validações de entrada e erros menores foram agrupados. As permissões são sempre decididas pela API.
+Comportamento revisado em 26/11/2026, incluindo as oito contas de desenvolvimento. Validações de entrada e erros menores foram agrupados. As permissões são sempre decididas pela API.
 
 ## Login e sessão local
 
@@ -23,7 +23,37 @@ sequenceDiagram
     end
 ```
 
-No Google, `/api/auth/google` cria uma tentativa OAuth e redireciona ao provedor. O callback verifica state, nonce, PKCE e ID token; persiste identidade e sessão no PostgreSQL. Novos usuários são ALUNO sem vínculos automáticos. Ver [SSO](login-google.md).
+No Google, `/api/auth/google` cria uma tentativa OAuth e redireciona ao provedor. O callback verifica state, nonce, PKCE e ID token, exige e-mail verificado `@usp.br` ou convite externo vigente e persiste identidade e sessão no PostgreSQL. Novos usuários são ALUNO sem vínculos automáticos. O aluno USP precisa concluir nome completo, NUSP e ano de ingresso antes das rotas privadas; convidados são dispensados desse cadastro. Revogar o convite encerra seu acesso. Ver [SSO](login-google.md).
+
+## Contas fictícias no desenvolvimento Google/PostgreSQL
+
+```mermaid
+sequenceDiagram
+    participant U as Navegador
+    participant A as API local
+    participant D as PostgreSQL
+    U->>A: GET /auth/providers
+    A-->>U: Google e formulário de teste se habilitado
+    U->>A: POST /auth/login com senha e CSRF
+    A->>D: Atualizar conta, vínculos e convite
+    A->>A: Verificar endereço reservado, hash e conta ativa
+    alt Convidado de teste sem convite ativo
+        A-->>U: 401 com erro genérico
+    else Conta de teste permitida
+        A->>D: Persistir hash de sessão
+        A-->>U: Cookie HttpOnly e developmentTest
+        alt Conta de cadastro ainda incompleta
+            A-->>U: Área acadêmica bloqueada até completar os dados
+            U->>A: POST /auth/profile com dados fictícios e CSRF
+            A->>D: Validar unicidade e persistir cadastro
+            A-->>U: Perfil completo e acesso conforme vínculos
+        else Outra conta de teste autorizada
+            A-->>U: Acesso conforme papel e vínculos
+        end
+    end
+```
+
+A opção é validada na inicialização: Google configurado, `NODE_ENV=development`, `DEV_TEST_LOGIN=true` e origem local. O callback Google permanece independente e autentica contas reais. Revogação do convite ou desativação bloqueia o convidado; desligar a opção bloqueia todas as sessões dos endereços reservados. As contas e o histórico permanecem no banco.
 
 ## Submissão e preservação de versões
 
@@ -85,26 +115,27 @@ sequenceDiagram
     end
 ```
 
-## Publicação: conexão real pendente
+## Publicação integrada a C1 e C3
 
 ```mermaid
 sequenceDiagram
     participant U as Professor
     participant A as API de publicação
     participant P as PublicationService
-    participant D as Provedores C1 e C3
+    participant D as Provedores reais C1 e C3
     U->>A: Solicitar finalização
-    A->>P: Validar turma e entrega
-    alt Servidor normal da base revisada
-        P-->>A: Provedores ausentes
-        A-->>U: 503 PUBLICATION_INTEGRATION_UNAVAILABLE
-    else Provedores injetados nos testes
-        P->>D: Consultar entrega e completude
-        D-->>P: Snapshots C1 e C3
-        P->>P: Validar versões, avaliadores e bytes
-        P-->>A: Decisão de finalização persistida
-        A-->>U: Pode selecionar materiais e autorizar publicação
-    end
+    A->>P: Validar sessão e turma
+    P->>D: Consultar entrega e completude da rodada
+    D-->>P: Snapshot C1 e consolidação C3
+    P->>P: Verificar versões, avaliadores e bytes privados
+    P->>D: Revalidar rodada após operações assíncronas
+    P-->>A: Finalização e snapshot persistidos juntos
+    A-->>U: Pode selecionar materiais e autorizar publicação
+    U->>A: Publicar seleção com autorização do grupo
+    A->>P: Persistir decisão pública e manter dados privados separados
+    P-->>A: DTO C4 autorizado
+    U->>A: Retirar publicação
+    A-->>U: Novos GET, HEAD e Range públicos bloqueados
 ```
 
-Este último diagrama não declara a integração concluída. O serviço de catálogo, arquivos autorizados e retirada existe; testes usam provedores injetados. Conectar os produtores reais e validar o fluxo no servidor normal é pendência de #42/#11.
+`server.ts` injeta os repositórios; `createApp` compõe C1/C3 reais. Liberação de notas ao grupo é independente da autorização pública. O E2E `publication-flow.spec.ts` usa o servidor normal; as fixtures dos testes isolados continuam identificadas separadamente. Aceite humano permanece pendente quando não registrado.

@@ -129,7 +129,9 @@ function UploadFeedback({ upload, label }: { upload: Upload; label: string }) {
             value={upload.progress}
             aria-label={`Enviando ${label}`}
           />
-          <span aria-live="polite" className="tabular-nums">{upload.progress}%</span>
+          <span aria-live="polite" className="tabular-nums">
+            {upload.progress}%
+          </span>
           <Button variant="ghost" size="sm" onClick={upload.cancel}>
             Cancelar
           </Button>
@@ -140,7 +142,11 @@ function UploadFeedback({ upload, label }: { upload: Upload; label: string }) {
           <Notice>
             <span>{upload.error}</span>
             {upload.retry && (
-              <Button variant="outline" size="xs" onClick={() => void upload.retry?.()}>
+              <Button
+                variant="outline"
+                size="xs"
+                onClick={() => void upload.retry?.()}
+              >
                 Tentar novamente
               </Button>
             )}
@@ -196,6 +202,54 @@ function FileButton({
   );
 }
 
+function MaterialVideo({
+  version,
+  title,
+}: {
+  version: Material["currentVersion"];
+  title: string;
+}) {
+  const [failed, setFailed] = useState(false);
+  return (
+    <div className="mt-3 min-w-0">
+      {failed ? (
+        <div
+          className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm"
+          role="alert"
+        >
+          <p>
+            Não foi possível reproduzir este vídeo. Tente novamente ou use
+            Baixar.
+          </p>
+          <button
+            className={buttonVariants({
+              variant: "outline",
+              size: "sm",
+              className: "mt-3",
+            })}
+            type="button"
+            onClick={() => setFailed(false)}
+          >
+            Tentar reproduzir novamente
+          </button>
+        </div>
+      ) : (
+        <video
+          className="block aspect-video max-h-[65vh] w-full max-w-[760px] rounded-xl border bg-black object-contain"
+          controls
+          playsInline
+          preload="none"
+          aria-label={`Assistir ${title} — versão ${version.versionNumber}`}
+          src={version.playbackUrl}
+          onError={() => setFailed(true)}
+        >
+          Seu navegador não oferece suporte à reprodução. Use o botão Baixar.
+        </video>
+      )}
+    </div>
+  );
+}
+
 function KindIcon({ kind }: { kind: string }) {
   if (kind === "VIDEO") return <Video aria-hidden="true" />;
   if (kind === "RELATORIO") return <FileText aria-hidden="true" />;
@@ -228,75 +282,86 @@ function MaterialCard({
     // "material-card" é gancho dos testes E2E, sem estilo próprio.
     <li className="material-card px-4 py-4">
       <div className="flex flex-wrap items-start gap-3">
-      <span
-        className={cn(
-          "relative grid size-9 shrink-0 place-items-center rounded-lg border [&>svg]:size-4",
-          current
-            ? "border-success/24 bg-success/8 text-success-foreground"
-            : "bg-background text-muted-foreground",
-        )}
-      >
-        <KindIcon kind={rule.kind} />
-        {current && (
-          <Check className="absolute -right-1 -bottom-1 size-3.5! rounded-full bg-success p-0.5 text-white" />
-        )}
-      </span>
-      <div className="grid min-w-0 flex-1 gap-0.5 text-xs text-muted-foreground [overflow-wrap:anywhere]">
-        <strong className="text-sm font-medium text-foreground">{title}</strong>
-        <span>{formatsText(rule)}</span>
-        {rule.dueAt && <span>Prazo de {title}: {formatDate(rule.dueAt)}</span>}
-        {rule.lock === "DEADLINE_PASSED" && <span>Prazo deste material encerrado.</span>}
-        {current && (
-          <span>
-            Enviado · versão {current.versionNumber} · {author(current)} ·{" "}
-            {formatDate(current.uploadedAt)}
-          </span>
-        )}
-        {current && (
-          <span>
-            {current.originalFilename} · {formatBytes(current.sizeBytes)}
-          </span>
-        )}
+        <span
+          className={cn(
+            "relative grid size-9 shrink-0 place-items-center rounded-lg border [&>svg]:size-4",
+            current
+              ? "border-success/24 bg-success/8 text-success-foreground"
+              : "bg-background text-muted-foreground",
+          )}
+        >
+          <KindIcon kind={rule.kind} />
+          {current && (
+            <Check className="absolute -right-1 -bottom-1 size-3.5! rounded-full bg-success p-0.5 text-white" />
+          )}
+        </span>
+        <div className="grid min-w-0 flex-1 gap-0.5 text-xs text-muted-foreground [overflow-wrap:anywhere]">
+          <strong className="text-sm font-medium text-foreground">
+            {title}
+          </strong>
+          <span>{formatsText(rule)}</span>
+          {rule.dueAt && (
+            <span>
+              Prazo de {title}: {formatDate(rule.dueAt)}
+            </span>
+          )}
+          {rule.lock === "DEADLINE_PASSED" && (
+            <span>Prazo deste material encerrado.</span>
+          )}
+          {current && (
+            <span>
+              Enviado · versão {current.versionNumber} · {author(current)} ·{" "}
+              {formatDate(current.uploadedAt)}
+            </span>
+          )}
+          {current && (
+            <span>
+              {current.originalFilename} · {formatBytes(current.sizeBytes)}
+            </span>
+          )}
+        </div>
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+          {!current && (
+            <Badge variant={rule.required ? "warning" : "secondary"}>
+              {rule.required ? "Pendente" : "Opcional"}
+            </Badge>
+          )}
+          {current && (
+            <a
+              className={buttonVariants({ variant: "outline", size: "sm" })}
+              href={current.downloadUrl}
+              download
+            >
+              Baixar
+            </a>
+          )}
+          {canUpload && (
+            <FileButton
+              rule={rule}
+              label={`Arquivo para ${title}`}
+              text={current ? "Substituir" : "Enviar arquivo"}
+              primary={!current}
+              disabled={upload.progress !== null}
+              onFile={(file) =>
+                void upload.send(file, { materialId: material?.id })
+              }
+            />
+          )}
+          {material && (
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-expanded={history}
+              onClick={() => setHistory(!history)}
+            >
+              Histórico ({material.versions.length})
+            </Button>
+          )}
+        </div>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
-        {!current && (
-          <Badge variant={rule.required ? "warning" : "secondary"}>
-            {rule.required ? "Pendente" : "Opcional"}
-          </Badge>
-        )}
-        {current && (
-          <a
-            className={buttonVariants({ variant: "outline", size: "sm" })}
-            href={current.downloadUrl}
-            download
-          >
-            Baixar
-          </a>
-        )}
-        {canUpload && (
-          <FileButton
-            rule={rule}
-            label={`Arquivo para ${title}`}
-            text={current ? "Substituir" : "Enviar arquivo"}
-            primary={!current}
-            disabled={upload.progress !== null}
-            onFile={(file) =>
-              void upload.send(file, { materialId: material?.id })
-            }
-          />
-        )}
-        {material && (
-          <Button
-            variant="ghost"
-            size="sm"
-            aria-expanded={history}
-            onClick={() => setHistory(!history)}
-          >
-            Histórico ({material.versions.length})
-          </Button>
-        )}
-      </div>
-      </div>
+      {current?.playbackUrl && current.mimeType.startsWith("video/") && (
+        <MaterialVideo key={current.id} version={current} title={title} />
+      )}
       <UploadFeedback upload={upload} label={title} />
       {material && history && (
         <ol
@@ -457,7 +522,10 @@ export function MaterialsPanel({
         </p>
       )}
       {required.length > 0 && (
-        <div aria-hidden="true" className="-mt-1 mb-4 h-1.5 overflow-hidden rounded-full bg-muted">
+        <div
+          aria-hidden="true"
+          className="-mt-1 mb-4 h-1.5 overflow-hidden rounded-full bg-muted"
+        >
           <div
             className="h-full rounded-full bg-success transition-[width]"
             style={{

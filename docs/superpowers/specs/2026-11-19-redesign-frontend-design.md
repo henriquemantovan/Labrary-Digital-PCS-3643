@@ -1,5 +1,7 @@
 # Redesign do frontend com shadcn/ui
 
+Registro histórico de 19/11/2026. A interface integrada usa coss ui/Base UI e Tailwind, conforme a [arquitetura atual](../../arquitetura.md). As propostas e instruções abaixo pertencem ao planejamento daquele incremento; não são o guia de execução atual.
+
 Data: 19/11/2026 · Branch: `yuhang/frontend-redesign` (a partir de `47fc731`, HU08)
 
 ## Objetivo

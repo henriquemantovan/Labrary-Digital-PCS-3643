@@ -71,6 +71,17 @@ describe("papéis PostgreSQL", () => {
     await ctx.repo.changeRole(4, 1, "ALUNO", 0);
     expect(ctx.query.mock.calls).toHaveLength(6);
   });
+  it("não contabiliza contas fictícias para remover o último ADMIN real", async () => {
+    const ctx = setup(actor, actor, 1);
+    await expect(ctx.repo.changeRole(4, 4, "ALUNO", 0)).rejects.toMatchObject({ code: "LAST_ADMIN" });
+    expect(ctx.query.mock.calls[4][1][0]).toBe(false);
+    expect(ctx.query.mock.calls[4][1][1]).toContain("admin@labrary.test");
+  });
+  it("mantém a contagem total ao remover o papel de uma conta fictícia", async () => {
+    const ctx = setup(actor, { ...actor, id: "8", email: "admin@labrary.test" }, 2);
+    expect((await ctx.repo.changeRole(4, 8, "ALUNO", 0)).role).toBe("ALUNO");
+    expect(ctx.query.mock.calls[4][1][0]).toBe(true);
+  });
   it.each(["actor", "inactive", "missing", "last"] as const)(
     "faz rollback em rejeição %s",
     async (kind) => {

@@ -1,6 +1,6 @@
 # Dados: relações físicas e lógicas
 
-Base `c2dbb7f`, revisão de 25/11/2026. Este documento separa as tabelas efetivamente usadas pelos adapters PostgreSQL das relações lógicas persistidas em JSON. O [schema Prisma](../packages/api/prisma/schema.prisma) e o [SQL inicial](../db/schema.sql) descrevem um modelo relacional mais amplo; a presença de uma tabela não comprova seu uso pelo servidor.
+Código revisado em 26/11/2026. Este documento separa as tabelas efetivamente usadas pelos adapters PostgreSQL das relações lógicas persistidas em JSON. O [schema Prisma](../packages/api/prisma/schema.prisma) e o [SQL inicial](../db/schema.sql) descrevem um modelo relacional mais amplo; a presença de uma tabela não comprova seu uso pelo servidor.
 
 ## PostgreSQL ativo no modo Google
 
@@ -9,14 +9,28 @@ Recortes das relações utilizadas pelos adapters em `repositories/postgres*`. C
 ```mermaid
 erDiagram
     APP_USER ||--o{ AUTH_SESSION : autentica
+    APP_USER ||--o{ GUEST_INVITATION : autoriza
     APP_USER ||--o{ USER_ROLE_AUDIT : alvo
     APP_USER ||--o{ COURSE_CLASS : ministra
     APP_USER {
         bigint id PK
         varchar email
         varchar google_subject
+        text password_hash
+        boolean email_verified
         user_role role
         boolean active
+        varchar usp_number
+        smallint entry_year
+        timestamptz academic_profile_completed_at
+    }
+    GUEST_INVITATION {
+        bigint id PK
+        varchar email
+        bigint invited_by FK
+        timestamptz created_at
+        timestamptz revoked_at
+        bigint revoked_by FK
     }
     AUTH_SESSION {
         char token_hash PK
@@ -66,7 +80,7 @@ erDiagram
     }
 ```
 
-`project_evaluator.project_id` é uma referência lógica ao projeto do JSON privado. A migration `20261107000000_academic_links` removeu sua FK para a tabela `project` histórica; a aplicação valida projeto e turma. A FK para o avaliador permanece. Participações encerradas e auditoria preservam o histórico. As colunas USP foram mantidas por compatibilidade; não há SSO USP ativo.
+`project_evaluator.project_id` é uma referência lógica ao projeto do JSON privado. A migration `20261107000000_academic_links` removeu sua FK para a tabela `project` histórica; a aplicação valida projeto e turma. A FK para o avaliador permanece. Participações encerradas e auditoria preservam o histórico. O login usa Google com validação do e-mail USP ou convite vigente. NUSP, ano de ingresso e conclusão do cadastro ficam em `app_user`; convites conservam o histórico em `guest_invitation`. Não há integração com Senha Única USP. As oito contas fictícias do desenvolvimento usam estas mesmas tabelas, com hash scrypt e `google_subject` nulo, sem simular uma identidade Google verificada. O cadastro da conta reservada e o convite do convidado fictício não exigem novas tabelas/migrations.
 
 ## Domínio acadêmico persistido em JSON
 
@@ -93,7 +107,7 @@ erDiagram
     SUBMISSION ||--o{ RESULT_RELEASE : libera
 ```
 
-Uma submissão guarda também a cópia da rubrica. Rubricas/avaliações/liberações usam arquivos separados, com referências verificadas pelos serviços. A decisão de publicação guarda snapshot e autorização; a conexão dos seus pré-requisitos reais ao bootstrap ainda está pendente.
+Uma submissão guarda também a cópia da rubrica. Rubricas/avaliações/liberações usam arquivos separados, com referências verificadas pelos serviços. A decisão de publicação guarda snapshot e autorização; seus pré-requisitos reais C1/C3 são compostos em `createApp`, a partir dos repositórios persistentes fornecidos pelo bootstrap.
 
 | Agregado | Armazenamento configurável |
 | --- | --- |
@@ -102,6 +116,7 @@ Uma submissão guarda também a cópia da rubrica. Rubricas/avaliações/libera�
 | Requisitos e rubricas | `RUBRIC_DATA_FILE` |
 | Avaliações | `EVALUATION_DATA_FILE` |
 | Liberações | `RESULT_RELEASE_DATA_FILE` |
-| Bytes de cada versão | Disco privado `UPLOAD_DIR`, referenciado por `storageKey` |
+| Bytes de cada versão | Disco privado `UPLOAD_DIR` ou R2 privado, referenciado por `storageKey` |
+| Controle local das operações R2 | Arquivo privado `R2_USAGE_FILE` |
 
 IDs e fingerprints conectam os agregados; não existe transação distribuída entre PostgreSQL e os vários JSON. Um backup apenas SQL não restaura os materiais, as avaliações nem as rodadas. Ver [backup e aceitação](instalacao-e-aceitacao.md).

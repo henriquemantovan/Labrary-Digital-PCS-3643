@@ -7,10 +7,11 @@ import { createMemoryProjectRepository } from "./repositories/projectRepository.
 import { createFileProjectStorage } from "./repositories/fileProjectStorage.js";
 import { createResultReleaseRepository } from "./repositories/resultReleaseRepository.js";
 import { createEvaluationRepository } from "./repositories/evaluationRepository.js";
-import { loadDirectory, resolveUploadDir } from "./services/configuration.js";
-import { createDiskStorage } from "./services/fileStorage.js";
+import { loadDirectory } from "./services/configuration.js";
+import { createConfiguredStorage } from "./services/storageConfiguration.js";
 import { createPostgresAdminRepository } from "./repositories/postgresAdminRepository.js";
 import { Pool } from "pg";
+import { createPostgresAcademicAccessRepository } from "./repositories/postgresAcademicAccessRepository.js";
 import { createPostgresIdentityRepository } from "./repositories/postgresIdentityRepository.js";
 import { createGoogleOAuth } from "./services/googleOAuth.js";
 import {
@@ -18,6 +19,7 @@ import {
   createPostgresOAuthAttempts,
 } from "./repositories/postgresAuthRepository.js";
 import { loadGoogleConfig } from "./services/googleConfiguration.js";
+import { loadDevelopmentTestLogin } from "./services/developmentTestAccounts.js";
 import {
   AuthRepository,
   createAuthRepository,
@@ -39,12 +41,19 @@ if (
   throw new Error("APP_ORIGIN deve usar HTTPS em produção.");
 }
 const googleConfig = loadGoogleConfig(process.env, origin);
+const developmentTestLogin = loadDevelopmentTestLogin(
+  process.env,
+  Boolean(googleConfig),
+  origin,
+);
 let auth: AuthRepository;
 let google;
 let admin;
 let groups;
+let academicAccess;
 if (googleConfig) {
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  academicAccess = createPostgresAcademicAccessRepository(pool, developmentTestLogin);
   const identity = createPostgresIdentityRepository(pool);
   admin = createPostgresAdminRepository(pool);
   groups = createPostgresGroupRepository(pool);
@@ -59,6 +68,7 @@ if (googleConfig) {
 } else {
   auth = createAuthRepository(await loadDirectory(process.env));
 }
+auth.developmentTestLogin = developmentTestLogin;
 const dataFile =
   process.env.PROJECT_DATA_FILE ??
   resolve(
@@ -75,14 +85,19 @@ groups ??= createMemoryGroupRepository(
     process.env.GROUP_DATA_FILE ?? `${dataFile}.groups.json`,
   ),
 );
-createApp({
+const app = createApp({
+  academicAccess,
   evaluationRepository: createEvaluationRepository(
     process.env.EVALUATION_DATA_FILE ?? `${dataFile}.evaluations.json`,
   ),
-  resultReleases: createResultReleaseRepository(process.env.RESULT_RELEASE_DATA_FILE ?? `${dataFile}.results.json`),
-  rubrics: createMemoryRubricRepository(createFileRubricStorage(
-    process.env.RUBRIC_DATA_FILE ?? `${dataFile}.rubrics.json`,
-  )),
+  resultReleases: createResultReleaseRepository(
+    process.env.RESULT_RELEASE_DATA_FILE ?? `${dataFile}.results.json`,
+  ),
+  rubrics: createMemoryRubricRepository(
+    createFileRubricStorage(
+      process.env.RUBRIC_DATA_FILE ?? `${dataFile}.rubrics.json`,
+    ),
+  ),
   groups,
   repository,
   admin,
@@ -91,7 +106,10 @@ createApp({
   localLogin: !google,
   origin,
   secureCookies: process.env.NODE_ENV === "production",
-  storage: createDiskStorage(resolveUploadDir(process.env, repositoryRoot)),
-}).listen(port, () => {
-  console.log(`Labrary API listening on http://localhost:${port}`);
+  storage: createConfiguredStorage(process.env, repositoryRoot, dataFile),
 });
+const listening = () => {
+  console.log(`Labrary API listening on http://localhost:${port}`);
+};
+if (developmentTestLogin) app.listen(port, "127.0.0.1", listening);
+else app.listen(port, listening);

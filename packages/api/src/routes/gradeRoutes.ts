@@ -62,9 +62,8 @@ export function createGradeRouter(projects: ProjectRepository, auth: AuthReposit
     response.json({ data: { ...result, resultReleased: true } });
   });
   // Token de confirmação recebido separadamente; também protege contra tela desatualizada.
-  // TODO(S6 #41 / Henrique #37): conectar o consumidor de finalização ao C3
-  // real. Exigir C1 válido e allEvaluationsCompleted; resultReleased não
-  // substitui esses critérios nem autoriza publicação (C4). Validar integrado.
+  // A finalização usa C1/C3 pelo publicationEvaluationProvider composto em createApp.
+  // resultReleased não substitui avaliações completas nem autoriza publicação (C4).
   router.get("/projects/:projectId/results/consolidation", async (request, response) => {
     const user = response.locals.user;
     teacher(user);
@@ -72,9 +71,8 @@ export function createGradeRouter(projects: ProjectRepository, auth: AuthReposit
     const { result, fingerprint } = await current(project);
     response.json({ data: { result, fingerprint } });
   });
-  // TODO(S6 #41 / Dan #40): conectar a tela do grupo a este contrato, mantendo
-  // bloqueio antes da liberação e isolamento entre grupos. Validar em E2E com
-  // C2 persistido: liberação, reabertura e nova rodada ocultam/exibem como previsto.
+  // GroupResult consome este contrato; a API conserva o bloqueio antes da liberação
+  // e o isolamento entre grupos, inclusive após reabertura ou mudança de rodada.
   router.get("/projects/:projectId/result", async (request, response) => {
     const user = response.locals.user;
     const project = ownProject(user, id.parse(request.params.projectId));

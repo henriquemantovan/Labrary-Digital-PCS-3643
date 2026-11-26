@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { requiresAcademicProfile } from "./academicAccess.js";
+import { isDevelopmentTestAccount } from "../services/developmentTestAccounts.js";
 
 export const academicRoles = ["ALUNO", "AVALIADOR", "PROFESSOR"] as const;
 export type AcademicRole = (typeof academicRoles)[number];
@@ -20,6 +22,10 @@ export const directorySchema = z
             .regex(/^scrypt\$[a-f0-9]{32}\$[a-f0-9]{128}$/)
             .nullable(),
           googleLinked: z.boolean().optional(),
+          guest: z.boolean().optional(),
+          uspNumber: z.string().nullable().optional(),
+          entryYear: z.number().int().nullable().optional(),
+          academicProfileCompleted: z.boolean().optional(),
           role: z.enum(roles),
           active: z.boolean(),
         })
@@ -87,14 +93,26 @@ export type Directory = z.infer<typeof directorySchema>;
 export type User = Directory["users"][number];
 export type PublicUser = Omit<User, "passwordHash" | "active"> & {
   viewRole?: AcademicRole;
+  requiresAcademicProfile?: boolean;
+  developmentTest?: boolean;
 };
-export function publicUser(user: User, viewRole?: AcademicRole): PublicUser {
+export function publicUser(user: User, viewRole?: AcademicRole, developmentTestLogin = false): PublicUser {
+  const developmentTest = developmentTestLogin && isDevelopmentTestAccount(user);
   return {
     id: user.id,
     fullName: user.fullName,
     email: user.email,
     role: user.role,
     ...(user.role === "ADMIN" && viewRole ? { viewRole } : {}),
-    ...(user.googleLinked ? { googleLinked: true } : {}),
+    ...(developmentTest ? { developmentTest: true } : {}),
+    ...(user.googleLinked || developmentTest
+      ? {
+          ...(user.googleLinked ? { googleLinked: true } : {}),
+          guest: Boolean(user.guest),
+          uspNumber: user.uspNumber ?? null,
+          entryYear: user.entryYear ?? null,
+          requiresAcademicProfile: requiresAcademicProfile(user, developmentTestLogin),
+        }
+      : {}),
   };
 }

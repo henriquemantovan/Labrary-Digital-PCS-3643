@@ -17,7 +17,7 @@ Os testes usam HTTP, API, autorização, serviços de publicação/liberação e
 
 Durante esta entrega, a equipe integrou o PR #56: **Yuhang entregou C2 persistente e o entrypoint passou a conectá-lo à consolidação/liberação de Kauê**. A suíte `evaluation.spec.ts` agora comprova o resultado com upload, submissão, avaliação e liberação reais, incluindo bloqueio antes da liberação, isolamento entre grupos, comentários por critério e ocultação após reabertura. As gravações de resultado desta entrega usam esse fluxo real, com dados de demonstração e persistência em arquivos privados. O teste também preserva a rubrica da rodada anterior ao submeter outra rodada.
 
-- **Henrique, #37/#42:** publicação e bytes já existem; falta conectar os provedores reais de finalização/publicação no entrypoint e aceitar esse fluxo integrado. `createApp` ainda recebe `publicationProviders` apenas por injeção. O cenário público comprova autorização e retirada com API/bytes reais, mas seus pré-requisitos de decisão vêm de contratos de teste.
+- **Henrique, #37/#42:** na base das gravações de 22/11, a ligação real de finalização/publicação ainda era pendente. A integração de 25/11 conecta C1/C3 em `createApp` e é exercitada por `publication-flow.spec.ts` no servidor normal; ver [HU11](hu11.md) e [revisão atual](revisao-final.md). Os clipes de catálogo/retirada abaixo continuam sendo evidências da base original com pré-requisitos de teste, sem atribuir a eles uma nova gravação do fluxo integrado. Aceite humano permanece pendente.
 - Próxima revisão proposta: 23/11/2026, verificando essa integração e registrando revisão por outro integrante. Nenhuma aprovação humana foi presumida. #45 e histórias de origem não devem ser encerradas como integralmente aceitas por estas evidências.
 
 ## Gravações e capturas
@@ -50,7 +50,7 @@ Node 24.19.0 e pnpm 11.25.0 preparados em `/tmp/labrary-s7-tools`; lockfile e de
 | `RECORD_EVIDENCE=true pnpm test:e2e` (após integração do PR #56) | Passou: 44 cenários gerais + 4 submissão + 2 notas + 2 avaliação real = 52 |
 | `git diff --check` | Passou |
 
-Cobertura atual (statements / branches / funções / linhas): API **98,49 / 96,91 / 98,50 / 99,29%**; web **97,41 / 92,79 / 96,15 / 98,55%**. Nenhum limiar ou asserção foi reduzido.
+Cobertura da entrega de 22/11 (statements / branches / funções / linhas): API **98,49 / 96,91 / 98,50 / 99,29%**; web **97,41 / 92,79 / 96,15 / 98,55%**. Nenhum limiar ou asserção foi reduzido. Os resultados da integração atual estão na [revisão final](revisao-final.md).
 
 As primeiras execuções de testes/API e navegador falharam por `listen EPERM` no sandbox; passaram com execução autorizada fora dele. Executar os dois perfis juntos na configuração de notas causou falha mobile por reutilizar o resultado liberado pelo desktop. A repetição seguiu o script existente, com um processo por perfil e armazenamento novo, e passou. Não foi defeito do produto nem se enfraqueceu a asserção de resultado bloqueado.
 

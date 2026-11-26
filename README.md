@@ -1,31 +1,29 @@
 # Labrary Digital
 
 [![Build e testes da main](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/henriquemantovan/Labrary-Digital-PCS-3643/actions/workflows/ci.yml)
-[![Cobertura API na base c2dbb7f](https://img.shields.io/badge/API%20c2dbb7f-98.49%25%20statements-brightgreen)](docs/revisao-final.md#verificações-da-base)
-[![Cobertura web na base c2dbb7f](https://img.shields.io/badge/web%20c2dbb7f-95.62%25%20statements-brightgreen)](docs/revisao-final.md#verificações-da-base)
 
 Plataforma de gestão, avaliação e divulgação de projetos acadêmicos de sistemas digitais. Reúne vídeo, relatório, manual, feedback privado, submissões versionadas, avaliação por rubrica e liberação de resultados.
 
-Projeto de **PCS3643 — Laboratório de Engenharia de Software I**. Esta revisão documental descreve a base `c2dbb7f` (merge do PR #58), conferida em 25/11/2026. Os badges de cobertura são valores estáticos dessa validação, não medições contínuas desta branch.
+Projeto de **PCS3643 — Laboratório de Engenharia de Software I**. Estado documentado em **26/11/2026**: redesign integrado, cadastro USP/convidados, PostgreSQL, R2 privado, player e oito contas de desenvolvimento com cenários completos. A base inclui o merge da main (`d9f7d83`); a disponibilidade dos incrementos em outro clone depende de publicar os commits da branch. Verificações locais e pendências estão na [revisão final](docs/revisao-final.md). O badge acima acompanha a main remota, não os commits locais desta branch.
 
 ## 1. Tema e escopo
 
-O tema é uma adaptação de plataforma de conteúdo digital para projetos acadêmicos. **Não há aprovação do professor registrada no repositório para a adaptação ou para a dispensa de requisitos originais.** Consulte o [registro acadêmico](docs/escopo-academico.md) e a [matriz de critérios e pendências](docs/revisao-final.md).
+O tema é uma adaptação de plataforma de conteúdo digital para projetos acadêmicos. Nas decisões do usuário de 22/11/2026, o fluxo acadêmico atual foi aceito; restrição etária, funcionalidades financeiras e HU13–HU14 foram dispensadas. Essas decisões orientam a implementação e não substituem um registro de aprovação docente. Consulte a [matriz de critérios e pendências](docs/revisao-final.md).
 
 | Área | Estado do código na base revisada |
 | --- | --- |
-| Autenticação e perfis | Login local ou Google, sessão, permissões por turma/grupo e administração de papéis |
+| Autenticação e perfis | Google com e-mail USP ou convite, cadastro de aluno, sessões e administração; três contas locais ou oito contas de desenvolvimento no PostgreSQL |
 | Grupos e projetos | Cadastro docente, integrantes, atribuição de avaliadores e auditoria de vínculos |
 | Requisitos e rubricas | Versões por projeto, três materiais obrigatórios, prazos e pesos dos critérios |
-| Materiais | Upload real, histórico de versões, checksum e download protegido |
+| Materiais | Upload real, versões, checksum, download e player privados; disco ou bucket R2 configurável |
 | Submissão | Checklist, snapshot da rubrica/materiais, bloqueios, devolução e reabertura |
 | Acompanhamento e feedback | Busca/filtros privados e conversa vinculada às versões |
 | Avaliações e notas | Rascunho, finalização, reabertura, consolidação, CSV e liberação ao grupo integrados |
-| Publicação e acervo | Serviço, API e interface existem; finalização/publicação indisponíveis no servidor normal por falta de conexão dos provedores reais C1/C3 |
+| Publicação e acervo | Finalização, publicação autorizada e retirada integradas aos produtores reais C1/C3; catálogo, vídeo e documentos autorizados |
 | Interface | Página inicial pública, login, quadro de projetos, turmas, perfil, notas e acervo; redesign do PR #58 integrado |
-| Complementos | Histórico de consumo, vistos, favoritos, recomendações e estatísticas ainda no backlog |
+| Complementos | Histórico de consumo, vistos, favoritos, recomendações e estatísticas fora do escopo desta entrega |
 
-Assinaturas individual/familiar, quatro acessos, restrição etária, receita e custos não foram implementados. Rubrica docente e feedback privado não equivalem automaticamente à avaliação pública exigida no enunciado. As dispensas precisam de decisão explícita do professor.
+**Decisão em aberto:** dispensa ou adaptação das assinaturas individual/familiar e seus quatro acessos. Aluno, Avaliador, Professor e Administrador são papéis de permissão acadêmica, não planos de assinatura. O registro de aceite docente e as evidências humanas da entrega permanecem pendentes quando não comprovados.
 
 ## 2. Sistema e equipe
 
@@ -51,14 +49,21 @@ As [HU01–HU14, critérios e definição de Done](docs/historias-de-usuario.md)
 
 ## 5. Instalação e execução
 
-Requer **Node.js 24.19.0** e **pnpm 11.25.0**. A instalação detalhada, inclusive preparação de uma máquina Linux nova, está em [instalação e aceitação](docs/instalacao-e-aceitacao.md). O requisito acadêmico é Ubuntu **26.04**; o CI usa **24.04**, e a validação limpa na distribuição exigida continua pendente.
+Requer **Node.js 24.19.0** e **pnpm 11.25.0**. A instalação detalhada, inclusive preparação de uma máquina Linux nova, está em [instalação e aceitação](docs/instalacao-e-aceitacao.md). O requisito acadêmico é Ubuntu **26.04**: a integração foi validada nessa distribuição, incluindo dependências, build e preparação do seed em cópia limpa. A instalação autônoma por outra pessoa ainda depende de aceite. O CI usa **24.04**.
 
-Após preparar Git, Node e pnpm:
+Escolha o ambiente antes de iniciar. A demonstração isolada e o desenvolvimento usam as mesmas portas padrão; execute um deles por vez ou configure portas/origem separadas.
+
+| Modo | Comando | Autenticação e dados |
+| --- | --- | --- |
+| Demonstração isolada | `pnpm demo` | Três contas `@labrary.local`, arquivos locais novos em diretório temporário, sem Google/PostgreSQL/R2 |
+| Desenvolvimento | `pnpm dev` | Usa o `.env` existente: Google/PostgreSQL e disco ou R2, conforme configuração |
+| Cenários completos de desenvolvimento | `pnpm contas:teste`, `pnpm dev` e, em outro terminal, `pnpm demonstracao:completa` | Oito contas `@labrary.test`; exige Google configurado, `NODE_ENV=development` e `DEV_TEST_LOGIN=true`; cria cenários ausentes, preservando os existentes |
+
+Após preparar Git, Node e pnpm, para a demonstração isolada:
 
 ```sh
 git clone https://github.com/henriquemantovan/Labrary-Digital-PCS-3643.git
 cd Labrary-Digital-PCS-3643
-git switch revisao-final
 node --version
 pnpm --version
 pnpm install --frozen-lockfile
@@ -78,6 +83,8 @@ Essas contas são apenas locais. A demonstração padrão não inclui uma conta 
 
 Para desenvolvimento com configuração persistente, copie `.env.example` para `.env` **apenas se ainda não existir**, ajuste as variáveis e execute `pnpm dev`. Para Google/PostgreSQL, siga [SSO e migrations](docs/login-google.md); usuários, papéis e turmas precisam ser provisionados conforme o guia. Não reutilize dados da demonstração em contas reais.
 
+Para testar oito contas fictícias com senha no mesmo PostgreSQL/R2 do desenvolvimento, habilite `DEV_TEST_LOGIN=true` com `NODE_ENV=development` e execute `pnpm contas:teste`. A exceção funciona somente em origem local; usuários reais continuam no Google. Endereços, senha inicial e desativação estão no [guia das contas de teste](docs/login-google.md#contas-fictícias-com-senha-no-desenvolvimento-googler2). Com o servidor em execução, `pnpm demonstracao:completa` prepara projetos nas diferentes etapas, sem reiniciar os já existentes; veja o [roteiro por funcionalidade](docs/manual-de-uso.md#demonstração-completa-com-postgresql-e-r2).
+
 ## 6. Testes, CI e evidências
 
 ```sh
@@ -91,11 +98,11 @@ pnpm test:e2e
 - Cobertura mínima de **85% em statements, branches, funções e linhas**, separadamente para API e web.
 - Playwright: Chromium desktop e emulação mobile, com servidores e dados de teste isolados.
 - O enunciado não fixa quantidade mínima de testes; exige tipos de teste, cobertura e **ao menos cinco vídeos de funcionalidades diferentes**.
-- `pnpm test:e2e` executa as suítes geral, submissão, notas (um perfil por processo) e avaliação.
+- `pnpm test:e2e` executa as suítes geral, submissão, notas (um perfil por processo), avaliação, publicação integrada, cadastro USP/convidados e contas fictícias de desenvolvimento.
 - O [workflow](.github/workflows/ci.yml) instala dependências, compila, testa cobertura, testa PostgreSQL/migrations e executa E2E; publica cobertura e resultados como artefatos.
-- Testes locais e CI não comprovam login com Google real ou instalação no Ubuntu 26.04.
+- Os testes com OIDC simulado não comprovam login com conta Google real. As evidências do sistema operacional e da cópia limpa são registradas separadamente na revisão final.
 
-A [última validação da base](docs/revisao-final.md#verificações-da-base) registra 277 testes API, 127 web e 54 cenários E2E aprovados. Esta branch altera somente documentação e não declara uma nova execução dessas suítes. As [gravações de Dan](docs/dan-semana7.md) distinguem fluxos reais de pré-requisitos de publicação simulados. A seleção final dos cinco vídeos permanece em revisão.
+A [validação da demonstração completa em 26/11/2026](docs/revisao-final.md#demonstração-completa--26112026) registra 330 testes API, 140 web e 68 cenários E2E aprovados no conjunto das execuções, além de build e integração PostgreSQL aprovados. O comando completo de E2E teve timeout global na avaliação desktop; a repetição isolada e as suítes restantes passaram, conforme o relatório. Resultados anteriores estão identificados por etapa e data. As [gravações de Dan](docs/dan-semana7.md) distinguem fluxos reais de pré-requisitos de publicação simulados. A seleção final dos cinco vídeos permanece em revisão.
 
 `pnpm db:test` exige um PostgreSQL descartável com permissão CREATEDB; veja [instalação e aceitação](docs/instalacao-e-aceitacao.md). Não o execute contra infraestrutura de produção.
 
@@ -106,14 +113,14 @@ A [última validação da base](docs/revisao-final.md#verificações-da-base) re
 | Runtime e pacotes | Node 24.19.0; pnpm 11.25.0; TypeScript 5.9.3 |
 | Interface | React/React DOM 19.3.1; Vite 8.3.4; Tailwind 4.3.5; Base UI 1.9.0; componentes coss ui copiados para `components/ui`; Lucide 1.73.0 |
 | API | Express 5.3.0; Zod 4.6.7; busboy 1.6.0; jose 6.2.14 |
-| Dados | PostgreSQL (CI: imagem 18), pg 8.23.1; Prisma 7.10.0 para schema/migrations; JSON e volume privado para o domínio acadêmico |
+| Dados e arquivos | PostgreSQL (CI: imagem 18), pg 8.23.1; Prisma 7.10.0 para schema/migrations; JSON privado para o domínio; AWS SDK S3 3.1175.0 para Cloudflare R2 |
 | Testes | Vitest/coverage-v8 5.0.5; Supertest 7.3.1; Testing Library React 16.3.0; Playwright 1.56.1 |
 
 Todas as dependências diretas e transitivas estão nos manifests da [raiz](package.json), [API](packages/api/package.json), [web](packages/web/package.json) e no [lockfile](pnpm-lock.yaml). Use instalação congelada. Não há Docker Compose ou script de lint versionado nesta base.
 
 ## 8. Arquitetura e diagramas
 
-A implementação usa View React, controllers/rotas Express, serviços de domínio e repositórios. **A persistência é híbrida**: PostgreSQL para identidades/sessões/vínculos no modo Google, JSON privado para projetos, rubricas, avaliações e liberações, e disco privado para os arquivos enviados. A API usa consultas `pg`; a existência do model Prisma não significa que todo o domínio seja persistido pelo Prisma.
+A implementação usa View React, controllers/rotas Express, serviços de domínio e repositórios. **A persistência é híbrida**: PostgreSQL para identidades/sessões/vínculos no modo Google, JSON privado para projetos, rubricas, avaliações e liberações, e disco ou R2 privado para os arquivos enviados. A API usa consultas `pg`; a existência do model Prisma não significa que todo o domínio seja persistido pelo Prisma.
 
 ```mermaid
 flowchart TB
@@ -122,7 +129,7 @@ flowchart TB
     S --> M["Model e repositórios"]
     M --> P["PostgreSQL: identidade e vínculos Google"]
     M --> J["JSON: domínio acadêmico"]
-    M --> F["Disco privado: arquivos"]
+    M --> F["Disco privado ou R2: arquivos"]
 ```
 
 - [Arquitetura e componentes atuais](docs/arquitetura.md).
@@ -141,8 +148,8 @@ O [SQL inicial](db/schema.sql) e o [schema Prisma](packages/api/prisma/schema.pr
 | [Manual de uso](docs/manual-de-uso.md) | Passos por perfil e roteiro de demonstração |
 | [Instalação e aceitação](docs/instalacao-e-aceitacao.md) | Ambiente, banco, seed, backup, testes e evidências |
 | [Revisão final](docs/revisao-final.md) | Matriz de requisitos, verificações e pendências por responsável |
-| [Escopo acadêmico](docs/escopo-academico.md) | Decisões do professor ainda necessárias |
+| [Escopo da entrega](#1-tema-e-escopo) | Decisões do usuário e definição de assinaturas ainda pendente |
 | [Planejamento](docs/planejamento.md) | Responsabilidades, backlog e histórico de sprints |
 | [Uso de IA](docs/desenvolvimento-com-ia.md) | Orientações e registro dos prompts conhecidos |
 
-A apresentação final está prevista para **26/11/2026**. Não há declaração de aceite integral: faltam integração real de publicação, comprovação do ambiente exigido, revisão das evidências e decisões acadêmicas. A atualização desta branch não fecha issues nem altera o código da aplicação.
+A apresentação final está prevista para **26/11/2026**. Ainda faltam instalação autônoma com aceite independente, revisão cruzada, seleção das cinco gravações finais e fechamento das decisões/aceites acadêmicos. A integração real de publicação está implementada e a execução local no Ubuntu 26.04 foi verificada; esta atualização não fecha issues nem presume aprovações humanas.

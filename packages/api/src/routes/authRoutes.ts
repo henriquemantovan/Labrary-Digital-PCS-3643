@@ -10,6 +10,7 @@ import {
   readSessionToken,
   requireAdmin,
   requireAuth,
+  requireCompleteAcademicProfile,
 } from "../middleware/auth.js";
 import { AuthRepository } from "../repositories/authRepository.js";
 
@@ -22,7 +23,8 @@ export function createAuthRouter(auth: AuthRepository, options: AuthOptions) {
     response.json({
       data: {
         google: Boolean(options.google),
-        local: options.localLogin !== false,
+        local: options.localLogin !== false || auth.developmentTestLogin === true,
+        ...(auth.developmentTestLogin ? { testLogin: true } : {}),
       },
     }),
   );
@@ -56,10 +58,15 @@ export function createAuthRouter(auth: AuthRepository, options: AuthOptions) {
           "Sua sessão terminou. Entre novamente.",
         );
       response.json({
-        data: publicUser(response.locals.accountUser, role ?? undefined),
+        data: publicUser(response.locals.accountUser, role ?? undefined, auth.developmentTestLogin),
       });
     },
   );
-  router.get("/scope", requireAuth(auth, options.now), controller.scope);
+  router.get(
+    "/scope",
+    requireAuth(auth, options.now),
+    requireCompleteAcademicProfile,
+    controller.scope,
+  );
   return router;
 }

@@ -61,6 +61,10 @@ model AppUser {
   uspNumber       String?   @unique @map("usp_number") @db.VarChar(32)
   uspAffiliations Json      @default("[]") @map("usp_affiliations")
   uspSyncedAt     DateTime? @map("usp_synced_at") @db.Timestamptz
+  entryYear Int? @map("entry_year") @db.SmallInt
+  academicProfileCompletedAt DateTime? @map("academic_profile_completed_at") @db.Timestamptz
+  invitationsMade GuestInvitation[] @relation("GuestInviter")
+  invitationsRevoked GuestInvitation[] @relation("GuestRevoker")
 
   googleSubject       String?         @unique @map("google_subject") @db.VarChar(255)
   emailVerified       Boolean         @default(false) @map("email_verified")
@@ -83,6 +87,18 @@ model AppUser {
   publications         ProjectPublication[] @relation("Publisher")
 
   @@map("app_user")
+}
+
+model GuestInvitation {
+  id BigInt @id @default(autoincrement())
+  email String @db.VarChar(254)
+  invitedBy BigInt @map("invited_by")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz
+  revokedBy BigInt? @map("revoked_by")
+  inviter AppUser @relation("GuestInviter", fields: [invitedBy], references: [id])
+  revoker AppUser? @relation("GuestRevoker", fields: [revokedBy], references: [id])
+  @@map("guest_invitation")
 }
 
 model CourseClass {

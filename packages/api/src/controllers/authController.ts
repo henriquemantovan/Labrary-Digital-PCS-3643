@@ -5,6 +5,11 @@ import { publicUser } from "../models/auth.js";
 import { readSessionToken, sessionCookie } from "../middleware/auth.js";
 import { AuthRepository } from "../repositories/authRepository.js";
 import { dummyPasswordHash, verifyPassword } from "../services/password.js";
+import {
+  isDevelopmentTestAccount,
+  isDevelopmentTestEmail,
+  isDevelopmentGuestAccount,
+} from "../services/developmentTestAccounts.js";
 
 const credentialsSchema = z
   .object({
@@ -16,8 +21,10 @@ const credentialsSchema = z
   })
   .strict();
 import { GoogleAuthOptions } from "./googleAuthController.js";
+import type { AcademicAccessRepository } from "../repositories/academicAccessRepository.js";
 
 export interface AuthOptions {
+  academicAccess?: AcademicAccessRepository;
   google?: GoogleAuthOptions;
   localLogin?: boolean;
   now: () => number;
@@ -38,7 +45,7 @@ export function createAuthController(
   };
   return {
     async login(request: Request, response: Response) {
-      if (options.localLogin === false)
+      if (options.localLogin === false && !auth.developmentTestLogin)
         throw new ApiError(
           403,
           "LOCAL_LOGIN_DISABLED",
@@ -66,6 +73,7 @@ export function createAuthController(
       }
       attempt.count++;
       const parsed = credentialsSchema.safeParse(request.body);
+      if (parsed.success) await auth.refresh?.();
       const user = parsed.success
         ? auth.findByEmail(parsed.data.email)
         : undefined;
@@ -73,7 +81,13 @@ export function createAuthController(
         parsed.success ? parsed.data.password : "",
         user?.passwordHash ?? dummyPasswordHash,
       );
-      if (!valid || !user?.active)
+      const permitted =
+        user &&
+        (isDevelopmentTestEmail(user.email)
+          ? auth.developmentTestLogin === true && isDevelopmentTestAccount(user) &&
+            (!isDevelopmentGuestAccount(user) || user.guest)
+          : options.localLogin !== false);
+      if (!valid || !user?.active || !permitted)
         throw new ApiError(
           401,
           "INVALID_CREDENTIALS",
@@ -89,11 +103,11 @@ export function createAuthController(
         ...cookie,
         maxAge: options.sessionTtlMs,
       });
-      response.status(200).json({ data: publicUser(user) });
+      response.status(200).json({ data: publicUser(user, undefined, auth.developmentTestLogin) });
     },
     me(_request: Request, response: Response) {
       response.json({
-        data: publicUser(response.locals.accountUser, response.locals.viewRole),
+        data: publicUser(response.locals.accountUser, response.locals.viewRole, auth.developmentTestLogin),
       });
     },
     async logout(request: Request, response: Response) {
